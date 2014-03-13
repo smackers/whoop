@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{ED690CF6-D197-4E45-BEF3-EA47A491C757}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>whoop</RootNamespace>
+    <AssemblyName>WhoopCoreLib</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\Binaries</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\Binaries</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\Binaries</OutputPath>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\Binaries</OutputPath>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\Util\WhoopUtil.csproj">
+      <Project>{1646810D-F199-4F97-B375-13FC7402B5B7}</Project>
+      <Name>WhoopUtil</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Core">
+      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
+    </Reference>
+    <Reference Include="CodeContractsExtender">
+      <HintPath>..\..\BoogieBinaries\CodeContractsExtender.dll</HintPath>
+    </Reference>
+    <Reference Include="ExecutionEngine">
+      <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Basetypes">
+      <HintPath>..\..\BoogieBinaries\Basetypes.dll</HintPath>
+    </Reference>
+    <Reference Include="ParserHelper">
+      <HintPath>..\..\BoogieBinaries\ParserHelper.dll</HintPath>
+    </Reference>
+    <Reference Include="AbsInt">
+      <HintPath>..\..\BoogieBinaries\AbsInt.dll</HintPath>
+    </Reference>
+    <Reference Include="Graph">
+      <HintPath>..\..\BoogieBinaries\Graph.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Outcome.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\PairConverter.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAnalyser.cs" />
+    <Compile Include="StaticLocksetAnalysis\ExprModifier.cs" />
+    <Compile Include="StaticLocksetAnalysis\Lockset.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\LocksetInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\RaceInstrumentation.cs" />
+    <Compile Include="WhoopProgram.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\PairWiseLocksetInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\MainFunctionInstrumentation.cs" />
+    <Compile Include="SourceLocationInfo.cs" />
+    <Compile Include="WhoopProgramParser.cs" />
+    <Compile Include="AccessType.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="StaticLocksetAnalysis\" />
+    <Folder Include="StaticLocksetAnalysis\Passes\" />
+  </ItemGroup>
+</Project>
