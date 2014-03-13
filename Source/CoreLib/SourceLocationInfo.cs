@@ -55,19 +55,6 @@ namespace whoop
       return GetFile() + ":" + GetLine() + ":" + GetColumn();
     }
 
-    public string GetOriginalName()
-    {
-      string originalName = "<unknown shared resource>";
-      if (stackTrace.Contains(" = ")) {
-        originalName = stackTrace.Trim().Split(new string[] { " = " }, StringSplitOptions.None)[0];
-        if (originalName.Contains("->")) {
-          string[] splitStr = originalName.Split(new string[] { "->" }, StringSplitOptions.None);
-          originalName = splitStr[splitStr.Length - 1];
-        }
-      }
-      return originalName;
-    }
-
     public void PrintStackTrace() {
       IO.ErrorWriteLine(stackTrace);
       Console.Error.WriteLine();

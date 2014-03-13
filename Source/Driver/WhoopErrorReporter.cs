@@ -55,11 +55,8 @@ namespace whoop
         GetPossibleSourceLocationsForFirstAccessInRace(conflictingAction);
       SourceLocationInfo sourceInfoForSecondAccess = new SourceLocationInfo(callCex.FailingCall.Attributes);
 
-      string sharedResourceOriginalName = sourceInfoForSecondAccess.GetOriginalName();
-
       ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
-        "potential " + raceName + " race on the shared resource " + sharedResourceOriginalName,
-        ErrorMsgType.Error);
+        "potential " + raceName + " race:", ErrorMsgType.Error);
 
       string ep1, ep2;
       GetEntryPointsFromCallCounterexample(callCex, out ep1, out ep2);
