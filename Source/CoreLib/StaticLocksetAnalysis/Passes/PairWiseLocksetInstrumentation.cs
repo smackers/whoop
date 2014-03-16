@@ -14,7 +14,7 @@ namespace whoop
     {
       AddCurrentLockset();
       AddMemoryLocksets();
-      AddLocksetCompFunc(wp.currLockset.id.TypedIdent.Type);
+//      AddLocksetCompFunc(wp.currLockset.id.TypedIdent.Type);
       AddUpdateLocksetFunc();
 
       InstrumentEntryPoints();

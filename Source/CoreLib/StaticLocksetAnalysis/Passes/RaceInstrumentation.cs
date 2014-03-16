@@ -64,8 +64,13 @@ namespace whoop
         wp.resContext.AddProcedure(proc);
 
         List<Variable> localVars = new List<Variable>();
-        Variable trackParam = new LocalVariable(v.tok, new TypedIdent(v.tok, "track", Microsoft.Boogie.Type.Bool));
+        Variable trackParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "track", Microsoft.Boogie.Type.Bool));
+        Variable tempParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "temp",
+                               new MapType(Token.NoToken, new List<TypeVariable>(),
+                                 new List<Microsoft.Boogie.Type> { Microsoft.Boogie.Type.Int },
+                                 Microsoft.Boogie.Type.Bool)));
         localVars.Add(trackParam);
+        localVars.Add(tempParam);
 
         Block b = new Block(Token.NoToken, "$bb0", new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
@@ -78,7 +83,7 @@ namespace whoop
           b.Cmds.Add(new AssignCmd(Token.NoToken,
             new List<AssignLhs>() { new MapAssignLhs(Token.NoToken,
                 new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(accessHasOccurred.tok, accessHasOccurred)),
-                new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v) }))
+                new List<Expr>(new Expr[] { new IdentifierExpr(v.tok, v) }))
             },
             new List<Expr> { new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
                 new List<Expr>(new Expr[] { new IdentifierExpr(trackParam.tok, trackParam),
@@ -87,18 +92,33 @@ namespace whoop
             }));
         }
 
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+          Microsoft.Boogie.Type.Int));
+        dummies.Add(dummyLock);
+
+        b.Cmds.Add(new AssumeCmd(Token.NoToken, new ForallExpr(Token.NoToken, dummies,
+          Expr.Iff(MakeMapSelect(tempParam, dummyLock),
+            Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                  new List<Expr>(new Expr[] {
+                    new IdentifierExpr(ls.id.tok, ls.id),
+                    new IdentifierExpr(v.tok, v),
+                  })),
+                new IdentifierExpr(dummyLock.tok, dummyLock)
+              })),
+              MakeMapSelect(wp.currLockset.id, dummyLock)))
+        )));
+
         b.Cmds.Add(new AssignCmd(Token.NoToken,
           new List<AssignLhs>() { new MapAssignLhs(wp.currLockset.id.tok,
               new SimpleAssignLhs(wp.currLockset.id.tok,
-                new IdentifierExpr(Token.NoToken, ls.id)),
-              new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v) }))
+                new IdentifierExpr(ls.id.tok, ls.id)),
+              new List<Expr>(new Expr[] { new IdentifierExpr(v.tok, v) }))
           },
-          new List<Expr> { new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
-              new List<Expr>(new Expr[] { new IdentifierExpr(trackParam.tok, trackParam),
-                MakeMapSelect(ls.id, v), wp.MakeBVFunctionCall("BV" + argType.BvBits + "_AND", "bvand",
-                  argType, MakeMapSelect(ls.id, v), new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id))
-              }))
-          }));
+          new List<Expr> { new IdentifierExpr(tempParam.tok, tempParam) }
+        ));
 
         Implementation impl = new Implementation(Token.NoToken, "_LOG_" + access.ToString() + "_LS_" + ls.targetName,
           new List<TypeVariable>(), inParams, new List<Variable>(), localVars, new List<Block>());
@@ -122,34 +142,35 @@ namespace whoop
           new List<TypeVariable>(), inParams, new List<Variable>(),
           new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
 
-        if (access == AccessType.WRITE) {
-          Requires r = new Requires(false, new NAryExpr(Token.NoToken,
-                         new FunctionCall((Function)wp.resContext.LookUpProcedure("$cmp_ls")),
-                         new List<Expr> { new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, ls.id),
-                  new IdentifierExpr(Token.NoToken, v)
-                })), new IdentifierExpr(Token.NoToken, wp.currLockset.id)
-            }));
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+          Microsoft.Boogie.Type.Int));
+        dummies.Add(dummyLock);
 
-          r.Attributes = new QKeyValue(Token.NoToken, "resource", new List<object>() { ls.targetName }, null);
-          r.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), r.Attributes);
-          proc.Requires.Add(r);
+        ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
+                              Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
+                                new MapSelect(Token.NoToken, 1),
+                                new List<Expr>(new Expr[] {
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new IdentifierExpr(ls.id.tok, ls.id),
+                  new IdentifierExpr(v.tok, v),
+                })), new IdentifierExpr(dummyLock.tok, dummyLock)
+            })), MakeMapSelect(wp.currLockset.id, dummyLock)), Expr.True));
+
+        Requires r = null;
+
+        if (access == AccessType.WRITE) {
+          r = new Requires(false, exists);
         } else if (access == AccessType.READ) {
           Variable waho = wp.GetRaceCheckingVariables().Find(val => val.Name.Contains(ls.targetName) &&
                           val.Name.Contains("WRITE_HAS_OCCURRED_"));
-
-          Requires r = new Requires(false, Expr.Imp(MakeMapSelect(waho, v),
-                         new NAryExpr(Token.NoToken, new FunctionCall((Function)wp.resContext.LookUpProcedure("$cmp_ls")),
-                           new List<Expr> { new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                  new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, ls.id),
-                    new IdentifierExpr(Token.NoToken, v)
-                  })), new IdentifierExpr(Token.NoToken, wp.currLockset.id)
-              })));
-
-          r.Attributes = new QKeyValue(Token.NoToken, "resource", new List<object>() { ls.targetName }, null);
-          r.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), r.Attributes);
-          proc.Requires.Add(r);
+          r = new Requires(false, Expr.Imp(MakeMapSelect(waho, v), exists));
         }
+
+        r.Attributes = new QKeyValue(Token.NoToken, "resource", new List<object>() { ls.targetName }, null);
+        r.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), r.Attributes);
+        proc.Requires.Add(r);
 
         wp.program.TopLevelDeclarations.Add(proc);
         wp.resContext.AddProcedure(proc);
@@ -238,7 +259,27 @@ namespace whoop
     {
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val => val.Name.Contains(v.Name));
-        proc.Requires.Add(new Requires(false, MakeAccessForAllExpr(raceCheck)));
+
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+          Microsoft.Boogie.Type.Int));
+        dummies.Add(dummyPtr);
+
+        List<Expr> tr = new List<Expr>();
+        tr.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new IdentifierExpr(raceCheck.tok, raceCheck),
+            new IdentifierExpr(dummyPtr.tok, dummyPtr)
+          })));
+
+        proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummies,
+          new Trigger(Token.NoToken, true, tr),
+          Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+            new List<Expr>(new Expr[] {
+              new IdentifierExpr(raceCheck.tok, raceCheck),
+              new IdentifierExpr(dummyPtr.tok, dummyPtr)
+            }))))));
+
         if (!proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name)))
           proc.Modifies.Add(new IdentifierExpr(Token.NoToken, raceCheck));
       }
@@ -248,29 +289,9 @@ namespace whoop
     {
       return new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
         new List<Expr>(new Expr[] {
-          new IdentifierExpr(v.tok, v), new IdentifierExpr(idx.tok, idx)
+          new IdentifierExpr(v.tok, v),
+          new IdentifierExpr(idx.tok, idx)
         }));
-    }
-
-    internal static ForallExpr MakeAccessForAllExpr(Variable v)
-    {
-      List<Variable> dummies = new List<Variable>();
-      Variable dummy = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "p",
-                         Microsoft.Boogie.Type.Int));
-      dummies.Add(dummy);
-
-      List<Expr> tr = new List<Expr>();
-      tr.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-        new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v),
-          new IdentifierExpr(Token.NoToken, dummy)
-        })));
-
-      return new ForallExpr(Token.NoToken, dummies,
-        new Trigger(Token.NoToken, true, tr),
-        Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v),
-            new IdentifierExpr(Token.NoToken, dummy)
-          }))));
     }
   }
 }

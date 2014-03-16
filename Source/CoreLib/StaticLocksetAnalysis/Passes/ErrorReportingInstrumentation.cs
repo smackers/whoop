@@ -20,7 +20,7 @@ namespace whoop
     public void Run()
     {
       InstrumentCalls();
-      CleanUpAssumes();
+      CleanUpSourceLockAssumes();
       InstrumentCaptureStates();
     }
 
@@ -119,11 +119,12 @@ namespace whoop
       }
     }
 
-    private void CleanUpAssumes()
+    private void CleanUpSourceLockAssumes()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         foreach (Block b in impl.Blocks) {
-          b.Cmds.RemoveAll(val => (val is AssumeCmd));
+          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
+            QKeyValue.FindExprAttributes((val as AssumeCmd).Attributes, "sourceloc") != null);
         }
       }
     }

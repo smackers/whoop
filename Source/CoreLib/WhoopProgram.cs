@@ -109,27 +109,6 @@ namespace whoop
       return e;
     }
 
-    internal ForallExpr MakeForallEquality(Variable v)
-    {
-      List<Variable> dummies = new List<Variable>();
-      Variable dummy = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "p",
-        Microsoft.Boogie.Type.Int));
-      dummies.Add(dummy);
-
-      List<Expr> tr = new List<Expr>();
-      tr.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-        new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v),
-          new IdentifierExpr(Token.NoToken, dummy)
-        })));
-
-      return new ForallExpr(Token.NoToken, dummies,
-        new Trigger(Token.NoToken, true, tr),
-        Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, v),
-            new IdentifierExpr(Token.NoToken, dummy)
-          })), new LiteralExpr(Token.NoToken, BigNum.FromInt(1), 1)));
-    }
-
     private void DetectMainFunction()
     {
       string mainFuncName = null;

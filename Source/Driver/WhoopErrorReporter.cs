@@ -90,8 +90,8 @@ namespace whoop
     private AssumeCmd DetermineConflictingAction(CallCounterexample callCex, string raceyState, string accessLockset)
     {
       AssumeCmd firstLogAssume = null;
-
       bool finished = false;
+      Write(callCex.Model);
       foreach (var b in callCex.Trace) {
         foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
           string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
@@ -105,6 +105,8 @@ namespace whoop
           }
 
           // TODO: have to check if lockset of shared state is empty else skip
+
+
 
           firstLogAssume = c;
 

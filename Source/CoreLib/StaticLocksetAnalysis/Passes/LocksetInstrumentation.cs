@@ -24,7 +24,9 @@ namespace whoop
     {
       wp.currLockset = new Lockset(new GlobalVariable(Token.NoToken,
         new TypedIdent(Token.NoToken, "CLS",
-          new BvType(1))));
+          new MapType(Token.NoToken, new List<TypeVariable>(),
+            new List<Microsoft.Boogie.Type> { Microsoft.Boogie.Type.Int },
+            Microsoft.Boogie.Type.Bool))));
       wp.currLockset.id.AddAttribute("lockset", new object[] { });
       wp.program.TopLevelDeclarations.Add(wp.currLockset.id);
     }
@@ -64,12 +66,12 @@ namespace whoop
       List<AssignLhs> newLhss = new List<AssignLhs>();
       List<Expr> newRhss = new List<Expr>();
 
-      newLhss.Add(new SimpleAssignLhs(wp.currLockset.id.tok, new IdentifierExpr(Token.NoToken, wp.currLockset.id)));
-      newRhss.Add(new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
-        new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, in2),
-          new LiteralExpr(Token.NoToken, BigNum.FromInt(1), 1),
-          new LiteralExpr(Token.NoToken, BigNum.FromInt(0), 1)
-        })));
+      newLhss.Add(new MapAssignLhs(wp.currLockset.id.tok,
+        new SimpleAssignLhs(wp.currLockset.id.tok,
+          new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id)),
+        new List<Expr>(new Expr[] { new IdentifierExpr(in1.tok, in1) })));
+
+      newRhss.Add(new IdentifierExpr(in2.tok, in2));
 
       AssignCmd assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
       b.Cmds.Add(assign);
@@ -148,24 +150,71 @@ namespace whoop
       if (proc.Modifies.Exists(val => val.Name.Equals(wp.currLockset.id.Name)))
         return false;
 
-      proc.Modifies.Add(new IdentifierExpr(Token.NoToken, wp.currLockset.id));
+      proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
       foreach (var ls in wp.locksets) {
-        proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
+        proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
       }
 
       if (modifiesOnly)
         return false;
 
-      proc.Requires.Add(new Requires(false,
-        Expr.Eq(new IdentifierExpr(Token.NoToken, wp.currLockset.id),
-          new LiteralExpr(Token.NoToken, BigNum.FromInt(0), 1))));
+      List<Variable> dummiesCLS = new List<Variable>();
+      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+        Microsoft.Boogie.Type.Int));
+      dummiesCLS.Add(dummyLock);
 
-      proc.Ensures.Add(new Ensures(false,
-        Expr.Eq(new IdentifierExpr(Token.NoToken, wp.currLockset.id),
-          new LiteralExpr(Token.NoToken, BigNum.FromInt(0), 1))));
+      List<Expr> tr1 = new List<Expr>();
+      tr1.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+        new List<Expr>(new Expr[] {
+          new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+          new IdentifierExpr(dummyLock.tok, dummyLock)
+        })));
+
+      proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesCLS,
+        new Trigger(Token.NoToken, true, tr1),
+        Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+            new IdentifierExpr(dummyLock.tok, dummyLock)
+          })), Expr.False))));
+
+      proc.Ensures.Add(new Ensures(false, new ForallExpr(Token.NoToken, dummiesCLS,
+        new Trigger(Token.NoToken, true, tr1),
+        Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+            new IdentifierExpr(dummyLock.tok, dummyLock)
+          })), Expr.False))));
 
       foreach (var ls in wp.locksets) {
-        proc.Requires.Add(new Requires(false, wp.MakeForallEquality(ls.id)));
+        List<Variable> dummiesLS = new List<Variable>();
+        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+                              Microsoft.Boogie.Type.Int));
+        dummiesLS.Add(dummyPtr);
+        dummiesLS.Add(dummyLock);
+
+        List<Expr> tr2 = new List<Expr>();
+        tr2.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new IdentifierExpr(ls.id.tok, ls.id),
+                new IdentifierExpr(dummyPtr.tok, dummyPtr),
+              })),
+            new IdentifierExpr(dummyLock.tok, dummyLock)
+          })));
+
+        proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesLS,
+          new Trigger(Token.NoToken, true, tr2),
+          Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+            new List<Expr>(new Expr[] {
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new IdentifierExpr(ls.id.tok, ls.id),
+                  new IdentifierExpr(dummyPtr.tok, dummyPtr),
+                })),
+              new IdentifierExpr(dummyLock.tok, dummyLock)
+            })), Expr.True))));
       }
 
       return true;

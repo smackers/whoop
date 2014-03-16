@@ -31,33 +31,88 @@ namespace whoop
       Block b = new Block(Token.NoToken, "$bb" + wp.mainFunc.Blocks.Count,
                   new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
+      List<Variable> dummiesCLS = new List<Variable>();
+      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+        Microsoft.Boogie.Type.Int));
+      dummiesCLS.Add(dummyLock);
+
+      List<Expr> tr1 = new List<Expr>();
+      tr1.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+        new List<Expr>(new Expr[] {
+          new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+          new IdentifierExpr(dummyLock.tok, dummyLock)
+        })));
+
       b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-        Expr.Eq(new IdentifierExpr(Token.NoToken, wp.currLockset.id),
-          new LiteralExpr(Token.NoToken, BigNum.FromInt(0), 1))));
+        new ForallExpr(Token.NoToken, dummiesCLS,
+          new Trigger(Token.NoToken, true, tr1),
+          Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+            new List<Expr>(new Expr[] {
+              new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+              new IdentifierExpr(dummyLock.tok, dummyLock)
+            })), Expr.False))));
 
       foreach (var ls in wp.locksets) {
-        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken, wp.MakeForallEquality(ls.id)));
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+                              Microsoft.Boogie.Type.Int));
+        dummies.Add(dummyPtr);
+        dummies.Add(dummyLock);
+
+        List<Expr> tr2 = new List<Expr>();
+
+        tr2.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] { new IdentifierExpr(Token.NoToken, ls.id),
+                new IdentifierExpr(dummyPtr.tok, dummyPtr)
+              })),
+            new IdentifierExpr(dummyLock.tok, dummyLock)
+          })));
+
+        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
+          new ForallExpr(Token.NoToken, dummies,
+            new Trigger(Token.NoToken, true, tr2),
+            Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                  new List<Expr>(new Expr[] {
+                    new IdentifierExpr(Token.NoToken, ls.id),
+                    new IdentifierExpr(Token.NoToken, dummyPtr)
+                  })),
+                new IdentifierExpr(Token.NoToken, dummyLock)
+              })), Expr.True))));
       }
 
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val => val.Name.Contains(v.Name));
 
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+          Microsoft.Boogie.Type.Int));
+        dummies.Add(dummyPtr);
+
+        List<Expr> tr = new List<Expr>();
+        tr.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
+            new IdentifierExpr(Token.NoToken, raceCheck),
+            new IdentifierExpr(dummyPtr.tok, dummyPtr)
+          })));
+
         b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-          RaceInstrumentation.MakeAccessForAllExpr(raceCheck)));
+          new ForallExpr(Token.NoToken, dummies,
+            new Trigger(Token.NoToken, true, tr),
+            Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new IdentifierExpr(Token.NoToken, raceCheck),
+                new IdentifierExpr(dummyPtr.tok, dummyPtr)
+              }))))));
       }
 
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         string[] str = impl.Name.Split(new Char[] { '$' });
         Contract.Requires(str.Length == 3);
 
-//        Implementation i1 = wp.GetImplementation(str[1]);
-//
-//        Console.WriteLine(i1.Name);
-//
-//        foreach (var inparam in i1.InParams) {
-//          Console.WriteLine(inparam.Name);
-//        }
-//
         CallCmd c1 = (wp.mainFunc.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
           (val as CallCmd).callee.Equals(str[1])) as CallCmd);
         CallCmd c2 = (wp.mainFunc.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
