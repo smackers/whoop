@@ -19,12 +19,13 @@ namespace whoop
 
     public void Run()
     {
-      InstrumentCalls();
+      InstrumentCallsWithSourceLocationInfo();
       CleanUpSourceLockAssumes();
       InstrumentCaptureStates();
+      InstrumentCheckCallsWithStateId();
     }
 
-    private void InstrumentCalls()
+    private void InstrumentCallsWithSourceLocationInfo()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         foreach (Block b in impl.Blocks) {
@@ -44,13 +45,9 @@ namespace whoop
             } else if (call.callee.Contains("_CHECK_WRITE_LS_")) {
               Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
               call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-              call.Attributes = new QKeyValue(Token.NoToken, "check_id",
-                new List<object>() { "check_ls_$" + call.callee.Split(new char[] { '$' })[1] }, call.Attributes);
             } else if (call.callee.Contains("_CHECK_READ_LS_")) {
               Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
               call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
-              call.Attributes = new QKeyValue(Token.NoToken, "check_id",
-                new List<object>() { "check_ls_$" + call.callee.Split(new char[] { '$' })[1] }, call.Attributes);
             }
           }
         }
@@ -73,7 +70,6 @@ namespace whoop
             }
 
             CallCmd call = c as CallCmd;
-            newCmds.Add(call);
 
             if (call.callee.Contains("_LOG_WRITE_LS_") ||
                 call.callee.Contains("_LOG_READ_LS_")) {
@@ -97,10 +93,11 @@ namespace whoop
 
               assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
                 new List<object>() { "log_state_" + logCounter }, assume.Attributes);
-              assume.Attributes = new QKeyValue(Token.NoToken, "check_id",
-                new List<object>() { "check_ls_$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
+              assume.Attributes = new QKeyValue(Token.NoToken, "resource",
+                new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
               logCounter++;
 
+              newCmds.Add(call);
               newCmds.Add(assume);
             } else if (call.callee.Contains("_CHECK_WRITE_LS_") ||
                        call.callee.Contains("_CHECK_READ_LS_")) {
@@ -111,10 +108,34 @@ namespace whoop
               checkCounter++;
 
               newCmds.Add(assume);
+              newCmds.Add(call);
+            } else {
+              newCmds.Add(call);
             }
           }
 
           b.Cmds = newCmds;
+        }
+      }
+    }
+
+    private void InstrumentCheckCallsWithStateId()
+    {
+      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+        foreach (Block b in impl.Blocks) {
+          for (int i = 0; i < b.Cmds.Count; i++) {
+            if (!(b.Cmds[i] is CallCmd)) continue;
+            CallCmd call = b.Cmds[i] as CallCmd;
+
+            if (call.callee.Contains("_CHECK_WRITE_LS_") ||
+              call.callee.Contains("_CHECK_READ_LS_")) {
+              Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
+              call.Attributes = new QKeyValue(Token.NoToken, "state_id",
+                new List<object>() {
+                  QKeyValue.FindStringAttribute((b.Cmds[i - 1] as AssumeCmd).Attributes, "captureState")
+                }, call.Attributes);
+            }
+          }
         }
       }
     }
@@ -153,4 +174,3 @@ namespace whoop
     }
   }
 }
-

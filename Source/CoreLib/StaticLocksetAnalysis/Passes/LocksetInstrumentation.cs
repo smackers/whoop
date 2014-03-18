@@ -135,7 +135,7 @@ namespace whoop
               continue;
             if (InstrumentImplementation(wp.GetImplementation(c.callee)))
               foundLock = true;
-            if (foundLock) InstrumentProcedure(wp.GetImplementation(c.callee).Proc, true);
+            if (foundLock) InstrumentProcedure(wp.GetImplementation(c.callee).Proc);
           }
         }
       }
@@ -143,7 +143,7 @@ namespace whoop
       return foundLock;
     }
 
-    private bool InstrumentProcedure(Procedure proc, bool modifiesOnly=false)
+    private bool InstrumentProcedure(Procedure proc)
     {
       Contract.Requires(proc != null);
 
@@ -153,68 +153,6 @@ namespace whoop
       proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
       foreach (var ls in wp.locksets) {
         proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
-      }
-
-      if (modifiesOnly)
-        return false;
-
-      List<Variable> dummiesCLS = new List<Variable>();
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-        Microsoft.Boogie.Type.Int));
-      dummiesCLS.Add(dummyLock);
-
-      List<Expr> tr1 = new List<Expr>();
-      tr1.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-        new List<Expr>(new Expr[] {
-          new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-          new IdentifierExpr(dummyLock.tok, dummyLock)
-        })));
-
-      proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesCLS,
-        new Trigger(Token.NoToken, true, tr1),
-        Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] {
-            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-            new IdentifierExpr(dummyLock.tok, dummyLock)
-          })), Expr.False))));
-
-      proc.Ensures.Add(new Ensures(false, new ForallExpr(Token.NoToken, dummiesCLS,
-        new Trigger(Token.NoToken, true, tr1),
-        Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] {
-            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-            new IdentifierExpr(dummyLock.tok, dummyLock)
-          })), Expr.False))));
-
-      foreach (var ls in wp.locksets) {
-        List<Variable> dummiesLS = new List<Variable>();
-        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-                              Microsoft.Boogie.Type.Int));
-        dummiesLS.Add(dummyPtr);
-        dummiesLS.Add(dummyLock);
-
-        List<Expr> tr2 = new List<Expr>();
-        tr2.Add(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] {
-            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-              new List<Expr>(new Expr[] {
-                new IdentifierExpr(ls.id.tok, ls.id),
-                new IdentifierExpr(dummyPtr.tok, dummyPtr),
-              })),
-            new IdentifierExpr(dummyLock.tok, dummyLock)
-          })));
-
-        proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesLS,
-          new Trigger(Token.NoToken, true, tr2),
-          Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-            new List<Expr>(new Expr[] {
-              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] {
-                  new IdentifierExpr(ls.id.tok, ls.id),
-                  new IdentifierExpr(dummyPtr.tok, dummyPtr),
-                })),
-              new IdentifierExpr(dummyLock.tok, dummyLock)
-            })), Expr.True))));
       }
 
       return true;

@@ -12,6 +12,7 @@ namespace whoop
     List<string> files;
     List<WhoopProgram> wps;
     PipelineStatistics stats;
+    WhoopErrorReporter errorReporter;
 
     public StaticLocksetAnalyser (List<string> files)
     {
@@ -19,6 +20,7 @@ namespace whoop
       this.files = files;
       this.wps = new List<WhoopProgram>();
       this.stats = new PipelineStatistics();
+      this.errorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
@@ -162,13 +164,10 @@ namespace whoop
           }
 
           Contract.Assert(errors != null);
-
           errors.Sort(new CounterexampleComparer());
-
-          foreach (Counterexample error in errors)
-          {
-            new WhoopErrorReporter(wp, impl).ReportCounterexample(error);
-            stats.ErrorCount++;
+          foreach (Counterexample error in errors) {
+            stats.ErrorCount += errorReporter.ReportCounterexample(wp, impl, error);
+            Console.WriteLine("New CounterExample");
           }
           whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errors.Count == 1 ? "" : "s"));
           break;
