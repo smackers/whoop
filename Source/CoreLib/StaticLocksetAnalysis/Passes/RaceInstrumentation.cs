@@ -86,11 +86,14 @@ namespace whoop
         proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
 
         b.Cmds.Add(new AssignCmd(Token.NoToken,
-          new List<AssignLhs>() { 
+          new List<AssignLhs>() {
             new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(offset.tok, offset))
           },
-          new List<Expr> { 
-            new IdentifierExpr(v.tok, v)
+          new List<Expr> {
+            new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
+              new List<Expr>(new Expr[] { new IdentifierExpr(trackParam.tok, trackParam),
+                new IdentifierExpr(v.tok, v), new IdentifierExpr(offset.tok, offset)
+              }))
           }));
 
         if (access == AccessType.WRITE) {
@@ -100,9 +103,15 @@ namespace whoop
           proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
 
           b.Cmds.Add(new AssignCmd(Token.NoToken,
-            new List<AssignLhs>() { 
+            new List<AssignLhs>() {
               new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(raceCheck.tok, raceCheck))
-            }, new List<Expr> { Expr.True }));
+            },
+            new List<Expr> {
+              new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
+                new List<Expr>(new Expr[] { new IdentifierExpr(trackParam.tok, trackParam),
+                  Expr.True, new IdentifierExpr(raceCheck.tok, raceCheck)
+                }))
+            }));
         }
 
         List<Variable> dummies = new List<Variable>();

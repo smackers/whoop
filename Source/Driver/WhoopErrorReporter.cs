@@ -29,6 +29,9 @@ namespace whoop
         AssertCounterexample cex = error as AssertCounterexample;
         if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking")) {
           errors = ReportRace(cex);
+        } else {
+          errors++;
+          Console.WriteLine("Error: AssertCounterexample");
         }
       } else if (error is CallCounterexample) {
         errors++;
