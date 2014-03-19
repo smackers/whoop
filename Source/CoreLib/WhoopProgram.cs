@@ -70,17 +70,19 @@ namespace whoop
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
-
-      return (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-        (val as Implementation).Name.Equals(name)) as Implementation);
+      Implementation impl = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
+                            (val as Implementation).Name.Equals(name)) as Implementation);
+      Contract.Requires(impl != null);
+      return impl;
     }
 
     public Constant GetConstant(string name)
     {
       Contract.Requires(name != null);
-
-      return (program.TopLevelDeclarations.Find(val => (val is Constant) &&
-        (val as Constant).Name.Equals(name)) as Constant);
+      Constant cons = (program.TopLevelDeclarations.Find(val => (val is Constant) &&
+                      (val as Constant).Name.Equals(name)) as Constant);
+      Contract.Requires(cons != null);
+      return cons;
     }
 
     internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)

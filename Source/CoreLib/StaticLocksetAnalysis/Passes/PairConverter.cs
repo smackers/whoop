@@ -10,20 +10,20 @@ namespace whoop
   public class PairConverter
   {
     WhoopProgram wp;
-    List<Tuple<string, string>> entryPointPairs;
+    List<Tuple<string, List<string>>> entryPointPairs;
 
     public PairConverter(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
-      entryPointPairs = new List<Tuple<string, string>>();
+      entryPointPairs = new List<Tuple<string, List<string>>>();
 
       foreach (var kvp1 in wp.entryPoints) {
         foreach (var ep1 in kvp1.Value) {
           foreach (var kvp2 in wp.entryPoints) {
             foreach (var ep2 in kvp2.Value) {
               if (CanRunConcurrently(ep1.Value, ep2.Value))
-                entryPointPairs.Add(new Tuple<string, string>(ep1.Value, ep2.Value));
+                entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
             }
           }
         }
@@ -33,127 +33,156 @@ namespace whoop
     public void Run()
     {
       foreach (var ep in entryPointPairs) {
-        Implementation impl1 = wp.GetImplementation(ep.Item1);
-        Implementation impl2 = wp.GetImplementation(ep.Item2);
+        Implementation impl = wp.GetImplementation(ep.Item1);
+        List<Implementation> implList = new List<Implementation>();
 
-        if (impl1 != null && impl2 != null) {
-          CreateNewpair(impl1, impl2);
+        foreach (var v in ep.Item2) implList.Add(wp.GetImplementation(v));
 
-          Constant cons1 = wp.GetConstant(ep.Item1);
-          Constant cons2 = wp.GetConstant(ep.Item2);
+        CreateNewpair(impl, implList);
 
-          if (cons1 != null && cons2 != null) {
-            CreateNewConstant(cons1, cons2);
-          }
-        }
+        Constant cons = wp.GetConstant(ep.Item1);
+        List<Constant> consList = new List<Constant>();
+
+        foreach (var v in ep.Item2) consList.Add(wp.GetConstant(v));
+
+        CreateNewConstant(cons, consList);
       }
     }
 
-    private void CreateNewpair(Implementation impl1, Implementation impl2)
+    private void CreateNewpair(Implementation impl, List<Implementation> implList)
     {
-      string name = "pair_" + "$" + impl1.Name + "$" + impl2.Name;
+      string name = "pair_" + "$" + impl.Name + "$" + implList[0].Name;
 
-      Procedure proc = new Procedure(Token.NoToken, name,
-                         new List<TypeVariable>(), ProcessInParams(impl1, impl2), 
-                         new List<Variable>(), new List<Requires>(),
-                         new List<IdentifierExpr>(), new List<Ensures>());
+      Procedure newProc = new Procedure(Token.NoToken, name,
+                            new List<TypeVariable>(), ProcessInParams(impl, implList), 
+                            new List<Variable>(), new List<Requires>(),
+                            new List<IdentifierExpr>(), new List<Ensures>());
 
-      proc.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
-      proc.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
+      newProc.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
+      newProc.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
         new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
-      }, proc.Attributes);
+      }, newProc.Attributes);
 
-      Implementation impl = new Implementation(Token.NoToken, name,
-                              new List<TypeVariable>(), ProcessInParams(impl1, impl2),
-                              new List<Variable>(), ProcessLocalVars(impl1, impl2),
-                              ProcessListOfBlocks(impl1, impl2));
+      Implementation newImpl = new Implementation(Token.NoToken, name,
+        new List<TypeVariable>(), ProcessInParams(impl, implList),
+        new List<Variable>(), ProcessLocalVars(impl, implList),
+        ProcessListOfBlocks(impl, implList));
 
-      impl.Proc = proc;
-      impl.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
-      impl.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
+      newImpl.Proc = newProc;
+      newImpl.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
+      newImpl.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
         new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
-      }, impl.Attributes);
+      }, newImpl.Attributes);
 
       foreach (var v in wp.program.TopLevelDeclarations.OfType<GlobalVariable>()) {
         if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr") || v.Name.Contains("$M.")) {
-          proc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
+          newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
         }
       }
 
-      wp.program.TopLevelDeclarations.Add(proc);
-      wp.program.TopLevelDeclarations.Add(impl);
-      wp.resContext.AddProcedure(proc);
+      wp.program.TopLevelDeclarations.Add(newProc);
+      wp.program.TopLevelDeclarations.Add(newImpl);
+      wp.resContext.AddProcedure(newProc);
     }
 
-    private List<Variable> ProcessInParams(Implementation impl1, Implementation impl2)
+    private List<Variable> ProcessInParams(Implementation impl, List<Implementation> implList)
     {
       List<Variable> newInParams = new List<Variable>();
 
-      foreach (Variable v in impl1.Proc.InParams) {
+      foreach (var v in impl.Proc.InParams) {
         newInParams.Add(new ExprModifier(wp, 1).VisitVariable(v.Clone() as Variable) as Variable);
       }
 
-      foreach (Variable v in impl2.Proc.InParams) {
-        newInParams.Add(new ExprModifier(wp, 2).VisitVariable(v.Clone() as Variable) as Variable);
+      for (int i = 0; i < implList.Count; i++) {
+        foreach (var v in implList[i].Proc.InParams) {
+          newInParams.Add(new ExprModifier(wp, i + 2).VisitVariable(v.Clone() as Variable) as Variable);
+        }
       }
 
       return newInParams;
     }
 
-    private List<Variable> ProcessLocalVars(Implementation impl1, Implementation impl2)
+    private List<Variable> ProcessLocalVars(Implementation impl, List<Implementation> implList)
     {
       List<Variable> newLocalVars = new List<Variable>();
 
-      foreach (LocalVariable v in impl1.LocVars) {
+      foreach (var v in impl.LocVars) {
         newLocalVars.Add(new ExprModifier(wp, 1).VisitVariable(v.Clone() as Variable) as Variable);
       }
 
-      foreach (LocalVariable v in impl2.LocVars) {
-        newLocalVars.Add(new ExprModifier(wp, 2).VisitVariable(v.Clone() as Variable) as Variable);
+      for (int i = 0; i < implList.Count; i++) {
+        foreach (var v in implList[i].LocVars) {
+          newLocalVars.Add(new ExprModifier(wp, i + 2).VisitVariable(v.Clone() as Variable) as Variable);
+        }
       }
 
       return newLocalVars;
     }
 
-    private List<Block> ProcessListOfBlocks(Implementation impl1, Implementation impl2)
+    private List<Block> ProcessListOfBlocks(Implementation impl, List<Implementation> implList)
     {
       List<Block> newBlocks = new List<Block>();
 
-      foreach (Block block in impl1.Blocks) {
-        ProcessBlock(block, newBlocks, 1, impl1);
-      }
+      foreach (var b in impl.Blocks) ProcessBlock(newBlocks, b, impl, implList);
 
-      foreach (Block block in impl2.Blocks) {
-        ProcessBlock(block, newBlocks, 2, impl2);
+      for (int i = 0; i < implList.Count; i++) {
+        foreach (var b in implList[i].Blocks) {
+          if (implList[i].Name.Equals(impl.Name)) ProcessBlock(newBlocks, b, implList[i], i + 2, true);
+          else ProcessBlock(newBlocks, b, implList[i], i + 2, false);
+        }
       }
-
-      ProcessBlockTransfer(newBlocks, impl1.Blocks, impl2.Blocks);
-      ProcessBlockLabels(newBlocks, impl1, impl2);
 
       return newBlocks;
     }
 
-    private void ProcessBlock(Block b, List<Block> blocks, int fid, Implementation impl)
+    private void ProcessBlock(List<Block> blocks, Block b, Implementation impl, List<Implementation> implList)
     {
       // SMACK produces one assume for each source location
       Contract.Requires(b.Cmds.Count % 2 == 0);
 
       Block newBlock = null;
 
-      if (b.TransferCmd is ReturnCmd && fid == 2) {
-        newBlock = new Block(Token.NoToken, b.Label, new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      if (b.TransferCmd is ReturnCmd) {
+        List<string> gotos = new List<string>();
+
+        foreach (var i in implList) {
+          if (i.Name.Equals(impl.Name)) gotos.Add(ProcessLabel(i, i.Blocks[0].Label, true));
+          else gotos.Add(ProcessLabel(i, i.Blocks[0].Label, false));
+        }
+
+        newBlock = new Block(Token.NoToken, ProcessLabel(impl, b.Label, false),
+          new List<Cmd>(), new GotoCmd(Token.NoToken, gotos));
       } else {
-        newBlock = new Block(Token.NoToken, b.Label, new List<Cmd>(), new GotoCmd(Token.NoToken, new List<string>()));
+        newBlock = new Block(Token.NoToken, ProcessLabel(impl, b.Label, false),
+          new List<Cmd>(), new GotoCmd(Token.NoToken, new List<string>()));
       }
 
-      foreach (var cmd in b.Cmds) {
-        ProcessCmd(cmd, newBlock.Cmds, fid, impl);
-      }
-
+      foreach (var cmd in b.Cmds) ProcessCmd(cmd, newBlock.Cmds, 1);
+      if (!(b.TransferCmd is ReturnCmd)) ProcessBlockTransfer(newBlock, b, impl, false);
       blocks.Add(newBlock);
     }
 
-    private void ProcessCmd(Cmd c, List<Cmd> cmds, int fid, Implementation impl)
+    private void ProcessBlock(List<Block> blocks, Block b, Implementation impl, int fid, bool isSame)
+    {
+      // SMACK produces one assume for each source location
+      Contract.Requires(b.Cmds.Count % 2 == 0);
+
+      Block newBlock = null;
+
+      if (b.TransferCmd is ReturnCmd) {
+        newBlock = new Block(Token.NoToken, ProcessLabel(impl, b.Label, isSame),
+          new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      } else {
+        newBlock = new Block(Token.NoToken, ProcessLabel(impl, b.Label, isSame),
+          new List<Cmd>(), new GotoCmd(Token.NoToken, new List<string>()));
+      }
+
+      foreach (var cmd in b.Cmds) ProcessCmd(cmd, newBlock.Cmds, fid);
+      ProcessBlockTransfer(newBlock, b, impl, isSame);
+      blocks.Add(newBlock);
+    }
+
+    private void ProcessCmd(Cmd c, List<Cmd> cmds, int fid)
     {
       if (c is CallCmd) {
         CallCmd call = c as CallCmd;
@@ -161,13 +190,11 @@ namespace whoop
         List<Expr> newIns = new List<Expr>();
         List<IdentifierExpr> newOuts = new List<IdentifierExpr>();
 
-        foreach (IdentifierExpr v in call.Ins) {
+        foreach (IdentifierExpr v in call.Ins)
           newIns.Add(new ExprModifier(wp, fid).VisitExpr(v.Clone() as Expr));
-        }
 
-        foreach (var v in call.Outs) {
+        foreach (var v in call.Outs)
           newOuts.Add(new ExprModifier(wp, fid).VisitIdentifierExpr(v.Clone() as IdentifierExpr) as IdentifierExpr);
-        }
 
         cmds.Add(new CallCmd(Token.NoToken, call.callee, newIns, newOuts));
       } else if (c is AssignCmd) {
@@ -200,63 +227,35 @@ namespace whoop
       }
     }
 
-    private void ProcessBlockTransfer(List<Block> blocks, List<Block> b1, List<Block> b2)
+    private void ProcessBlockTransfer(Block newBlock, Block block, Implementation impl, bool isSame)
     {
-      for (int i = 0; i < b1.Count; i++) {
-        if (b1[i].TransferCmd is ReturnCmd) {
-          (blocks[i].TransferCmd as GotoCmd).labelNames.Add("$bb" + b1.Count);
-          continue;
-        }
-
-        foreach (string label in (b1[i].TransferCmd as GotoCmd).labelNames)
-          (blocks[i].TransferCmd as GotoCmd).labelNames.Add(label);
-      }
-
-      for (int i = 0; i < b2.Count; i++) {
-        blocks[i + b1.Count].Label = "$bb" +
-          (Convert.ToInt32(blocks[i + b1.Count].Label.Substring(3)) + b1.Count);
-
-        if (b2[i].TransferCmd is ReturnCmd)
-          continue;
-
-        foreach (string label in (b2[i].TransferCmd as GotoCmd).labelNames)
-          (blocks[i + b1.Count].TransferCmd as GotoCmd).labelNames.Add("$bb" +
-            (Convert.ToInt32(label.Substring(3)) + b1.Count));
+      if (newBlock.TransferCmd is ReturnCmd) return;
+      if (block.TransferCmd is ReturnCmd) {
+        (newBlock.TransferCmd as GotoCmd).labelNames.Add(ProcessLabel(impl, block.Label, isSame));
+      } else {
+        foreach (string label in (block.TransferCmd as GotoCmd).labelNames)
+          (newBlock.TransferCmd as GotoCmd).labelNames.Add(ProcessLabel(impl, label, isSame));
       }
     }
 
-    private void ProcessBlockLabels(List<Block> blocks, Implementation impl1, Implementation impl2)
+    private void CreateNewConstant(Constant cons, List<Constant> consList)
     {
-      foreach (var b in blocks) {
-        if (Convert.ToInt32(b.Label.Substring(3)) < impl1.Blocks.Count) {
-          b.Label = impl1.Name + "$" + b.Label.Substring(3);
-          if (b.TransferCmd is GotoCmd) {
-            for (int i = 0; i < (b.TransferCmd as GotoCmd).labelNames.Count; i++) {
-              (b.TransferCmd as GotoCmd).labelNames[i] = impl1.Name + "$" +
-              (b.TransferCmd as GotoCmd).labelNames[i].Substring(3);
-            }
-          }
-        } else {
-          b.Label = impl2.Name + "$" + b.Label.Substring(3);
-          if (b.TransferCmd is GotoCmd) {
-            for (int i = 0; i < (b.TransferCmd as GotoCmd).labelNames.Count; i++) {
-              (b.TransferCmd as GotoCmd).labelNames[i] = impl2.Name + "$" +
-                (b.TransferCmd as GotoCmd).labelNames[i].Substring(3);
-            }
-          }
-        }
-      }
-    }
-
-    private void CreateNewConstant(Constant cons1, Constant cons2)
-    {
-      string consName = "pair_" + "$" + cons1.Name + "$" + cons2.Name;
+      string consName = "pair_" + "$" + cons.Name + "$" + consList[0].Name;
 
       Constant newCons = new Constant(Token.NoToken,
                            new TypedIdent(Token.NoToken, consName,
                              wp.memoryModelType), true);
 
       wp.program.TopLevelDeclarations.Add(newCons);
+    }
+
+    private string ProcessLabel(Implementation impl, string oldLabel, bool isSame)
+    {
+      string newLabel = null;
+      if (isSame) newLabel = impl.Name + "$" + (Convert.ToInt32(oldLabel.Substring(3)) + impl.Blocks.Count);
+      else newLabel = impl.Name + "$" + oldLabel.Substring(3);
+      Contract.Requires(newLabel != null);
+      return newLabel;
     }
 
     private bool CanRunConcurrently(string ep1, string ep2)
