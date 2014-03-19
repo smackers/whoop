@@ -165,10 +165,9 @@ namespace whoop
 
           Contract.Assert(errors != null);
           errors.Sort(new CounterexampleComparer());
-          foreach (Counterexample error in errors) {
+          foreach (Counterexample error in errors)
             stats.ErrorCount += errorReporter.ReportCounterexample(wp, impl, error);
-            Console.WriteLine("New CounterExample");
-          }
+
           whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errors.Count == 1 ? "" : "s"));
           break;
 

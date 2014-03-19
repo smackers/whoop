@@ -128,6 +128,7 @@ namespace whoop
       }
 
       ProcessBlockTransfer(newBlocks, impl1.Blocks, impl2.Blocks);
+      ProcessBlockLabels(newBlocks, impl1, impl2);
 
       return newBlocks;
     }
@@ -221,6 +222,29 @@ namespace whoop
         foreach (string label in (b2[i].TransferCmd as GotoCmd).labelNames)
           (blocks[i + b1.Count].TransferCmd as GotoCmd).labelNames.Add("$bb" +
             (Convert.ToInt32(label.Substring(3)) + b1.Count));
+      }
+    }
+
+    private void ProcessBlockLabels(List<Block> blocks, Implementation impl1, Implementation impl2)
+    {
+      foreach (var b in blocks) {
+        if (Convert.ToInt32(b.Label.Substring(3)) < impl1.Blocks.Count) {
+          b.Label = impl1.Name + "$" + b.Label.Substring(3);
+          if (b.TransferCmd is GotoCmd) {
+            for (int i = 0; i < (b.TransferCmd as GotoCmd).labelNames.Count; i++) {
+              (b.TransferCmd as GotoCmd).labelNames[i] = impl1.Name + "$" +
+              (b.TransferCmd as GotoCmd).labelNames[i].Substring(3);
+            }
+          }
+        } else {
+          b.Label = impl2.Name + "$" + b.Label.Substring(3);
+          if (b.TransferCmd is GotoCmd) {
+            for (int i = 0; i < (b.TransferCmd as GotoCmd).labelNames.Count; i++) {
+              (b.TransferCmd as GotoCmd).labelNames[i] = impl2.Name + "$" +
+                (b.TransferCmd as GotoCmd).labelNames[i].Substring(3);
+            }
+          }
+        }
       }
     }
 

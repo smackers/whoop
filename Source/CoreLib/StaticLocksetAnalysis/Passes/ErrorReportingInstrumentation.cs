@@ -22,7 +22,6 @@ namespace whoop
       InstrumentCallsWithSourceLocationInfo();
       CleanUpSourceLockAssumes();
       InstrumentCaptureStates();
-      InstrumentCheckCallsWithStateId();
     }
 
     private void InstrumentCallsWithSourceLocationInfo()
@@ -71,71 +70,59 @@ namespace whoop
 
             CallCmd call = c as CallCmd;
 
+            if (!(call.callee.Contains("_LOG_WRITE_LS_") ||
+                call.callee.Contains("_LOG_READ_LS_") ||
+                call.callee.Contains("_CHECK_WRITE_LS_") ||
+                call.callee.Contains("_CHECK_READ_LS_"))) {
+              newCmds.Add(call);
+              continue;
+            }
+
+            AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+
+            assume.Attributes = new QKeyValue(Token.NoToken, "column",
+              new List<object>() { new LiteralExpr(Token.NoToken,
+                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
+              }, null);
+            assume.Attributes = new QKeyValue(Token.NoToken, "line",
+              new List<object>() { new LiteralExpr(Token.NoToken,
+                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
+              }, assume.Attributes);
+
+            if (call.callee.Contains("WRITE"))
+              assume.Attributes = new QKeyValue(Token.NoToken, "access",
+                new List<object>() { "write" }, assume.Attributes);
+            else if (call.callee.Contains("READ"))
+              assume.Attributes = new QKeyValue(Token.NoToken, "access",
+                new List<object>() { "read" }, assume.Attributes);
+
+            assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
+              new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
+
             if (call.callee.Contains("_LOG_WRITE_LS_") ||
                 call.callee.Contains("_LOG_READ_LS_")) {
-              AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
-
-              assume.Attributes = new QKeyValue(Token.NoToken, "column",
-                new List<object>() { new LiteralExpr(Token.NoToken,
-                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
-                }, null);
-              assume.Attributes = new QKeyValue(Token.NoToken, "line",
-                new List<object>() { new LiteralExpr(Token.NoToken,
-                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
-                }, assume.Attributes);
-
-              if (call.callee.Contains("WRITE"))
-                assume.Attributes = new QKeyValue(Token.NoToken, "access",
-                  new List<object>() { "write" }, assume.Attributes);
-              else if (call.callee.Contains("READ"))
-                assume.Attributes = new QKeyValue(Token.NoToken, "access",
-                  new List<object>() { "read" }, assume.Attributes);
-
               assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
                 new List<object>() { "log_state_" + logCounter }, assume.Attributes);
-              assume.Attributes = new QKeyValue(Token.NoToken, "resource",
-                new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
-              logCounter++;
-
-              newCmds.Add(call);
-              newCmds.Add(assume);
-            } else if (call.callee.Contains("_CHECK_WRITE_LS_") ||
-                       call.callee.Contains("_CHECK_READ_LS_")) {
-              AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
-
-              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-                new List<object>() { "check_state_" + checkCounter }, assume.Attributes);
-              checkCounter++;
-
-              newCmds.Add(assume);
-              newCmds.Add(call);
             } else {
+              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+                new List<object>() { "check_state_" + logCounter }, assume.Attributes);
+            }
+
+            assume.Attributes = new QKeyValue(Token.NoToken, "resource",
+              new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
+            logCounter++;
+
+            if (call.callee.Contains("_LOG_WRITE_LS_") ||
+                call.callee.Contains("_LOG_READ_LS_")) {
+              newCmds.Add(call);
+              newCmds.Add(assume);
+            } else {
+              newCmds.Add(assume);
               newCmds.Add(call);
             }
           }
 
           b.Cmds = newCmds;
-        }
-      }
-    }
-
-    private void InstrumentCheckCallsWithStateId()
-    {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        foreach (Block b in impl.Blocks) {
-          for (int i = 0; i < b.Cmds.Count; i++) {
-            if (!(b.Cmds[i] is CallCmd)) continue;
-            CallCmd call = b.Cmds[i] as CallCmd;
-
-            if (call.callee.Contains("_CHECK_WRITE_LS_") ||
-              call.callee.Contains("_CHECK_READ_LS_")) {
-              Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-              call.Attributes = new QKeyValue(Token.NoToken, "state_id",
-                new List<object>() {
-                  QKeyValue.FindStringAttribute((b.Cmds[i - 1] as AssumeCmd).Attributes, "captureState")
-                }, call.Attributes);
-            }
-          }
         }
       }
     }

@@ -102,14 +102,7 @@ namespace whoop
           b.Cmds.Add(new AssignCmd(Token.NoToken,
             new List<AssignLhs>() { 
               new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(raceCheck.tok, raceCheck))
-            },
-            new List<Expr> { new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
-                new List<Expr>(new Expr[] {
-                  new IdentifierExpr(trackParam.tok, trackParam),
-                  Expr.True,
-                  new IdentifierExpr(raceCheck.tok, raceCheck)
-                }))
-            }));
+            }, new List<Expr> { Expr.True }));
         }
 
         List<Variable> dummies = new List<Variable>();
@@ -162,9 +155,21 @@ namespace whoop
         Variable v = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr", Microsoft.Boogie.Type.Int));
         inParams.Add(v);
 
-        Procedure proc = new Procedure(Token.NoToken, "_CHECK_"+ access.ToString() + "_LS_" + ls.targetName,
+        Procedure proc = new Procedure(Token.NoToken, "_CHECK_" + access.ToString() + "_LS_" + ls.targetName,
           new List<TypeVariable>(), inParams, new List<Variable>(),
           new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+        proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+        wp.program.TopLevelDeclarations.Add(proc);
+        wp.resContext.AddProcedure(proc);
+
+        List<Variable> localVars = new List<Variable>();
+        Variable trackParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "track", Microsoft.Boogie.Type.Bool));
+        localVars.Add(trackParam);
+
+        Block b = new Block(Token.NoToken, "_CHECK_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
+
+        b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam)}));
 
         List<Variable> dummies = new List<Variable>();
         Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
@@ -172,9 +177,9 @@ namespace whoop
         dummies.Add(dummyLock);
 
         ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
-                              Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
-                                new MapSelect(Token.NoToken, 1),
-                                new List<Expr>(new Expr[] {
+          Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
+            new MapSelect(Token.NoToken, 1),
+            new List<Expr>(new Expr[] {
               new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                 new List<Expr>(new Expr[] {
                   new IdentifierExpr(ls.id.tok, ls.id),
@@ -184,26 +189,34 @@ namespace whoop
 
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(ls.targetName));
-        Requires r = null;
+        AssertCmd assert = null;
 
         if (access == AccessType.WRITE) {
-          r = new Requires(false, Expr.Imp(Expr.Eq(new IdentifierExpr(offset.tok, offset),
-            new IdentifierExpr(v.tok, v)), exists));
-
+          assert = new AssertCmd(Token.NoToken, Expr.Imp(
+            Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
+              Expr.Eq(new IdentifierExpr(offset.tok, offset),
+                new IdentifierExpr(v.tok, v))), exists));
         } else if (access == AccessType.READ) {
           Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
             val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(ls.targetName));
-
-          r = new Requires(false, Expr.Imp(Expr.And(new IdentifierExpr(raceCheck.tok, raceCheck),
-            Expr.Eq(new IdentifierExpr(offset.tok, offset), new IdentifierExpr(v.tok, v))), exists));
+          assert = new AssertCmd(Token.NoToken, Expr.Imp(
+            Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
+              Expr.And(new IdentifierExpr(raceCheck.tok, raceCheck),
+                Expr.Eq(new IdentifierExpr(offset.tok, offset), new IdentifierExpr(v.tok, v)))), exists));
         }
 
-        r.Attributes = new QKeyValue(Token.NoToken, "resource", new List<object>() { ls.targetName }, null);
-        r.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), r.Attributes);
-        proc.Requires.Add(r);
+        assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
 
-        wp.program.TopLevelDeclarations.Add(proc);
-        wp.resContext.AddProcedure(proc);
+        b.Cmds.Add(assert);
+
+        Implementation impl = new Implementation(Token.NoToken, "_CHECK_" + access.ToString() + "_LS_" + ls.targetName,
+          new List<TypeVariable>(), inParams, new List<Variable>(), localVars, new List<Block>());
+
+        impl.Blocks.Add(b);
+        impl.Proc = proc;
+        impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+        wp.program.TopLevelDeclarations.Add(impl);
       }
     }
 
