@@ -23,11 +23,13 @@ namespace whoop
       new PairConverter(wp).Run();
       new PairWiseLocksetInstrumentation(wp).Run();
       new RaceInstrumentation(wp).Run();
+      new DeadlockInstrumentation(wp).Run();
       new SharedStateAbstractor(wp).Run();
       new ErrorReportingInstrumentation(wp).Run();
       new MainFunctionInstrumentation(wp).Run();
 
       RemoveEmptyBlocks();
+      RemoveEmptyBlocksInEntryPoints();
       RemoveUnecesseryReturns();
       CleanUpOldEntryPoints();
 
@@ -39,24 +41,64 @@ namespace whoop
     private void RemoveEmptyBlocks()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        foreach (var b1 in impl.Blocks) {
-          if (b1.Cmds.Count == 0 && b1.TransferCmd is GotoCmd) {
-            GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name)))
+          continue;
 
-            foreach (var b2 in impl.Blocks) {
-              if (b2.TransferCmd is GotoCmd) {
-                GotoCmd g = b2.TransferCmd as GotoCmd;
-                for (int i = 0; i < g.labelNames.Count; i++) {
-                  if (g.labelNames[i].Equals(b1.Label)) {
-                    g.labelNames[i] = t.labelNames[0];
-                  }
-                }
+        foreach (var b1 in impl.Blocks) {
+          if (b1.Cmds.Count != 0) continue;
+          if (b1.TransferCmd is ReturnCmd) continue;
+
+          GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
+
+          foreach (var b2 in impl.Blocks) {
+            if (b2.TransferCmd is ReturnCmd) continue;
+            GotoCmd g = b2.TransferCmd as GotoCmd;
+            for (int i = 0; i < g.labelNames.Count; i++) {
+              if (g.labelNames[i].Equals(b1.Label)) {
+                g.labelNames[i] = t.labelNames[0];
               }
             }
           }
         }
 
         impl.Blocks.RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd);
+      }
+    }
+
+    private void RemoveEmptyBlocksInEntryPoints()
+    {
+      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+        string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
+        Implementation original = wp.GetImplementation(label);
+        List<int> returnIdxs = new List<int>();
+
+        foreach (var b in original.Blocks) {
+          if (b.TransferCmd is ReturnCmd)
+            returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
+        }
+
+        foreach (var b1 in impl.Blocks) {
+          if (b1.Cmds.Count != 0) continue;
+          if (b1.TransferCmd is ReturnCmd) continue;
+
+          int idx = Convert.ToInt32(b1.Label.Split(new char[] { '$' })[1]);
+          if (returnIdxs.Exists(val => val == idx )) continue;
+
+          GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
+
+          foreach (var b2 in impl.Blocks) {
+            if (b2.TransferCmd is ReturnCmd) continue;
+            GotoCmd g = b2.TransferCmd as GotoCmd;
+            for (int i = 0; i < g.labelNames.Count; i++) {
+              if (g.labelNames[i].Equals(b1.Label)) {
+                g.labelNames[i] = t.labelNames[0];
+              }
+            }
+          }
+        }
+
+        impl.Blocks.RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd && returnIdxs.
+          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[1])));
       }
     }
 

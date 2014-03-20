@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>10.0.0</ProductVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ED690CF6-D197-4E45-BEF3-EA47A491C757}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -87,6 +87,7 @@
     <Compile Include="AccessType.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\DeadlockInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />
