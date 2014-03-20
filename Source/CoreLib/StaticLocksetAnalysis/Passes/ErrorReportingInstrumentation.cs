@@ -21,7 +21,8 @@ namespace whoop
     {
       InstrumentCallsWithSourceLocationInfo();
       CleanUpSourceLockAssumes();
-      InstrumentCaptureStates();
+      InstrumentRaceCheckingCaptureStates();
+      InstrumentDeadlockCheckingCaptureStates();
     }
 
     private void InstrumentCallsWithSourceLocationInfo()
@@ -53,7 +54,7 @@ namespace whoop
       }
     }
 
-    private void InstrumentCaptureStates()
+    private void InstrumentRaceCheckingCaptureStates()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         int logCounter = 0;
@@ -117,6 +118,67 @@ namespace whoop
               newCmds.Add(call);
               newCmds.Add(assume);
             } else {
+              newCmds.Add(assume);
+              newCmds.Add(call);
+            }
+          }
+
+          b.Cmds = newCmds;
+        }
+      }
+    }
+
+    private void InstrumentDeadlockCheckingCaptureStates()
+    {
+      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+        int updateCounter = 0;
+        int checkCounter = 0;
+
+        foreach (Block b in impl.Blocks) {
+          List<Cmd> newCmds = new List<Cmd>();
+
+          foreach (var c in b.Cmds) {
+            if (!(c is CallCmd)) {
+              newCmds.Add(c);
+              continue;
+            }
+
+            CallCmd call = c as CallCmd;
+
+            if (!(call.callee.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
+                call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))) {
+              newCmds.Add(call);
+              continue;
+            }
+
+            AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+
+            if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+              assume.Attributes = new QKeyValue(Token.NoToken, "column",
+                new List<object>() { new LiteralExpr(Token.NoToken,
+                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
+                }, null);
+              assume.Attributes = new QKeyValue(Token.NoToken, "line",
+                new List<object>() { new LiteralExpr(Token.NoToken,
+                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
+                }, assume.Attributes);
+            }
+
+            assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
+              new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
+
+            if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+                new List<object>() { "update_cls_state_" + updateCounter }, assume.Attributes);
+              updateCounter++;
+
+              newCmds.Add(call);
+              newCmds.Add(assume);
+            } else {
+              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+                new List<object>() { "check_deadlock_state_" + checkCounter }, assume.Attributes);
+              checkCounter++;
+
               newCmds.Add(assume);
               newCmds.Add(call);
             }

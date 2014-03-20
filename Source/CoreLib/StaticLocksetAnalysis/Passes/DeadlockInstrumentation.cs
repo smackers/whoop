@@ -10,11 +10,13 @@ namespace whoop
   public class DeadlockInstrumentation
   {
     WhoopProgram wp;
+    List<string> alreadyInstrumented;
 
     public DeadlockInstrumentation(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
+      this.alreadyInstrumented = new List<string>();
     }
 
     public void Run()
@@ -26,7 +28,7 @@ namespace whoop
 
     private void AddCheckAllLocksHaveBeenReleasedFunc()
     {
-      Procedure proc = new Procedure(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED_$" + wp.currLockset.id.Name,
+      Procedure proc = new Procedure(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
                          new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
                          new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
@@ -60,8 +62,8 @@ namespace whoop
 
       b.Cmds.Add(assert);
 
-      Implementation impl = new Implementation(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED_$" + wp.currLockset.id.Name,
-        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(), localVars, new List<Block>());
+      Implementation impl = new Implementation(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
+                              new List<TypeVariable>(), new List<Variable>(), new List<Variable>(), localVars, new List<Block>());
 
       impl.Blocks.Add(b);
       impl.Proc = proc;
@@ -88,22 +90,31 @@ namespace whoop
           returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
       }
 
-      Implementation checkLocksReleased = wp.GetImplementation("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED_$");
+      Implementation checkLocksReleased = wp.GetImplementation("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED");
       Contract.Requires(checkLocksReleased != null);
 
-      CallCmd call = new CallCmd(Token.NoToken,
-                       "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED_$" + wp.currLockset.id.Name,
+      CallCmd call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
                        new List<Expr> { }, new List<IdentifierExpr>());
 
       foreach (var b in impl.Blocks) {
-        int idx = Convert.ToInt32(b.Label.Split(new char[] { '$' })[1]);
-        if (!label.Equals(b.Label.Split(new char[] { '$' })[0])) break;
-        if (returnIdxs.Exists(val => val == idx)) b.Cmds.Add(call);
+        string[] thisLabel = b.Label.Split(new char[] { '$' });
+        Contract.Requires(thisLabel != null && thisLabel.Length == 2);
+        if (!label.Equals(thisLabel[0])) break;
+        if (alreadyInstrumented.Exists(val => val.Equals(thisLabel[0]))) continue;
+        if (returnIdxs.Exists(val => val == Convert.ToInt32(thisLabel[1]))) {
+          b.Cmds.Add(call);
+          alreadyInstrumented.Add(thisLabel[0]);
+        }
       }
 
       Contract.Requires(original.Blocks.Count < impl.Blocks.Count);
       for (int i = original.Blocks.Count; i < impl.Blocks.Count; i++) {
-        if (impl.Blocks[i].TransferCmd is ReturnCmd) impl.Blocks[i].Cmds.Add(call);
+        string thisLabel = impl.Blocks[i].Label.Split(new char[] { '$' })[0];
+        if (alreadyInstrumented.Exists(val => val.Equals(thisLabel))) continue;
+        if (impl.Blocks[i].TransferCmd is ReturnCmd) {
+          impl.Blocks[i].Cmds.Add(call);
+          alreadyInstrumented.Add(thisLabel);
+        }
       }
     }
   }

@@ -29,6 +29,8 @@ namespace whoop
         AssertCounterexample cex = error as AssertCounterexample;
         if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking")) {
           errors = ReportRace(cex);
+        } else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking")) {
+          errors = ReportUnreleasedLock(cex);
         } else {
           errors++;
           Console.WriteLine("Error: AssertCounterexample");
@@ -50,7 +52,7 @@ namespace whoop
     private int ReportRace(AssertCounterexample cex) {
       PopulateModelWithStatesIfNecessary(cex);
 
-      AssumeCmd conflictingAction = GetConflictingAction(cex);
+      AssumeCmd conflictingAction = GetCorrespondingAssume(cex);
       string accessOffset = "ACCESS_OFFSET_" + GetSharedResourceName(conflictingAction.Attributes);
       string access2 = GetAccessType(conflictingAction.Attributes);
       string raceName, access1;
@@ -73,8 +75,7 @@ namespace whoop
           sourceInfoForSecondAccess, new SourceLocationInfo(v.Attributes)));
       }
 
-      List<SourceLocationInfo> sourceLocationsForFirstAccess =
-        GetPossibleSourceLocationsForFirstAccessInRace(potentialConflictingActions);
+      List<SourceLocationInfo> sourceLocationsForFirstAccess = GetSourceLocationsForAssumes(potentialConflictingActions);
 
       for (int i = 0; i < sourceLocationsForFirstAccess.Count; i++) {
         Tuple<string, string> eps = GetEntryPointNames(conflictingAction, potentialConflictingActions[i]);
@@ -94,20 +95,15 @@ namespace whoop
       return sourceLocationsForFirstAccess.Count;
     }
 
-    private AssumeCmd GetConflictingAction(AssertCounterexample cex)
+    private string GetSharedResourceName(QKeyValue attributes)
     {
-      AssumeCmd assume = cex.Trace[cex.Trace.Count - 2].Cmds.FindLast(val => val is AssumeCmd) as AssumeCmd;
-      Contract.Requires(assume != null);
-      return assume;
-    }
-
-    private string GetSharedResourceName(QKeyValue attributes) {
       string arrName = QKeyValue.FindStringAttribute(attributes, "resource");
       Contract.Requires(arrName != null);
       return arrName;
     }
 
-    private ulong GetOffset(AssertCounterexample cex, QKeyValue attributes) {
+    private ulong GetOffset(AssertCounterexample cex, QKeyValue attributes)
+    {
       string stateName = QKeyValue.FindStringAttribute(attributes, "captureState");
       Contract.Requires(stateName != null);
 
@@ -189,15 +185,6 @@ namespace whoop
       return logAssumes;
     }
 
-    private List<SourceLocationInfo> GetPossibleSourceLocationsForFirstAccessInRace(List<AssumeCmd> conflictingActions)
-    {
-      List<SourceLocationInfo> possibleSourceLocations = new List<SourceLocationInfo>();
-      foreach (var action in conflictingActions) {
-        possibleSourceLocations.Add(new SourceLocationInfo(action.Attributes));
-      }
-      return possibleSourceLocations;
-    }
-
     private void DetermineNatureOfRace(AssumeCmd assume, out string raceName, out string access1, string access2)
     {
       access1 = QKeyValue.FindStringAttribute(assume.Attributes, "access");
@@ -244,6 +231,95 @@ namespace whoop
       }
 
       return stateLocksDictionary;
+    }
+
+    private int ReportUnreleasedLock(AssertCounterexample cex)
+    {
+      PopulateModelWithStatesIfNecessary(cex);
+
+      AssumeCmd deadlockCheck = GetCorrespondingAssume(cex);
+      string entryPoint = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "entryPoint");
+      Contract.Requires(entryPoint != null);
+
+      List<AssumeCmd> unreleasedLocks = DetermineUnreleasedLocks(cex, deadlockCheck, entryPoint);
+      List<SourceLocationInfo> sourceLocationsForUnreleasedLocks = GetSourceLocationsForAssumes(unreleasedLocks);
+      Contract.Requires(sourceLocationsForUnreleasedLocks.Count > 0);
+
+      ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
+        "potential source of deadlock:", ErrorMsgType.Error);
+
+      foreach (var v in sourceLocationsForUnreleasedLocks) {
+        Console.Error.Write("the following lock is not released when " + entryPoint + " returns, ");
+        Console.Error.WriteLine(v.ToString());
+        v.PrintStackTrace();
+      }
+
+      return sourceLocationsForUnreleasedLocks.Count;
+    }
+
+    private List<AssumeCmd> DetermineUnreleasedLocks(AssertCounterexample cex, AssumeCmd deadlockCheck, string entryPoint)
+    {
+      string checkStateName = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "captureState");
+      Contract.Requires(checkStateName != null);
+      Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
+      Contract.Requires(checkState != null);
+
+      List<Tuple<string, string>> locksLeftLocked = new List<Tuple<string, string>>();
+      List<AssumeCmd> logAssumes = new List<AssumeCmd>();
+
+      foreach (var b in cex.Trace) {
+        foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
+          string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
+          if (stateName == null) continue;
+          if (!stateName.Contains("update_cls_state")) continue;
+          if (!entryPoint.Equals(QKeyValue.FindStringAttribute(c.Attributes, "entryPoint"))) continue;
+
+          Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
+          if (logState == null) continue;
+
+          string lockName = logState.Variables.ToList().Find(val => val.Contains("UPDATE_CURRENT_LOCKSET") &&
+                            val.Contains("lock"));
+          Contract.Requires(lockName != null);
+          string isLocked = logState.Variables.ToList().Find(val => val.Contains("UPDATE_CURRENT_LOCKSET") &&
+                            val.Contains("isLocked"));
+          Contract.Requires(isLocked != null);
+
+          Model.Integer lockId = logState.TryGet(lockName) as Model.Integer;
+          if (lockId == null) continue;
+          Model.Boolean lockVal = logState.TryGet(isLocked) as Model.Boolean;
+          if (lockVal == null) continue;
+
+          locksLeftLocked.RemoveAll(val => val.Item1.Equals(lockId.Numeral));
+          if (lockVal.Value) locksLeftLocked.Add(new Tuple<string, string>(lockId.Numeral, stateName));
+        }
+      }
+
+      foreach (var b in cex.Trace) {
+        foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
+          string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
+          if (stateName == null) continue;
+          if (!locksLeftLocked.Any(val => val.Item2.Equals(stateName))) continue;
+          logAssumes.Add(c);
+        }
+      }
+
+      return logAssumes;
+    }
+
+    private AssumeCmd GetCorrespondingAssume(AssertCounterexample cex)
+    {
+      AssumeCmd assume = cex.Trace[cex.Trace.Count - 2].Cmds.FindLast(val => val is AssumeCmd) as AssumeCmd;
+      Contract.Requires(assume != null);
+      return assume;
+    }
+
+    private List<SourceLocationInfo> GetSourceLocationsForAssumes(List<AssumeCmd> assumes)
+    {
+      List<SourceLocationInfo> sourceLocations = new List<SourceLocationInfo>();
+      foreach (var assume in assumes) {
+        sourceLocations.Add(new SourceLocationInfo(assume.Attributes));
+      }
+      return sourceLocations;
     }
 
     public void Write(Model model)
