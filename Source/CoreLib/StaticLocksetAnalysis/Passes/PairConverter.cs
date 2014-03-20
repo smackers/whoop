@@ -18,6 +18,22 @@ namespace whoop
       this.wp = wp;
       entryPointPairs = new List<Tuple<string, List<string>>>();
 
+//      foreach (var kvp1 in wp.entryPoints) {
+//        foreach (var ep1 in kvp1.Value) {
+//          List<string> funcs = new List<string>();
+//
+//          foreach (var kvp2 in wp.entryPoints) {
+//            foreach (var ep2 in kvp2.Value) {
+//              if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+//              if (!IsNewPair(ep1.Value, ep2.Value)) continue;
+//              funcs.Add(ep2.Value);
+//            }
+//          }
+//
+//          entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
+//        }
+//      }
+
       foreach (var kvp1 in wp.entryPoints) {
         foreach (var ep1 in kvp1.Value) {
           foreach (var kvp2 in wp.entryPoints) {
@@ -268,8 +284,8 @@ namespace whoop
 
     private bool IsNewPair(string ep1, string ep2)
     {
-      if (entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Equals(ep2)) ||
-          (val.Item1.Equals(ep2) && val.Item2.Equals(ep1))))
+      if ((entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
+          (entryPointPairs.Exists(val => (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
         return false;
       return true;
     }
