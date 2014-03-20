@@ -7,6 +7,7 @@ namespace whoop
   {
     public bool DebugWhoop = false;
     public string OriginalFile = "";
+    public bool OnlyRaceChecking = false;
     public string MemoryModel = "default";
 
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
@@ -16,6 +17,11 @@ namespace whoop
 
     protected override bool ParseOption(string name, CommandLineOptionEngine.CommandLineParseState ps)
     {
+      if (name == "debugWhoop") {
+        DebugWhoop = true;
+        return true;
+      }
+
       if (name == "originalFile") {
         if (ps.ConfirmArgumentCount(1)) {
           OriginalFile = ps.args[ps.i];
@@ -23,8 +29,8 @@ namespace whoop
         return true;
       }
 
-      if (name == "debugWhoop") {
-        DebugWhoop = true;
+      if (name == "onlyRaceChecking") {
+        OnlyRaceChecking = true;
         return true;
       }
 

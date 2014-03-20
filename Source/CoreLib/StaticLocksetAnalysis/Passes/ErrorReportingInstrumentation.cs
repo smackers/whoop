@@ -22,7 +22,9 @@ namespace whoop
       InstrumentCallsWithSourceLocationInfo();
       CleanUpSourceLockAssumes();
       InstrumentRaceCheckingCaptureStates();
-      InstrumentDeadlockCheckingCaptureStates();
+
+      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+        InstrumentDeadlockCheckingCaptureStates();
     }
 
     private void InstrumentCallsWithSourceLocationInfo()

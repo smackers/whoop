@@ -23,7 +23,10 @@ namespace whoop
       new PairConverter(wp).Run();
       new PairWiseLocksetInstrumentation(wp).Run();
       new RaceInstrumentation(wp).Run();
-      new DeadlockInstrumentation(wp).Run();
+
+      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+        new DeadlockInstrumentation(wp).Run();
+
       new SharedStateAbstractor(wp).Run();
       new ErrorReportingInstrumentation(wp).Run();
       new MainFunctionInstrumentation(wp).Run();

@@ -144,7 +144,8 @@ class DefaultCmdLineOptions(object):
     self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
     self.includes = clangCoreIncludes
     self.defines = clangCoreDefines
-    self.instrumentation = True
+    self.onlyRaces = False
+    self.onlyDeadlocks = False
     self.memoryModel = "default"
     self.verbose = False
     self.silent = False
@@ -277,6 +278,10 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.silent = True
     if o == "--debug":
       CommandLineOptions.debugging = True
+    if o == "--only-race-checking":
+      CommandLineOptions.onlyRaces = True
+    if o == "--only-deadlock-checking":
+      CommandLineOptions.onlyDeadlocks = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--time":
@@ -284,8 +289,6 @@ def processGeneralOptions(opts, args):
     if o == "--time-as-csv":
       CommandLineOptions.time = True
       CommandLineOptions.timeCSVLabel = a
-    if o == "--no-instrumentation":
-      CommandLineOptions.instrumentation = False
     if o == "--clang-opt":
       CommandLineOptions.clangOptions += str(a).split(" ")
     if o == "--smack-opt":
@@ -459,10 +462,11 @@ def startToolChain(argv):
   try:
     opts, args = getopt.gnu_getopt(argv,'hVD:I:', 
              ['help', 'version', 'debug', 'verbose', 'silent',
+              'only-race-checking', 'only-deadlock-checking',
               'time', 'time-as-csv=', 'keep-temps',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'no-instrumentation', 'gen-smt2',
+              'gen-smt2',
               'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -529,6 +533,9 @@ def startToolChain(argv):
   CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", filename ]
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
+  
+  if CommandLineOptions.onlyRaces:
+    CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
   
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ wbplFilename ]
