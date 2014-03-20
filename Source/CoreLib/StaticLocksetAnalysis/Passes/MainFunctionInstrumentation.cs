@@ -25,17 +25,6 @@ namespace whoop
 
     private void InstrumentImplementation()
     {
-//      List<Variable> lockVars = new List<Variable>();
-//
-//      foreach (var block in wp.mainFunc.Blocks) {
-//        foreach (var call in block.Cmds.OfType<CallCmd>()) {
-//          if (call.callee.Equals("mutex_init")) {
-//            lockVars.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, call.Ins[0].ToString(),
-//              Microsoft.Boogie.Type.Int)));
-//          }
-//        }
-//      }
-
       wp.mainFunc.Blocks[wp.mainFunc.Blocks.Count - 1].TransferCmd =
         new GotoCmd(Token.NoToken, new List<string>() { "$bb" + wp.mainFunc.Blocks.Count });
 
@@ -46,17 +35,6 @@ namespace whoop
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
                              Microsoft.Boogie.Type.Int));
       dummiesCLS.Add(dummyLock);
-
-//      foreach (var v in lockVars) {
-//        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-//          new ForallExpr(Token.NoToken, dummiesCLS,
-//            Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-//              new List<Expr>(new Expr[] {
-//                new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-//                new IdentifierExpr(dummyLock.tok, dummyLock)
-//              })),
-//              Expr.False))));
-//      }
 
       b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
         new ForallExpr(Token.NoToken, dummiesCLS,
@@ -87,29 +65,12 @@ namespace whoop
               })), Expr.True))));
       }
 
-//      foreach (var ls in wp.locksets) {
-//
-//        foreach (var v in lockVars) {
-//          b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-//            new ForallExpr(Token.NoToken, dummies,
-//              Expr.Eq(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-//                new List<Expr>(new Expr[] {
-//                  new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-//                    new List<Expr>(new Expr[] {
-//                      new IdentifierExpr(ls.id.tok, ls.id),
-//                      new IdentifierExpr(dummyPtr.tok, dummyPtr)
-//                    })),
-//                  new IdentifierExpr(v.tok, v)
-//                })), Expr.True))));
-//        }
-//      }
-
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
         b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-          Expr.Not(new IdentifierExpr(raceCheck.tok, raceCheck))));
+          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
