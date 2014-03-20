@@ -97,7 +97,7 @@ private:
 
 class RemoveStaticVisitor : public RecursiveASTVisitor<RemoveStaticVisitor> {
 public:
-  RemoveStaticVisitor(CompilerInstance &CI, DriverInfo *DI)
+  RemoveStaticVisitor(CompilerInstance &CI)
 	  : Instance(CI) {
 	  	RW.setSourceMgr(Instance.getSourceManager(), Instance.getLangOpts());
 	  }
@@ -141,8 +141,7 @@ private:
 
 class FindEntryPointsVisitor : public RecursiveASTVisitor<FindEntryPointsVisitor> {
 public:
-  FindEntryPointsVisitor(CompilerInstance &CI, DriverInfo *DI)
-	  : Instance(CI) {}
+  FindEntryPointsVisitor() {}
 
 	bool VisitVarDecl(VarDecl* VD) {
 		if (!VD->getType()->isRecordType()) return true;
@@ -193,14 +192,13 @@ public:
 	}
 	
 private:
-  CompilerInstance &Instance;
 	DriverInfo *DI;
 };
 
 class ParseDriverConsumer : public ASTConsumer {
 public:
   explicit ParseDriverConsumer(CompilerInstance &CI)
-    : FEPV(CI, DI), RSV(CI, DI) {}
+    : FEPV(), RSV(CI) {}
 
   virtual void HandleTranslationUnit(ASTContext &AT) {
     FEPV.TraverseDecl(AT.getTranslationUnitDecl());
@@ -210,7 +208,6 @@ public:
   }
 	
 private:
-	DriverInfo *DI;
   FindEntryPointsVisitor FEPV;
 	RemoveStaticVisitor RSV;
 };
