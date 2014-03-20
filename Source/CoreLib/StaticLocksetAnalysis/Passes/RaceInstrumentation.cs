@@ -186,9 +186,9 @@ namespace whoop
         dummies.Add(dummyLock);
 
         ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
-          Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
-            new MapSelect(Token.NoToken, 1),
-            new List<Expr>(new Expr[] {
+                              Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
+                                new MapSelect(Token.NoToken, 1),
+                                new List<Expr>(new Expr[] {
               new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                 new List<Expr>(new Expr[] {
                   new IdentifierExpr(ls.id.tok, ls.id),
