@@ -22,8 +22,9 @@ namespace whoop
         foreach (var ep1 in kvp1.Value) {
           foreach (var kvp2 in wp.entryPoints) {
             foreach (var ep2 in kvp2.Value) {
-              if (CanRunConcurrently(ep1.Value, ep2.Value))
-                entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
+              if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+              if (!IsNewPair(ep1.Value, ep2.Value)) continue;
+              entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
             }
           }
         }
@@ -261,6 +262,14 @@ namespace whoop
     private bool CanRunConcurrently(string ep1, string ep2)
     {
       if (ep1.Equals(wp.mainFunc.Name) || ep2.Equals(wp.mainFunc.Name))
+        return false;
+      return true;
+    }
+
+    private bool IsNewPair(string ep1, string ep2)
+    {
+      if (entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Equals(ep2)) ||
+          (val.Item1.Equals(ep2) && val.Item2.Equals(ep1))))
         return false;
       return true;
     }
