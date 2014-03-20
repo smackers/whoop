@@ -315,6 +315,9 @@ namespace whoop
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
+        proc.Requires.Add(new Requires(false,
+          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+
         if (!proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name))) {
           proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
           proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
