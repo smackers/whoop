@@ -30,70 +30,166 @@ namespace whoop
 
     public void Run()
     {
-      InstrumentCallsWithSourceLocationInfo();
-      CleanUpSourceLockAssumes();
-      InstrumentRaceCheckingCaptureStates();
-
-      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-        InstrumentDeadlockCheckingCaptureStates();
+      InstrumentEntryPoints();
+      InstrumentOtherFuncs();
     }
 
-    private void InstrumentCallsWithSourceLocationInfo()
+    protected void InstrumentEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        foreach (Block b in impl.Blocks) {
-          for (int i = 0; i < b.Cmds.Count; i++) {
-            if (!(b.Cmds[i] is CallCmd)) continue;
-            CallCmd call = b.Cmds[i] as CallCmd;
+        InstrumentSourceLocationInfo(impl);
+        InstrumentRaceCheckingCaptureStates(impl);
 
-            if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
-              Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-              call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-            } else if (call.callee.Contains("_LOG_WRITE_LS_")) {
-              Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-              call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-            } else if (call.callee.Contains("_LOG_READ_LS_")) {
-              Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
-              call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
-            } else if (call.callee.Contains("_CHECK_WRITE_LS_")) {
-              Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-              call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-            } else if (call.callee.Contains("_CHECK_READ_LS_")) {
-              Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
-              call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
-            }
-          }
-        }
+        if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+          InstrumentDeadlockCheckingCaptureStates(impl);
       }
     }
 
-    private void InstrumentRaceCheckingCaptureStates()
+    protected void InstrumentOtherFuncs()
     {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        int logCounter = 0;
-        int checkCounter = 0;
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
 
-        foreach (Block b in impl.Blocks) {
-          List<Cmd> newCmds = new List<Cmd>();
+        InstrumentSourceLocationInfo(impl);
+        InstrumentRaceCheckingCaptureStates(impl);
 
-          foreach (var c in b.Cmds) {
-            if (!(c is CallCmd)) {
-              newCmds.Add(c);
-              continue;
-            }
+        if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+          InstrumentDeadlockCheckingCaptureStates(impl);
+      }
+    }
 
-            CallCmd call = c as CallCmd;
+    private void InstrumentSourceLocationInfo(Implementation impl)
+    {
+      foreach (Block b in impl.Blocks) {
+        for (int i = 0; i < b.Cmds.Count; i++) {
+          if (!(b.Cmds[i] is CallCmd)) continue;
+          CallCmd call = b.Cmds[i] as CallCmd;
 
-            if (!(call.callee.Contains("_LOG_WRITE_LS_") ||
-                call.callee.Contains("_LOG_READ_LS_") ||
-                call.callee.Contains("_CHECK_WRITE_LS_") ||
-                call.callee.Contains("_CHECK_READ_LS_"))) {
-              newCmds.Add(call);
-              continue;
-            }
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
+            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+          } else if (call.callee.Contains("_LOG_WRITE_LS_")) {
+            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
+            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+          } else if (call.callee.Contains("_LOG_READ_LS_")) {
+            Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
+            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
+          } else if (call.callee.Contains("_CHECK_WRITE_LS_")) {
+            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
+            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+          } else if (call.callee.Contains("_CHECK_READ_LS_")) {
+            Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
+            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
+          }
+        }
+      }
 
-            AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+      foreach (Block b in impl.Blocks) {
+        b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
+          QKeyValue.FindExprAttributes((val as AssumeCmd).Attributes, "sourceloc") != null);
+      }
+    }
 
+    private void InstrumentRaceCheckingCaptureStates(Implementation impl)
+    {
+      int logCounter = 0;
+      int checkCounter = 0;
+
+      foreach (Block b in impl.Blocks) {
+        List<Cmd> newCmds = new List<Cmd>();
+
+        foreach (var c in b.Cmds) {
+          if (!(c is CallCmd)) {
+            newCmds.Add(c);
+            continue;
+          }
+
+          CallCmd call = c as CallCmd;
+
+          if (!(call.callee.Contains("_LOG_WRITE_LS_") ||
+            call.callee.Contains("_LOG_READ_LS_") ||
+            call.callee.Contains("_CHECK_WRITE_LS_") ||
+            call.callee.Contains("_CHECK_READ_LS_"))) {
+            newCmds.Add(call);
+            continue;
+          }
+
+          AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+
+          assume.Attributes = new QKeyValue(Token.NoToken, "column",
+            new List<object>() { new LiteralExpr(Token.NoToken,
+              BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
+            }, null);
+          assume.Attributes = new QKeyValue(Token.NoToken, "line",
+            new List<object>() { new LiteralExpr(Token.NoToken,
+              BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
+            }, assume.Attributes);
+
+          if (call.callee.Contains("WRITE"))
+            assume.Attributes = new QKeyValue(Token.NoToken, "access",
+              new List<object>() { "write" }, assume.Attributes);
+          else if (call.callee.Contains("READ"))
+            assume.Attributes = new QKeyValue(Token.NoToken, "access",
+              new List<object>() { "read" }, assume.Attributes);
+
+          assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
+            new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
+
+          if (call.callee.Contains("_LOG_WRITE_LS_") ||
+            call.callee.Contains("_LOG_READ_LS_")) {
+            assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+              new List<object>() { "log_state_" + logCounter }, assume.Attributes);
+          } else {
+            assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+              new List<object>() { "check_state_" + logCounter }, assume.Attributes);
+          }
+
+          assume.Attributes = new QKeyValue(Token.NoToken, "resource",
+            new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
+          logCounter++;
+
+          if (call.callee.Contains("_LOG_WRITE_LS_") ||
+            call.callee.Contains("_LOG_READ_LS_")) {
+            newCmds.Add(call);
+            newCmds.Add(assume);
+          } else {
+            newCmds.Add(assume);
+            newCmds.Add(call);
+          }
+        }
+
+        b.Cmds = newCmds;
+      }
+    }
+
+    private void InstrumentDeadlockCheckingCaptureStates(Implementation impl)
+    {
+      int updateCounter = 0;
+      int checkCounter = 0;
+
+      foreach (Block b in impl.Blocks) {
+        List<Cmd> newCmds = new List<Cmd>();
+
+        foreach (var c in b.Cmds) {
+          if (!(c is CallCmd)) {
+            newCmds.Add(c);
+            continue;
+          }
+
+          CallCmd call = c as CallCmd;
+
+          if (!(call.callee.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
+            call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))) {
+            newCmds.Add(call);
+            continue;
+          }
+
+          AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
             assume.Attributes = new QKeyValue(Token.NoToken, "column",
               new List<object>() { new LiteralExpr(Token.NoToken,
                 BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
@@ -102,113 +198,29 @@ namespace whoop
               new List<object>() { new LiteralExpr(Token.NoToken,
                 BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
               }, assume.Attributes);
-
-            if (call.callee.Contains("WRITE"))
-              assume.Attributes = new QKeyValue(Token.NoToken, "access",
-                new List<object>() { "write" }, assume.Attributes);
-            else if (call.callee.Contains("READ"))
-              assume.Attributes = new QKeyValue(Token.NoToken, "access",
-                new List<object>() { "read" }, assume.Attributes);
-
-            assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
-              new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
-
-            if (call.callee.Contains("_LOG_WRITE_LS_") ||
-                call.callee.Contains("_LOG_READ_LS_")) {
-              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-                new List<object>() { "log_state_" + logCounter }, assume.Attributes);
-            } else {
-              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-                new List<object>() { "check_state_" + logCounter }, assume.Attributes);
-            }
-
-            assume.Attributes = new QKeyValue(Token.NoToken, "resource",
-              new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
-            logCounter++;
-
-            if (call.callee.Contains("_LOG_WRITE_LS_") ||
-                call.callee.Contains("_LOG_READ_LS_")) {
-              newCmds.Add(call);
-              newCmds.Add(assume);
-            } else {
-              newCmds.Add(assume);
-              newCmds.Add(call);
-            }
           }
 
-          b.Cmds = newCmds;
-        }
-      }
-    }
+          assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
+            new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
 
-    private void InstrumentDeadlockCheckingCaptureStates()
-    {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        int updateCounter = 0;
-        int checkCounter = 0;
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+            assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+              new List<object>() { "update_cls_state_" + updateCounter }, assume.Attributes);
+            updateCounter++;
 
-        foreach (Block b in impl.Blocks) {
-          List<Cmd> newCmds = new List<Cmd>();
+            newCmds.Add(call);
+            newCmds.Add(assume);
+          } else {
+            assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+              new List<object>() { "check_deadlock_state_" + checkCounter }, assume.Attributes);
+            checkCounter++;
 
-          foreach (var c in b.Cmds) {
-            if (!(c is CallCmd)) {
-              newCmds.Add(c);
-              continue;
-            }
-
-            CallCmd call = c as CallCmd;
-
-            if (!(call.callee.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
-                call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))) {
-              newCmds.Add(call);
-              continue;
-            }
-
-            AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
-
-            if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
-              assume.Attributes = new QKeyValue(Token.NoToken, "column",
-                new List<object>() { new LiteralExpr(Token.NoToken,
-                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
-                }, null);
-              assume.Attributes = new QKeyValue(Token.NoToken, "line",
-                new List<object>() { new LiteralExpr(Token.NoToken,
-                    BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
-                }, assume.Attributes);
-            }
-
-            assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
-              new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
-
-            if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
-              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-                new List<object>() { "update_cls_state_" + updateCounter }, assume.Attributes);
-              updateCounter++;
-
-              newCmds.Add(call);
-              newCmds.Add(assume);
-            } else {
-              assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-                new List<object>() { "check_deadlock_state_" + checkCounter }, assume.Attributes);
-              checkCounter++;
-
-              newCmds.Add(assume);
-              newCmds.Add(call);
-            }
+            newCmds.Add(assume);
+            newCmds.Add(call);
           }
-
-          b.Cmds = newCmds;
         }
-      }
-    }
 
-    private void CleanUpSourceLockAssumes()
-    {
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        foreach (Block b in impl.Blocks) {
-          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
-            QKeyValue.FindExprAttributes((val as AssumeCmd).Attributes, "sourceloc") != null);
-        }
+        b.Cmds = newCmds;
       }
     }
 
