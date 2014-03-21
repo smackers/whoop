@@ -2,6 +2,7 @@
 #define _LINUX_MODULE_H
 
 #include <linux/moduleparam.h>
+#include <linux/sched.h>
 
 #define MODULE_INFO(tag, info) void
 #define MODULE_AUTHOR(_author) void

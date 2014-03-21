@@ -35,7 +35,7 @@ static inline unsigned __read_seqcount_begin(const seqcount_t *s)
 
 repeat:
 	ret = ACCESS_ONCE(s->sequence);
-	if (unlikely(ret & 1)) {
+	if (ret & 1) {
 		cpu_relax();
 		goto repeat;
 	}
@@ -95,7 +95,7 @@ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
  */
 static inline int __read_seqcount_retry(const seqcount_t *s, unsigned start)
 {
-	return unlikely(s->sequence != start);
+	return s->sequence != start;
 }
 
 /**

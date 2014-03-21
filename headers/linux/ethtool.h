@@ -346,4 +346,6 @@ static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
 	return ep->speed;
 }
 
+u32 ethtool_op_get_link(struct net_device *dev);
+
 #endif /* _LINUX_ETHTOOL_H */

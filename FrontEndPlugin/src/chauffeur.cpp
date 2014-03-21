@@ -95,9 +95,9 @@ private:
 	void operator=(DriverInfo const&);
 };
 
-class RemoveStaticVisitor : public RecursiveASTVisitor<RemoveStaticVisitor> {
+class RewriteVisitor : public RecursiveASTVisitor<RewriteVisitor> {
 public:
-  RemoveStaticVisitor(CompilerInstance &CI)
+  RewriteVisitor(CompilerInstance &CI)
 	  : Instance(CI) {
 	  	RW.setSourceMgr(Instance.getSourceManager(), Instance.getLangOpts());
 	  }
@@ -147,7 +147,8 @@ private:
 
 class FindEntryPointsVisitor : public RecursiveASTVisitor<FindEntryPointsVisitor> {
 public:
-  FindEntryPointsVisitor() {}
+  FindEntryPointsVisitor(CompilerInstance &CI)
+		: Instance(CI) {}
 
 	bool VisitVarDecl(VarDecl* VD) {
 		if (!VD->getType()->isRecordType()) return true;
@@ -172,6 +173,8 @@ public:
 				  DIE->getDesignator(0)->getFieldName()->getName() == "remove" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "shutdown" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_drvinfo" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_regs_len" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_link" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_settings" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "set_settings" ||
 				  DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
@@ -189,7 +192,12 @@ public:
 				expr = cast<ImplicitCastExpr>(expr)->getSubExpr();
 			DeclRefExpr *DRE = cast<DeclRefExpr>(expr);
 			
-			DI->getInstance().AddEntryPoint(BaseRD->getNameAsString(), funcname, DRE->getNameInfo().getName().getAsString());
+			string fdFileWithExt = Instance.getSourceManager().getFilename(DRE->getDecl()->getLocation());
+			string fdFile = fdFileWithExt.substr(0, fdFileWithExt.find_last_of("."));
+			
+			if ((fdFile.size() > 0) && (DI->getInstance().GetFile().find(fdFile) != string::npos)) {
+				DI->getInstance().AddEntryPoint(BaseRD->getNameAsString(), funcname, DRE->getNameInfo().getName().getAsString());
+			}
 		}
 		
 		return true;
@@ -200,24 +208,25 @@ public:
 	}
 	
 private:
+	CompilerInstance &Instance;
 	DriverInfo *DI;
 };
 
 class ParseDriverConsumer : public ASTConsumer {
 public:
   explicit ParseDriverConsumer(CompilerInstance &CI)
-    : FEPV(), RSV(CI) {}
+    : FEPV(CI), RV(CI) {}
 
   virtual void HandleTranslationUnit(ASTContext &AT) {
     FEPV.TraverseDecl(AT.getTranslationUnitDecl());
 		FEPV.PrintEntryPoints();
-		RSV.TraverseDecl(AT.getTranslationUnitDecl());
-		RSV.Finalise();
+		RV.TraverseDecl(AT.getTranslationUnitDecl());
+		RV.Finalise();
   }
 	
 private:
   FindEntryPointsVisitor FEPV;
-	RemoveStaticVisitor RSV;
+	RewriteVisitor RV;
 };
 
 class ParseDriverASTAction : public PluginASTAction {

@@ -12,8 +12,21 @@
 #include <linux/spinlock.h>
 #include <linux/string.h>
 
+#define DEVICE_COUNT_RESOURCE	11
+
 struct pci_dev {
-	void *data;
+	struct pci_bus *bus;
+
+  unsigned int devfn;
+  unsigned short vendor;
+  unsigned short device;
+
+  u64 dma_mask;
+
+  struct device dev;
+  
+  unsigned int irq;
+  struct resource resource[DEVICE_COUNT_RESOURCE];
 };
 
 struct pci_dynids {
@@ -26,16 +39,16 @@ struct pci_driver {
 	struct list_head node;
 	const char *name;
 	const struct pci_device_id *id_table;
-	int  (*probe)  (struct pci_dev *dev, const struct pci_device_id *id);
+	int (*probe) (struct pci_dev *dev, const struct pci_device_id *id);
 	void (*remove) (struct pci_dev *dev);
-	int  (*suspend) (struct pci_dev *dev, pm_message_t state);
-	int  (*suspend_late) (struct pci_dev *dev, pm_message_t state);
-	int  (*resume_early) (struct pci_dev *dev);
-	int  (*resume) (struct pci_dev *dev);
+	int (*suspend) (struct pci_dev *dev, pm_message_t state);
+	int (*suspend_late) (struct pci_dev *dev, pm_message_t state);
+	int (*resume_early) (struct pci_dev *dev);
+	int (*resume) (struct pci_dev *dev);
 	void (*shutdown) (struct pci_dev *dev);
 	int (*sriov_configure) (struct pci_dev *dev, int num_vfs);
 	const struct pci_error_handlers *err_handler;
-	struct device_driver	driver;
+	struct device_driver driver;
 	struct pci_dynids dynids;
 };
 
@@ -43,6 +56,11 @@ struct pci_driver {
 
 int pci_register_driver(struct pci_driver *);
 void pci_unregister_driver(struct pci_driver *dev);
+
+static inline const char *pci_name(const struct pci_dev *pdev)
+{
+	return dev_name(&pdev->dev);
+}
 
 #define module_pci_driver(__pci_driver) \
 	module_driver(__pci_driver, pci_register_driver, \
