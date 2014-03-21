@@ -11,13 +11,10 @@ namespace whoop
   {
     protected WhoopProgram wp;
 
-    List<string> haveBeenInstrumentedAlready;
-
     internal LocksetInstrumentation(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
-      this.haveBeenInstrumentedAlready = new List<string>();
     }
 
     protected void AddCurrentLockset()
@@ -109,15 +106,28 @@ namespace whoop
     protected void InstrumentEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        InstrumentProcedure(impl.Proc, false);
         InstrumentImplementation(impl);
+        InstrumentProcedure(impl.Proc, false);
+      }
+    }
+
+    protected void InstrumentOtherFuncs()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+
+        bool guard = false;
+        guard = InstrumentImplementation(impl);
+        if (guard) InstrumentProcedure(impl.Proc, true);
       }
     }
 
     private bool InstrumentImplementation(Implementation impl)
     {
       Contract.Requires(impl != null);
-      haveBeenInstrumentedAlready.Add(impl.Name);
       bool foundLock = false;
 
       foreach (Block b in impl.Blocks) {
@@ -130,33 +140,12 @@ namespace whoop
             c.callee = "_UPDATE_CURRENT_LOCKSET";
             c.Ins.Add(Expr.False);
             foundLock = true;
-          } else {
-            if (haveBeenInstrumentedAlready.Exists(val => val.Equals(c.callee)))
-              continue;
-            if (InstrumentImplementation(wp.GetImplementation(c.callee)))
-              foundLock = true;
-            if (foundLock) InstrumentProcedure(wp.GetImplementation(c.callee).Proc, true);
           }
         }
       }
 
       return foundLock;
     }
-
-//    private bool InstrumentProcedure(Procedure proc)
-//    {
-//      Contract.Requires(proc != null);
-//
-//      if (proc.Modifies.Exists(val => val.Name.Equals(wp.currLockset.id.Name)))
-//        return false;
-//
-//      proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
-//      foreach (var ls in wp.locksets) {
-//        proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
-//      }
-//
-//      return true;
-//    }
 
     private bool InstrumentProcedure(Procedure proc, bool modifiesOnly)
     {
@@ -170,8 +159,7 @@ namespace whoop
         proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
       }
 
-      if (modifiesOnly)
-        return false;
+      if (modifiesOnly) return false;
 
       List<Variable> dummiesCLS = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",

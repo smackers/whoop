@@ -14,10 +14,10 @@ namespace whoop
     {
       AddCurrentLockset();
       AddMemoryLocksets();
-//      AddLocksetCompFunc(wp.currLockset.id.TypedIdent.Type);
       AddUpdateLocksetFunc();
 
       InstrumentEntryPoints();
+      InstrumentOtherFuncs();
     }
   }
 }

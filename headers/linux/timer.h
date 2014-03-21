@@ -16,4 +16,6 @@ struct timer_list {
 #endif
 };
 
+int mod_timer(struct timer_list *timer, unsigned long expires);
+
 #endif

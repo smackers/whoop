@@ -72,7 +72,6 @@ namespace whoop
       Contract.Requires(name != null);
       Implementation impl = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
                             (val as Implementation).Name.Equals(name)) as Implementation);
-      Contract.Requires(impl != null);
       return impl;
     }
 
@@ -81,8 +80,29 @@ namespace whoop
       Contract.Requires(name != null);
       Constant cons = (program.TopLevelDeclarations.Find(val => (val is Constant) &&
                       (val as Constant).Name.Equals(name)) as Constant);
-      Contract.Requires(cons != null);
       return cons;
+    }
+
+    public bool isWhoopFunc(string name)
+    {
+      if (name.Contains("_UPDATE_CURRENT_LOCKSET") ||
+          name.Contains("_LOG_WRITE_LS_") || name.Contains("_LOG_READ_LS_") ||
+          name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
+          name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+        return true;
+      return false;
+    }
+
+    public bool isCalledByAnEntryPoint(string name)
+    {
+      foreach (var ep in GetImplementationsToAnalyse()) {
+        foreach (var b in ep.Blocks) {
+          foreach (var c in b.Cmds.OfType<CallCmd>()) {
+            if (c.callee.Equals(name)) return true;
+          }
+        }
+      }
+      return false;
     }
 
     internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)

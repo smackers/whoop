@@ -27,6 +27,7 @@ namespace whoop
       AddCheckAccessFuncs(AccessType.READ);
 
       InstrumentEntryPoints();
+      InstrumentOtherFuncs();
     }
 
     private void AddAccessCheckingGlobalVars(AccessType access)
@@ -238,8 +239,25 @@ namespace whoop
       }
     }
 
-    private void InstrumentWriteAccesses(Implementation impl)
+    protected void InstrumentOtherFuncs()
     {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+
+        bool[] guard = { false, false };
+        guard[0] = InstrumentWriteAccesses(impl);
+        guard[1] = InstrumentReadAccesses(impl);
+        if (guard.Contains(true)) InstrumentProcedure(impl.Proc);
+      }
+    }
+
+    private bool InstrumentWriteAccesses(Implementation impl)
+    {
+      bool hasInstrumented = false;
+
       for (int i = 0; i < impl.Blocks.Count; i++) {
         Block b = impl.Blocks[i];
         List<Cmd> newCmds = new List<Cmd>();
@@ -266,15 +284,21 @@ namespace whoop
                 new List<Expr> { ind }, new List<IdentifierExpr>());
               newCmds.Add(call);
             }
+
+            hasInstrumented = true;
           }
         }
 
         impl.Blocks[i] = new Block(Token.NoToken, b.Label, newCmds, b.TransferCmd.Clone() as TransferCmd);
       }
+
+      return hasInstrumented;
     }
 
-    private void InstrumentReadAccesses(Implementation impl)
+    private bool InstrumentReadAccesses(Implementation impl)
     {
+      bool hasInstrumented = false;
+
       for (int i = 0; i < impl.Blocks.Count; i++) {
         Block b = impl.Blocks[i];
         List<Cmd> newCmds = new List<Cmd>();
@@ -300,11 +324,15 @@ namespace whoop
                 new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
               newCmds.Add(call);
             }
+
+            hasInstrumented = true;
           }
         }
 
         impl.Blocks[i] = new Block(Token.NoToken, b.Label, newCmds, b.TransferCmd.Clone() as TransferCmd);
       }
+
+      return hasInstrumented;
     }
 
     private void InstrumentProcedure(Procedure proc)
@@ -318,10 +346,8 @@ namespace whoop
         proc.Requires.Add(new Requires(false,
           Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
 
-        if (!proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name))) {
-          proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
-          proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
-        }
+        proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
+        proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
       }
     }
 

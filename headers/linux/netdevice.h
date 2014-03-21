@@ -8,17 +8,7 @@
 
 #define	NETDEV_ALIGN 32
 
-enum netdev_state_t {
-	__LINK_STATE_START,
-	__LINK_STATE_PRESENT,
-	__LINK_STATE_NOCARRIER,
-	__LINK_STATE_LINKWATCH_PENDING,
-	__LINK_STATE_DORMANT,
-};
-
-struct net_device {
-	unsigned long state;
-	
+struct net_device {	
 	netdev_features_t	features;
 };
 
@@ -30,7 +20,7 @@ static inline void *netdev_priv(const struct net_device *dev)
 static inline bool netif_running(const struct net_device *dev)
 {
 	bool val;
-	__SMACK_code("havoc @ != 0;", val);
+	__SMACK_code("havoc @;", val);
 	return val;
 }
 
