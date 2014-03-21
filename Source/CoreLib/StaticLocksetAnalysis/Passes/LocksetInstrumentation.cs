@@ -126,36 +126,29 @@ namespace whoop
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         if (wp.mainFunc.Name.Equals(impl.Name)) continue;
-        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+        if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
-        bool guard = false;
-        guard = InstrumentImplementation(impl);
-        if (guard) InstrumentProcedure(impl.Proc, true);
+        InstrumentImplementation(impl);
+        InstrumentProcedure(impl.Proc, true);
       }
     }
 
-    private bool InstrumentImplementation(Implementation impl)
+    private void InstrumentImplementation(Implementation impl)
     {
       Contract.Requires(impl != null);
-      bool foundLock = false;
-
       foreach (Block b in impl.Blocks) {
         foreach (var c in b.Cmds.OfType<CallCmd>()) {
           if (c.callee.Equals("mutex_lock")) {
             c.callee = "_UPDATE_CURRENT_LOCKSET";
             c.Ins.Add(Expr.True);
-            foundLock = true;
           } else if (c.callee.Equals("mutex_unlock")) {
             c.callee = "_UPDATE_CURRENT_LOCKSET";
             c.Ins.Add(Expr.False);
-            foundLock = true;
           }
         }
       }
-
-      return foundLock;
     }
 
     private bool InstrumentProcedure(Procedure proc, bool modifiesOnly)

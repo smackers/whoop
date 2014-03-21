@@ -27,6 +27,32 @@ namespace whoop
       this.wp = wp;
     }
 
+    internal bool IsImplementationRacing(Implementation impl)
+    {
+      Contract.Requires(impl != null);
+      foreach (var b in impl.Blocks) {
+        foreach (var c in b.Cmds) {
+          if (!(c is AssignCmd)) continue;
+
+          foreach (var lhs in (c as AssignCmd).Lhss.OfType<MapAssignLhs>()) {
+            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+                !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+              continue;
+            return true;
+          }
+
+          foreach (var rhs in (c as AssignCmd).Rhss.OfType<NAryExpr>()) {
+            if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
+                !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+              continue;
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
     internal List<Variable> GetMemoryRegions()
     {
       List<Variable> vars = new List<Variable>();

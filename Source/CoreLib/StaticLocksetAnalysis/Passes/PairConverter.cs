@@ -60,6 +60,14 @@ namespace whoop
 
     public void Run()
     {
+      ConvertEntryPoints();
+      ConvertOtherFuncs();
+
+      SplitCallsInEntryPoints();
+    }
+
+    private void ConvertEntryPoints()
+    {
       foreach (var ep in entryPointPairs) {
         Implementation impl = wp.GetImplementation(ep.Item1);
         List<Implementation> implList = new List<Implementation>();
@@ -77,8 +85,27 @@ namespace whoop
       }
     }
 
+    private void ConvertOtherFuncs()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>().ToArray()) {
+        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl)) continue;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!wp.isCalledByAnEntryPoint(impl)) continue;
+        if (!wp.isImplementationRacing(impl)) continue;
+
+        SplitFunc(impl, "log");
+        SplitFunc(impl, "check");
+
+        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Procedure) && (val as Procedure).Name.Equals(impl.Proc.Name));
+        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+      }
+    }
+
     private void CreateNewpair(Implementation impl, List<Implementation> implList)
     {
+      Contract.Requires(impl != null);
       string name = "pair_" + "$" + impl.Name + "$" + implList[0].Name;
 
       Procedure newProc = new Procedure(Token.NoToken, name,
@@ -111,6 +138,81 @@ namespace whoop
       wp.program.TopLevelDeclarations.Add(newProc);
       wp.program.TopLevelDeclarations.Add(newImpl);
       wp.resContext.AddProcedure(newProc);
+    }
+
+    private void SplitFunc(Implementation impl, string type)
+    {
+      Contract.Requires(impl != null && type != null);
+
+      List<Variable> inParams = new List<Variable>();
+      foreach (var v in impl.Proc.InParams)
+        inParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
+
+      List<Variable> outParams = new List<Variable>();
+      foreach (var v in impl.Proc.OutParams)
+        outParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
+
+      Procedure newProc = new Procedure(impl.Proc.tok, impl.Name + "$" + type,
+        new List<TypeVariable>(), inParams, outParams,
+        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+
+      newProc.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
+        new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
+      }, null);
+
+      List<Variable> locals = new List<Variable>();
+      foreach (var v in impl.LocVars)
+        locals.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
+
+      List<Block> blocks = new List<Block>();
+      foreach (var v in impl.Blocks)
+        blocks.Add(new Duplicator().VisitBlock(v.Clone() as Block));
+
+      Implementation newImpl = new Implementation(Token.NoToken, impl.Name + "$" + type,
+        new List<TypeVariable>(), inParams, outParams,
+        locals, blocks);
+
+      newImpl.Proc = newProc;
+      newImpl.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
+        new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
+      }, null);
+
+      foreach (var v in wp.program.TopLevelDeclarations.OfType<GlobalVariable>()) {
+        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr") || v.Name.Contains("$M.")) {
+          newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
+        }
+      }
+
+      wp.program.TopLevelDeclarations.Add(newProc);
+      wp.program.TopLevelDeclarations.Add(newImpl);
+      wp.resContext.AddProcedure(newProc);
+    }
+
+    private void SplitCallsInEntryPoints()
+    {
+      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+        string original = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
+        int originalCount = wp.GetImplementation(original).Blocks.Count;
+
+        foreach (var b in impl.Blocks) {
+          string[] label = b.Label.Split(new char[] { '$' });
+
+          foreach (var c in b.Cmds) {
+            if (!(c is CallCmd)) continue;
+            string callee = (c as CallCmd).callee;
+
+            if (wp.GetImplementation(callee + "$log") != null ||
+              wp.GetImplementation(callee + "$check") != null) {
+
+              if (original.Equals(label[0]) && originalCount > Convert.ToInt32(label[1])) {
+                (c as CallCmd).callee = callee + "$log";
+              } else {
+                (c as CallCmd).callee = callee + "$check";
+              }
+            }
+          }
+        }
+      }
     }
 
     private List<Variable> ProcessInParams(Implementation impl, List<Implementation> implList)

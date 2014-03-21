@@ -45,9 +45,9 @@ namespace whoop
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         if (wp.mainFunc.Name.Equals(impl.Name)) continue;
-        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+        if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
         AbstractReadAccesses(impl);
       }

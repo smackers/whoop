@@ -246,7 +246,7 @@ namespace whoop
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentWriteAccesses(impl);
         InstrumentReadAccesses(impl);
-        InstrumentProcedure(impl.Proc);
+        InstrumentProcedure(impl.Proc, false);
       }
     }
 
@@ -254,21 +254,20 @@ namespace whoop
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         if (wp.mainFunc.Name.Equals(impl.Name)) continue;
-        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+        if (!wp.isCalledByAnEntryPoint(impl)) continue;
+        if (!(impl.Name.Contains("$log") || impl.Name.Contains("$check"))) continue;
 
         bool[] guard = { false, false };
-        guard[0] = InstrumentWriteAccesses(impl);
-        guard[1] = InstrumentReadAccesses(impl);
-        if (guard.Contains(true)) InstrumentProcedure(impl.Proc);
+        guard[0] = InstrumentOtherFuncsWriteAccesses(impl);
+        guard[1] = InstrumentOtherFuncsReadAccesses(impl);
+        if (guard.Contains(true)) InstrumentProcedure(impl.Proc, true);
       }
     }
 
-    private bool InstrumentWriteAccesses(Implementation impl)
+    private void InstrumentWriteAccesses(Implementation impl)
     {
-      bool hasInstrumented = false;
-
       for (int i = 0; i < impl.Blocks.Count; i++) {
         Block b = impl.Blocks[i];
         List<Cmd> newCmds = new List<Cmd>();
@@ -295,21 +294,15 @@ namespace whoop
                 new List<Expr> { ind }, new List<IdentifierExpr>());
               newCmds.Add(call);
             }
-
-            hasInstrumented = true;
           }
         }
 
         impl.Blocks[i] = new Block(Token.NoToken, b.Label, newCmds, b.TransferCmd.Clone() as TransferCmd);
       }
-
-      return hasInstrumented;
     }
 
-    private bool InstrumentReadAccesses(Implementation impl)
+    private void InstrumentReadAccesses(Implementation impl)
     {
-      bool hasInstrumented = false;
-
       for (int i = 0; i < impl.Blocks.Count; i++) {
         Block b = impl.Blocks[i];
         List<Cmd> newCmds = new List<Cmd>();
@@ -335,6 +328,43 @@ namespace whoop
                 new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
               newCmds.Add(call);
             }
+          }
+        }
+
+        impl.Blocks[i] = new Block(Token.NoToken, b.Label, newCmds, b.TransferCmd.Clone() as TransferCmd);
+      }
+    }
+
+    private bool InstrumentOtherFuncsWriteAccesses(Implementation impl)
+    {
+      bool hasInstrumented = false;
+
+      for (int i = 0; i < impl.Blocks.Count; i++) {
+        Block b = impl.Blocks[i];
+        List<Cmd> newCmds = new List<Cmd>();
+
+        for (int k = 0; k < b.Cmds.Count; k++) {
+          newCmds.Add(b.Cmds[k].Clone() as Cmd);
+          if (!(b.Cmds[k] is AssignCmd)) continue;
+
+          foreach (var lhs in (b.Cmds[k] as AssignCmd).Lhss.OfType<MapAssignLhs>()) {
+            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+              !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+              continue;
+
+            newCmds.RemoveAt(newCmds.Count - 1);
+            var ind = lhs.Indexes[0];
+            if (impl.Name.Contains("$log")) {
+              CallCmd call = new CallCmd(Token.NoToken,
+                "_LOG_WRITE_LS_" + lhs.DeepAssignedIdentifier.Name,
+                new List<Expr> { ind }, new List<IdentifierExpr>());
+              newCmds.Add(call);
+            } else {
+              CallCmd call = new CallCmd(Token.NoToken,
+                "_CHECK_WRITE_LS_" + lhs.DeepAssignedIdentifier.Name,
+                new List<Expr> { ind }, new List<IdentifierExpr>());
+              newCmds.Add(call);
+            }
 
             hasInstrumented = true;
           }
@@ -346,7 +376,47 @@ namespace whoop
       return hasInstrumented;
     }
 
-    private void InstrumentProcedure(Procedure proc)
+    private bool InstrumentOtherFuncsReadAccesses(Implementation impl)
+    {
+      bool hasInstrumented = false;
+
+      for (int i = 0; i < impl.Blocks.Count; i++) {
+        Block b = impl.Blocks[i];
+        List<Cmd> newCmds = new List<Cmd>();
+
+        for (int k = 0; k < b.Cmds.Count; k++) {
+          newCmds.Add(b.Cmds[k].Clone() as Cmd);
+          if (!(b.Cmds[k] is AssignCmd))
+            continue;
+
+          foreach (var rhs in (b.Cmds[k] as AssignCmd).Rhss.OfType<NAryExpr>()) {
+            if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
+              !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+              continue;
+
+            if (impl.Name.Contains("$log")) {
+              CallCmd call = new CallCmd(Token.NoToken,
+                "_LOG_READ_LS_" + (rhs.Args[0] as IdentifierExpr).Name,
+                new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
+              newCmds.Add(call);
+            } else {
+              CallCmd call = new CallCmd(Token.NoToken,
+                "_CHECK_READ_LS_" + (rhs.Args[0] as IdentifierExpr).Name,
+                new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
+              newCmds.Add(call);
+            }
+
+            hasInstrumented = true;
+          }
+        }
+
+        impl.Blocks[i] = new Block(Token.NoToken, b.Label, newCmds, b.TransferCmd.Clone() as TransferCmd);
+      }
+
+      return hasInstrumented;
+    }
+
+    private void InstrumentProcedure(Procedure proc, bool modifiesOnly)
     {
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
@@ -354,8 +424,10 @@ namespace whoop
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
-        proc.Requires.Add(new Requires(false,
-          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+        if (!modifiesOnly) {
+          proc.Requires.Add(new Requires(false,
+            Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+        }
 
         proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
         proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));

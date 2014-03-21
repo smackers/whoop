@@ -17,4 +17,9 @@
 
 void barrier(void);
 
+#define inline  __attribute__((always_inline))
+#define __inline__	__attribute__((always_inline))
+#define __inline	__attribute__((always_inline))
+#define __always_inline	__attribute__((always_inline))
+
 #endif /* __LINUX_COMPILER_H */

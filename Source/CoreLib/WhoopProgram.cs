@@ -94,26 +94,34 @@ namespace whoop
       return cons;
     }
 
-    public bool isWhoopFunc(string name)
+    public bool isWhoopFunc(Implementation impl)
     {
-      if (name.Contains("_UPDATE_CURRENT_LOCKSET") ||
-          name.Contains("_LOG_WRITE_LS_") || name.Contains("_LOG_READ_LS_") ||
-          name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
-          name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+      Contract.Requires(impl != null);
+      if (impl.Name.Contains("_UPDATE_CURRENT_LOCKSET") ||
+          impl.Name.Contains("_LOG_WRITE_LS_") || impl.Name.Contains("_LOG_READ_LS_") ||
+          impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
+          impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
         return true;
       return false;
     }
 
-    public bool isCalledByAnEntryPoint(string name)
+    public bool isCalledByAnEntryPoint(Implementation impl)
     {
+      Contract.Requires(impl != null);
       foreach (var ep in GetImplementationsToAnalyse()) {
         foreach (var b in ep.Blocks) {
           foreach (var c in b.Cmds.OfType<CallCmd>()) {
-            if (c.callee.Equals(name)) return true;
+            if (c.callee.Equals(impl.Name)) return true;
           }
         }
       }
       return false;
+    }
+
+    public bool isImplementationRacing(Implementation impl)
+    {
+      Contract.Requires(impl != null);
+      return sharedStateAnalyser.IsImplementationRacing(impl);
     }
 
     internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)
