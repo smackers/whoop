@@ -2,20 +2,10 @@
 #define _LINUX_TIMER_H
 
 struct timer_list {
-    unsigned long expires;
-    
-		void (*function)(unsigned long);
-    unsigned long data;
-		
-		int slack;
-		
-#ifdef CONFIG_TIMER_STATS
-	int start_pid;
-	void *start_site;
-	char start_comm[16];
-#endif
+	unsigned long expires;
 };
 
 int mod_timer(struct timer_list *timer, unsigned long expires);
+int del_timer_sync(struct timer_list *timer);
 
 #endif

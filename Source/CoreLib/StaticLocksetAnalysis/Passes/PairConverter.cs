@@ -320,7 +320,7 @@ namespace whoop
         List<Expr> newIns = new List<Expr>();
         List<IdentifierExpr> newOuts = new List<IdentifierExpr>();
 
-        foreach (IdentifierExpr v in call.Ins)
+        foreach (var v in call.Ins)
           newIns.Add(new ExprModifier(wp, fid).VisitExpr(v.Clone() as Expr));
 
         foreach (var v in call.Outs)

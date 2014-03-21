@@ -154,7 +154,8 @@ public:
 		
 		RecordDecl *BaseRD = VD->getType()->getAs<RecordType>()->getDecl();
 		
-		if (!(BaseRD->getNameAsString() == "pci_driver" || BaseRD->getNameAsString() == "ethtool_ops" ||
+		if (!(BaseRD->getNameAsString() == "pci_driver" ||
+			  BaseRD->getNameAsString() == "ethtool_ops" ||
 				BaseRD->getNameAsString() == "test_driver")) {
 			return true;
 		}
@@ -170,6 +171,7 @@ public:
 			if (DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
 				  DIE->getDesignator(0)->getFieldName()->getName() == "remove" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "shutdown" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_drvinfo" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_settings" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "set_settings" ||
 				  DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||

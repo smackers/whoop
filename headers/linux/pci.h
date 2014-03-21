@@ -10,6 +10,7 @@
 #include <linux/pci_ids.h>
 #include <linux/pci_regs.h>
 #include <linux/spinlock.h>
+#include <linux/string.h>
 
 struct pci_dev {
 	void *data;
