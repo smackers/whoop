@@ -80,7 +80,7 @@ Global
 		$3.inheritsScope = text/plain
 		$3.scope = text/plain
 		$0.StandardHeader = $4
-		$4.Text = 
+		$4.Text = @===-----------------------------------------------------------------------==//\n\n                Whoop - a Verifier for Device Drivers\n\n Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)\n\n This file is distributed under the Microsoft Public License.  See\n LICENSE.TXT for details.\n\n===----------------------------------------------------------------------===//
 		$4.IncludeInNewFiles = True
 		$0.NameConventionPolicy = $5
 		$5.Rules = $6
@@ -206,6 +206,9 @@ Global
 		$26.NamingStyle = PascalCase
 		$26.IncludeInstanceMembers = True
 		$26.IncludeStaticEntities = True
+		$0.DotNetNamingPolicy = $28
+		$28.DirectoryNamespaceAssociation = None
+		$28.ResourceNamePolicy = FileFormatDefault
 		outputpath = Binaries
 	EndGlobalSection
 EndGlobal

@@ -1,4 +1,15 @@
-﻿using System;
+﻿// ===-----------------------------------------------------------------------==//
+//
+//                 Whoop - a Verifier for Device Drivers
+//
+//  Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)
+//
+//  This file is distributed under the Microsoft Public License.  See
+//  LICENSE.TXT for details.
+//
+// ===----------------------------------------------------------------------===//
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -20,11 +31,24 @@ namespace whoop
     public void Run()
     {
       AbstractEntryPoints();
+      AbstractOtherFuncs();
     }
 
     private void AbstractEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
+        AbstractReadAccesses(impl);
+      }
+    }
+
+    protected void AbstractOtherFuncs()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.isWhoopFunc(impl.Name)) continue;
+        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!wp.isCalledByAnEntryPoint(impl.Name)) continue;
+
         AbstractReadAccesses(impl);
       }
     }

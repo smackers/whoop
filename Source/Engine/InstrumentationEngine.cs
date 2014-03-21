@@ -1,4 +1,15 @@
-﻿using System;
+﻿// ===-----------------------------------------------------------------------==//
+//
+//                 Whoop - a Verifier for Device Drivers
+//
+//  Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)
+//
+//  This file is distributed under the Microsoft Public License.  See
+//  LICENSE.TXT for details.
+//
+// ===----------------------------------------------------------------------===//
+
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -21,6 +32,7 @@ namespace whoop
     public void Run()
     {
       new PairConverter(wp).Run();
+
       new PairWiseLocksetInstrumentation(wp).Run();
       new RaceInstrumentation(wp).Run();
 
@@ -28,6 +40,7 @@ namespace whoop
         new DeadlockInstrumentation(wp).Run();
 
       new SharedStateAbstractor(wp).Run();
+
       new ErrorReportingInstrumentation(wp).Run();
       new MainFunctionInstrumentation(wp).Run();
 
