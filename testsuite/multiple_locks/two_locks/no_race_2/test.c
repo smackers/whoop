@@ -2,9 +2,6 @@
 //
 
 #include <linux/device.h>
-#include <linux/netdevice.h>
-#include <linux/etherdevice.h>
-#include <asm/io.h>
 #include <whoop.h>
 
 struct shared {
@@ -13,9 +10,9 @@ struct shared {
 	struct mutex mutex2;
 };
 
-static void entrypoint(struct net_device *dev)
+static void entrypoint(struct test_device *dev)
 {
-	struct shared *tp = netdev_priv(dev);
+	struct shared *tp = testdev_priv(dev);
 	
 	mutex_lock(&tp->mutex2);
 	tp->resource = 1;
@@ -26,9 +23,9 @@ static void entrypoint(struct net_device *dev)
 static int init(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct shared *tp;
-	struct net_device *dev = alloc_etherdev(sizeof(*tp));
+	struct test_device *dev = alloc_testdev(sizeof(*tp));
 	
-	tp = netdev_priv(dev);
+	tp = testdev_priv(dev);
 	mutex_init(&tp->mutex1);
 	mutex_init(&tp->mutex2);
 	

@@ -323,4 +323,9 @@ struct ethtool_cmd {
 #define ETH_MODULE_SFF_8472		0x2
 #define ETH_MODULE_SFF_8472_LEN		512
 
+static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
+{
+	return ep->speed;
+}
+
 #endif /* _LINUX_ETHTOOL_H */
