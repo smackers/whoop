@@ -49,7 +49,7 @@ public:
 	void PrintDriverInfo() {
 		string file = fileName;
 		file.append(".info");
-		std::string error_msg;
+		string error_msg;
 		llvm::raw_fd_ostream *FOS = new llvm::raw_fd_ostream(file.c_str(), error_msg, llvm::sys::fs::F_None);
 		if (!error_msg.empty()) {
 	    if (llvm::errs().has_colors()) llvm::errs().changeColor(llvm::raw_ostream::RED);
@@ -102,11 +102,17 @@ public:
 	  	RW.setSourceMgr(Instance.getSourceManager(), Instance.getLangOpts());
 	  }
 
-	bool VisitFunctionDecl(FunctionDecl* FD) {		
+	bool VisitFunctionDecl(FunctionDecl* FD) {
+		string fdFileWithExt = Instance.getSourceManager().getFilename(FD->getLocation());
+		string fdFile = fdFileWithExt.substr(0, fdFileWithExt.find_last_of("."));
+		
 		if (DI->getInstance().existsEntryPointWithName(FD->getNameInfo().getName().getAsString())) {			
 			if (FD->getStorageClass() == SC_Static) {
 				RW.RemoveText(FD->getInnerLocStart(), 7);
 			}
+		} else if ((fdFile.size() > 0) && (DI->getInstance().GetFile().find(fdFile) != string::npos)) {
+			if (FD->getStorageClass() == SC_Static)
+				RW.ReplaceText(FD->getInnerLocStart(), 6, "static inline");
 		}
 		
 		return true;
@@ -116,7 +122,7 @@ public:
 		string file = DI->getInstance().GetFile();
 		file.append(".re.c");
 		
-		std::string error_msg;
+		string error_msg;
 		llvm::raw_fd_ostream *FOS = new llvm::raw_fd_ostream(file.c_str(), error_msg, llvm::sys::fs::F_None);
 		if (!error_msg.empty()) {
 	    if (llvm::errs().has_colors()) llvm::errs().changeColor(llvm::raw_ostream::RED);
@@ -218,7 +224,7 @@ protected:
     return new ParseDriverConsumer(CI);
   }
 
-  bool ParseArgs(const CompilerInstance &CI, const std::vector<std::string> &args) {		
+  bool ParseArgs(const CompilerInstance &CI, const vector<string> &args) {		
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			if (args[i] == "help") {
 	      PrintHelp(llvm::errs());
