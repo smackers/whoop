@@ -156,6 +156,7 @@ public:
 		RecordDecl *BaseRD = VD->getType()->getAs<RecordType>()->getDecl();
 		
 		if (!(BaseRD->getNameAsString() == "pci_driver" ||
+			  BaseRD->getNameAsString() == "dev_pm_ops" ||
 			  BaseRD->getNameAsString() == "ethtool_ops" ||
 				BaseRD->getNameAsString() == "test_driver")) {
 			return true;
@@ -169,15 +170,36 @@ public:
 			
 			string funcname;
 			
-			if (DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
+			if (/* pci_driver */
+				  DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
 				  DIE->getDesignator(0)->getFieldName()->getName() == "remove" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "shutdown" ||
+					/* dev_pm_ops */
+					DIE->getDesignator(0)->getFieldName()->getName() == "suspend" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "resume" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "freeze" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "thaw" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "poweroff" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "restore" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_suspend" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_resume" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_idle" ||
+					/* ethtool_ops */
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_drvinfo" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_regs_len" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_link" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_settings" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "set_settings" ||
-				  DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_msglevel" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "set_msglevel" ||
+				  DIE->getDesignator(0)->getFieldName()->getName() == "get_regs" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_wol" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "set_wol" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_strings" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_sset_count" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_ethtool_stats" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "get_ts_info" ||
+					/* test_driver */
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep1" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep2" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep2" ||

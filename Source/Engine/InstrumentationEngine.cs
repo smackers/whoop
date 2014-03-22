@@ -31,9 +31,12 @@ namespace whoop
 
     public void Run()
     {
-      new PairConverter(wp).Run();
+      RemoveUnecesseryAssumes();
 
-      new PairWiseLocksetInstrumentation(wp).Run();
+      new PairConverter(wp).Run();
+      new InitConverter(wp).Run();
+
+      new LocksetInstrumentation(wp).Run();
       new RaceInstrumentation(wp).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
@@ -42,7 +45,7 @@ namespace whoop
       new SharedStateAbstractor(wp).Run();
 
       new ErrorReportingInstrumentation(wp).Run();
-      new MainFunctionInstrumentation(wp).Run();
+      new InitInstrumentation(wp).Run();
 
       RemoveEmptyBlocks();
       RemoveEmptyBlocksInEntryPoints();
@@ -52,6 +55,16 @@ namespace whoop
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       whoop.IO.EmitProgram(wp.program, Util.GetCommandLineOptions().Files[
         Util.GetCommandLineOptions().Files.Count - 1], "wbpl");
+    }
+
+    private void RemoveUnecesseryAssumes()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        foreach (Block b in impl.Blocks) {
+          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes == null &&
+          (val as AssumeCmd).Expr.Equals(Expr.True));
+        }
+      }
     }
 
     private void RemoveEmptyBlocks()
@@ -132,7 +145,6 @@ namespace whoop
     {
       foreach (var kvp in wp.entryPoints) {
         foreach (var ep in kvp.Value) {
-          if (ep.Value.Equals(wp.mainFunc.Name)) continue;
           wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value).Proc);
           wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value));
           wp.program.TopLevelDeclarations.Remove(wp.GetConstant(ep.Value));

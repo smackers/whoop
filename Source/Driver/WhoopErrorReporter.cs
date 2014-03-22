@@ -21,19 +21,14 @@ namespace whoop
   {
     List<Tuple<SourceLocationInfo, SourceLocationInfo>> reportedErrors;
 
-    WhoopProgram wp;
-    Implementation impl;
-
     internal WhoopErrorReporter()
     {
       this.reportedErrors = new List<Tuple<SourceLocationInfo, SourceLocationInfo>>();
     }
 
-    internal int ReportCounterexample(WhoopProgram wp, Implementation impl, Counterexample error)
+    internal int ReportCounterexample(Counterexample error)
     {
-      Contract.Requires(wp != null && impl != null && error != null);
-      this.wp = wp;
-      this.impl = impl;
+      Contract.Requires(error != null);
       int errors = 0;
 
       if (error is AssertCounterexample) {
@@ -46,15 +41,17 @@ namespace whoop
           errors++;
           Console.WriteLine("Error: AssertCounterexample");
         }
+
+        Console.WriteLine("Error: " + cex.FailingAssert);
+        Console.WriteLine("Line: " + cex.FailingAssert.Line);
+        Console.WriteLine();
       } else if (error is CallCounterexample) {
         errors++;
         ReportRequiresFailure(error as CallCounterexample);
+        Console.WriteLine("Error: CallCounterexample");
       } else if (error is ReturnCounterexample) {
         errors++;
         Console.WriteLine("Error: ReturnCounterexample");
-      } else if (error is CalleeCounterexampleInfo) {
-        errors++;
-        Console.WriteLine("Error: CalleeCounterexampleInfo");
       }
 
       return errors;
@@ -95,12 +92,12 @@ namespace whoop
         ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
           "potential " + raceName + " race:", ErrorMsgType.Error);
 
-        Console.Error.WriteLine(access2 + " by entry point " + eps.Item2 + ", " + sourceInfoForSecondAccess.ToString());
-        sourceInfoForSecondAccess.PrintStackTrace();
-
-        Console.Error.Write(access1 + " by entry point " + eps.Item1 + ", ");
+        Console.Error.Write(access1 + " by entry point " + eps.Item2 + ", ");
         Console.Error.WriteLine(sourceLocationsForFirstAccess[i].ToString());
         sourceLocationsForFirstAccess[i].PrintStackTrace();
+
+        Console.Error.WriteLine(access2 + " by entry point " + eps.Item1 + ", " + sourceInfoForSecondAccess.ToString());
+        sourceInfoForSecondAccess.PrintStackTrace();
       }
 
       return sourceLocationsForFirstAccess.Count;
@@ -118,15 +115,40 @@ namespace whoop
       string stateName = QKeyValue.FindStringAttribute(attributes, "captureState");
       Contract.Requires(stateName != null);
 
+      bool check = false;
+
       Block b = cex.Trace[cex.Trace.Count - 2];
+      if (check) {
+        Console.WriteLine("label: " + b.Label);
+        foreach (var v in b.Cmds) {
+          Console.WriteLine(v);
+        }
+      }
+
       AssumeCmd assume = b.Cmds[b.Cmds.Count - 2] as AssumeCmd;
       Contract.Requires(assume != null);
+      if (check) {
+        Console.WriteLine("assume: " + assume);
+      }
 
       string expr = assume.Expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None)[0]
         .Split(new string[] { "@" }, StringSplitOptions.None)[0];
       Contract.Requires(expr != null && expr.Contains("inline$"));
 
+      if (check) {
+        Console.WriteLine("expr: " + expr);
+      }
+
       Model.CapturedState checkState = GetStateFromModel(stateName, cex.Model);
+      Contract.Requires(checkState != null);
+
+      if (check) {
+        Console.WriteLine("*** STATE {0}", checkState.Name);
+        foreach (var v in checkState.Variables)
+          Console.WriteLine("  {0} -> {1}", v, checkState.TryGet(v));
+        Console.WriteLine("*** END_STATE", checkState.Name);
+      }
+
       Model.Integer aoff = checkState.TryGet(expr) as Model.Integer;
       Contract.Requires(aoff != null);
 

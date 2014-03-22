@@ -21,7 +21,6 @@ namespace whoop
   public class StaticLocksetAnalyser
   {
     List<string> files;
-    List<WhoopProgram> wps;
     PipelineStatistics stats;
     WhoopErrorReporter errorReporter;
 
@@ -29,37 +28,27 @@ namespace whoop
     {
       Contract.Requires(files != null);
       this.files = files;
-      this.wps = new List<WhoopProgram>();
       this.stats = new PipelineStatistics();
       this.errorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
     {
-      wps.Add(new WhoopProgramParser(files[files.Count - 1], "wbpl").ParseNew());
-      if (wps[0] == null) Environment.Exit((int) Outcome.ParsingError);
-      CallCmd[] funcsToAnalyse = GetFuncsToAnalyse();
-      WhoopProgram whoopProgram = null;
-      int k = 0;
+      WhoopProgram wp = new WhoopProgramParser(files[files.Count - 1], "wbpl").ParseNew();
+      wp.EliminateDeadVariables();
+      wp.Inline();
 
-      foreach (var v in funcsToAnalyse) {
-        whoopProgram = wps[wps.Count - 1];
-        whoopProgram.mainFunc.Blocks.Find(val => val.TransferCmd is ReturnCmd).Cmds.RemoveAll(val =>
-          val is CallCmd && !(val as CallCmd).callee.Equals(v.callee));
+      if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
+        wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
+          Util.GetCommandLineOptions().SoundLoopUnrolling);
 
-        whoopProgram.EliminateDeadVariables();
-        whoopProgram.Inline();
+      // operate on a stable copy, in case it gets updated while we're running
+      var decls = wp.program.TopLevelDeclarations.ToArray();
 
-        if (!funcsToAnalyse[funcsToAnalyse.Length - 1].Equals(v)) {
-          wps.Add(new WhoopProgramParser(files[files.Count - 1], "wbpl").ParseNew());
-          if (wps[wps.Count - 1] == null) Environment.Exit((int) Outcome.ParsingError);
-        }
-      }
-
-      foreach (var wp in wps) {
-        if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
-          wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
-            Util.GetCommandLineOptions().SoundLoopUnrolling);
+      foreach (var initFunc in wp.GetInitFunctions()) {
+        Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
+          Find(val => val.Name.Equals(initFunc.Name));
+        Contract.Assert(funcToAnalyse != null);
 
         VC.ConditionGeneration vcgen = null;
         try {
@@ -70,12 +59,6 @@ namespace whoop
           Environment.Exit((int) Outcome.FatalError);
         }
 
-        // operate on a stable copy, in case it gets updated while we're running
-        var decls = wp.program.TopLevelDeclarations.ToArray();
-        Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
-          Find(val => val.Name.Equals(wp.mainFunc.Name));
-        Contract.Assert(funcToAnalyse != null);
-
         int prevAssertionCount = vcgen.CumulativeAssertionCount;
 
         List<Counterexample> errors;
@@ -85,7 +68,7 @@ namespace whoop
           start = DateTime.UtcNow;
           if (Util.GetCommandLineOptions().Trace) {
             Console.WriteLine("");
-            Console.WriteLine("Verifying {0} ...", funcsToAnalyse[k].callee);
+            Console.WriteLine("Verifying {0} ...", "pair_" + funcToAnalyse.Name.Substring(5));
           }
         }
 
@@ -120,10 +103,9 @@ namespace whoop
           Console.Out.Flush();
 
         vcgen.Close();
-        k++;
+        cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       }
 
-      cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       whoop.IO.WriteTrailer(stats);
 
       if ((stats.ErrorCount + stats.InconclusiveCount + stats.TimeoutCount + stats.OutOfMemoryCount) > 0)
@@ -177,7 +159,7 @@ namespace whoop
           Contract.Assert(errors != null);
           errors.Sort(new CounterexampleComparer());
           foreach (Counterexample error in errors)
-            stats.ErrorCount += errorReporter.ReportCounterexample(wp, impl, error);
+            stats.ErrorCount += errorReporter.ReportCounterexample(error);
 
           whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errors.Count == 1 ? "" : "s"));
           break;
@@ -186,13 +168,6 @@ namespace whoop
           Contract.Assert(false); // unexpected outcome
           throw new cce.UnreachableException();
       }
-    }
-
-    private CallCmd[] GetFuncsToAnalyse()
-    {
-      Contract.Assert(wps.Count > 0 && wps[0] != null);
-      return wps[0].mainFunc.Blocks.Find(val => val.TransferCmd
-        is ReturnCmd).Cmds.OfType<CallCmd>().ToArray();
     }
   }
 }

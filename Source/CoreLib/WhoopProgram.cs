@@ -24,7 +24,6 @@ namespace whoop
     public ResolutionContext resContext;
 
     public Dictionary<string, Dictionary<string, string>> entryPoints;
-    public Implementation mainFunc;
     public List<Variable> memoryRegions;
 
     public Lockset currLockset;
@@ -32,6 +31,7 @@ namespace whoop
 
     public Microsoft.Boogie.Type memoryModelType;
 
+    internal Implementation initFunc;
     internal SharedStateAnalyser sharedStateAnalyser;
 
     public WhoopProgram(Program program, ResolutionContext rc)
@@ -50,9 +50,6 @@ namespace whoop
 
       this.entryPoints = IO.ParseDriverInfo();
       this.sharedStateAnalyser = new SharedStateAnalyser(this);
-
-      DetectMainFunction();
-
       this.memoryRegions = sharedStateAnalyser.GetMemoryRegions();
     }
 
@@ -70,6 +67,12 @@ namespace whoop
     {
       return program.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entry_pair"));
+    }
+
+    public List<Implementation> GetInitFunctions()
+    {
+      return program.TopLevelDeclarations.OfType<Implementation>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "init"));
     }
 
     public List<Variable> GetRaceCheckingVariables()
@@ -150,16 +153,16 @@ namespace whoop
       return e;
     }
 
-    private void DetectMainFunction()
+    internal void DetectInitFunction()
     {
-      string mainFuncName = null;
+      string initFuncName = null;
       bool found = false;
 
       try {
         foreach (var kvp in entryPoints) {
           foreach (var ep in kvp.Value) {
             if (ep.Key.Equals("probe")) {
-              mainFuncName = ep.Value;
+              initFuncName = ep.Value;
               found = true;
               break;
             }
@@ -167,9 +170,9 @@ namespace whoop
           if (found) break;
         }
         if (!found) throw new Exception("no main function found");
-        mainFunc = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(mainFuncName)) as Implementation);
-        if (mainFunc == null) throw new Exception("no main function found");
+        initFunc = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
+          (val as Implementation).Name.Equals(initFuncName)) as Implementation);
+        if (initFunc == null) throw new Exception("no main function found");
       } catch (Exception e) {
         Console.Error.Write("Exception thrown in Whoop: ");
         Console.Error.WriteLine(e);

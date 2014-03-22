@@ -32,9 +32,11 @@ namespace whoop
     {
       InstrumentEntryPoints();
       InstrumentOtherFuncs();
+
+      CleanUp();
     }
 
-    protected void InstrumentEntryPoints()
+    private void InstrumentEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentSourceLocationInfo(impl);
@@ -45,10 +47,10 @@ namespace whoop
       }
     }
 
-    protected void InstrumentOtherFuncs()
+    private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
@@ -85,11 +87,6 @@ namespace whoop
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
           }
         }
-      }
-
-      foreach (Block b in impl.Blocks) {
-        b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
-          QKeyValue.FindExprAttributes((val as AssumeCmd).Attributes, "sourceloc") != null);
       }
     }
 
@@ -245,6 +242,16 @@ namespace whoop
         }, col);
 
       return line;
+    }
+
+    private void CleanUp()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        foreach (Block b in impl.Blocks) {
+          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
+          (val as AssumeCmd).Attributes.Key.Equals("sourceloc"));
+        }
+      }
     }
   }
 }

@@ -1,8 +1,8 @@
 #ifndef _LINUX_ETHTOOL_H
 #define _LINUX_ETHTOOL_H
 
-#define ETHTOOL_FWVERS_LEN	32
-#define ETHTOOL_BUSINFO_LEN	32
+#define ETHTOOL_FWVERS_LEN 32
+#define ETHTOOL_BUSINFO_LEN 32
 
 struct ethtool_drvinfo {
 	__u32	cmd;
@@ -17,6 +17,37 @@ struct ethtool_drvinfo {
 	__u32	testinfo_len;
 	__u32	eedump_len;
 	__u32	regdump_len;
+};
+
+struct ethtool_regs {
+	__u32 cmd;
+	__u32 version;
+	__u32 len;
+	__u8 data[0];
+};
+
+#define ETH_GSTRING_LEN 32
+enum ethtool_stringset {
+	ETH_SS_TEST = 0,
+	ETH_SS_STATS,
+	ETH_SS_PRIV_FLAGS,
+	ETH_SS_NTUPLE_FILTERS,
+	ETH_SS_FEATURES,
+};
+
+struct ethtool_stats {
+	__u32	cmd;
+	__u32	n_stats;
+	__u64	data[0];
+};
+
+#define SOPASS_MAX 6
+
+struct ethtool_wolinfo {
+	__u32 cmd;
+	__u32 supported;
+	__u32 wolopts;
+	__u8 sopass[SOPASS_MAX];
 };
 
 struct ethtool_ops {
@@ -347,5 +378,6 @@ static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
 }
 
 u32 ethtool_op_get_link(struct net_device *dev);
+int ethtool_op_get_ts_info(struct net_device *dev, struct ethtool_ts_info *eti);
 
 #endif /* _LINUX_ETHTOOL_H */

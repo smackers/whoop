@@ -13,6 +13,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Microsoft.Boogie;
 
 namespace whoop
@@ -52,7 +53,10 @@ namespace whoop
         return null;
       }
 
-      return new WhoopProgram(program, rc);
+      WhoopProgram whoopProgram = new WhoopProgram(program, rc);
+      if (whoopProgram == null) Environment.Exit((int) Outcome.ParsingError);
+
+      return whoopProgram;
     }
   }
 }

@@ -27,6 +27,7 @@ namespace whoop
     {
       Contract.Requires(wp != null);
       this.wp = wp;
+      wp.DetectInitFunction();
       entryPointPairs = new List<Tuple<string, List<string>>>();
 
 //      foreach (var kvp1 in wp.entryPoints) {
@@ -88,7 +89,7 @@ namespace whoop
     private void ConvertOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>().ToArray()) {
-        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
@@ -390,7 +391,7 @@ namespace whoop
 
     private bool CanRunConcurrently(string ep1, string ep2)
     {
-      if (ep1.Equals(wp.mainFunc.Name) || ep2.Equals(wp.mainFunc.Name))
+      if (ep1.Equals(wp.initFunc.Name) || ep2.Equals(wp.initFunc.Name))
         return false;
       return true;
     }

@@ -80,14 +80,14 @@
     <Compile Include="StaticLocksetAnalysis\Passes\LocksetInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\RaceInstrumentation.cs" />
     <Compile Include="WhoopProgram.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\PairWiseLocksetInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\MainFunctionInstrumentation.cs" />
     <Compile Include="SourceLocationInfo.cs" />
     <Compile Include="WhoopProgramParser.cs" />
     <Compile Include="AccessType.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\DeadlockInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\InitConverter.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\InitInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

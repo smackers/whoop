@@ -172,11 +172,7 @@ typedef unsigned long blkcnt_t;
 #define pgoff_t unsigned long
 #endif
 
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-typedef u64 dma_addr_t;
-#else
 typedef u32 dma_addr_t;
-#endif /* dma_addr_t */
 
 #ifdef __CHECKER__
 #else
@@ -188,11 +184,7 @@ typedef unsigned __bitwise__ gfp_t;
 typedef unsigned __bitwise__ fmode_t;
 typedef unsigned __bitwise__ oom_flags_t;
 
-#ifdef CONFIG_PHYS_ADDR_T_64BIT
-typedef u64 phys_addr_t;
-#else
 typedef u32 phys_addr_t;
-#endif
 
 typedef phys_addr_t resource_size_t;
 

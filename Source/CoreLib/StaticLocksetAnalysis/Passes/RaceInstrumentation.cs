@@ -241,7 +241,7 @@ namespace whoop
       }
     }
 
-    protected void InstrumentEntryPoints()
+    private void InstrumentEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentWriteAccesses(impl);
@@ -250,10 +250,10 @@ namespace whoop
       }
     }
 
-    protected void InstrumentOtherFuncs()
+    private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;

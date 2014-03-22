@@ -18,29 +18,30 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
-  public class MainFunctionInstrumentation
+  public class InitInstrumentation
   {
     WhoopProgram wp;
 
-    public MainFunctionInstrumentation(WhoopProgram wp)
+    public InitInstrumentation(WhoopProgram wp)
     {
       this.wp = wp;
     }
 
     public void Run()
     {
-      InstrumentProcedure();
-      InstrumentImplementation();
-      CleanUp();
+      foreach (var impl in wp.GetInitFunctions()) {
+        InstrumentImplementation(impl);
+        InstrumentProcedure(impl);
+        CleanUp(impl);
+      }
     }
 
-    private void InstrumentImplementation()
+    private void InstrumentImplementation(Implementation impl)
     {
-      wp.mainFunc.Blocks[wp.mainFunc.Blocks.Count - 1].TransferCmd =
-        new GotoCmd(Token.NoToken, new List<string>() { "$bb" + wp.mainFunc.Blocks.Count });
+      impl.Blocks[impl.Blocks.Count - 1].TransferCmd =
+        new GotoCmd(Token.NoToken, new List<string>() { "$checker" });
 
-      Block b = new Block(Token.NoToken, "$bb" + wp.mainFunc.Blocks.Count,
-                  new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      Block b = new Block(Token.NoToken, "$checker", new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
       List<Variable> dummiesCLS = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
@@ -84,31 +85,29 @@ namespace whoop
           Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
-        string[] str = impl.Name.Split(new Char[] { '$' });
-        Contract.Requires(str.Length == 3);
+      string[] str =  impl.Name.Split(new Char[] { '$' });
+      Contract.Requires(str.Length == 3);
 
-        CallCmd c1 = (wp.mainFunc.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
-          (val as CallCmd).callee.Equals(str[1])) as CallCmd);
-        CallCmd c2 = (wp.mainFunc.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
-          (val as CallCmd).callee.Equals(str[2])) as CallCmd);
+      CallCmd c1 = (impl.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
+                   (val as CallCmd).callee.Equals(str[1])) as CallCmd);
+      CallCmd c2 = (impl.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
+                   (val as CallCmd).callee.Equals(str[2])) as CallCmd);
 
-        List<Expr> ins = new List<Expr>();
-        foreach (var e in c1.Ins) ins.Add(e.Clone() as Expr);
-        foreach (var e in c2.Ins) ins.Add(e.Clone() as Expr);
+      List<Expr> ins = new List<Expr>();
+      foreach (var e in c1.Ins) ins.Add(e.Clone() as Expr);
+      foreach (var e in c2.Ins) ins.Add(e.Clone() as Expr);
 
-        b.Cmds.Add(new CallCmd(Token.NoToken, impl.Name, ins, new List<IdentifierExpr>()));
-      }
+      b.Cmds.Add(new CallCmd(Token.NoToken, "pair_" + impl.Name.Substring(5),
+        ins, new List<IdentifierExpr>()));
 
-      wp.mainFunc.Blocks.Add(b);
+      impl.Blocks.Add(b);
     }
 
-    private void InstrumentProcedure()
+    private void InstrumentProcedure(Implementation impl)
     {
-      wp.mainFunc.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, wp.currLockset.id));
+      impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, wp.currLockset.id));
       foreach (var ls in wp.locksets)
-        wp.mainFunc.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
-      wp.mainFunc.Blocks.Reverse();
+        impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
 
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
@@ -116,17 +115,17 @@ namespace whoop
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
-        if (!wp.mainFunc.Proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name))) {
-          wp.mainFunc.Proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
-          wp.mainFunc.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
+        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name))) {
+          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
+          impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
       }
     }
 
-    private void CleanUp()
+    private void CleanUp(Implementation impl)
     {
-      wp.mainFunc.Blocks[0].Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
-        val2.Name.Contains((val1 as CallCmd).callee)));
+      impl.Blocks[0].Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
+        val2.Name.Contains(impl.Name.Substring(5))));
     }
   }
 }

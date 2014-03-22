@@ -18,17 +18,27 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
-  public abstract class LocksetInstrumentation
+  public class LocksetInstrumentation
   {
-    protected WhoopProgram wp;
+    private WhoopProgram wp;
 
-    internal LocksetInstrumentation(WhoopProgram wp)
+    public LocksetInstrumentation(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
     }
 
-    protected void AddCurrentLockset()
+    public void Run()
+    {
+      AddCurrentLockset();
+      AddMemoryLocksets();
+      AddUpdateLocksetFunc();
+
+      InstrumentEntryPoints();
+      InstrumentOtherFuncs();
+    }
+
+    private void AddCurrentLockset()
     {
       wp.currLockset = new Lockset(new GlobalVariable(Token.NoToken,
         new TypedIdent(Token.NoToken, "CLS",
@@ -39,7 +49,7 @@ namespace whoop
       wp.program.TopLevelDeclarations.Add(wp.currLockset.id);
     }
 
-    protected void AddMemoryLocksets()
+    private void AddMemoryLocksets()
     {
       for (int i = 0; i < wp.memoryRegions.Count; i++) {
         wp.locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
@@ -52,7 +62,7 @@ namespace whoop
       }
     }
 
-    protected void AddUpdateLocksetFunc()
+    private void AddUpdateLocksetFunc()
     {
       List<Variable> inParams = new List<Variable>();
       Variable in1 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock", Microsoft.Boogie.Type.Int));
@@ -94,7 +104,7 @@ namespace whoop
       wp.program.TopLevelDeclarations.Add(impl);
     }
 
-    protected void AddLocksetCompFunc(Microsoft.Boogie.Type argType)
+    private void AddLocksetCompFunc(Microsoft.Boogie.Type argType)
     {
       List<Variable> inParams = new List<Variable>();
       Variable lhs = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ls$1", argType));
@@ -114,7 +124,7 @@ namespace whoop
       wp.resContext.AddProcedure(f);
     }
 
-    protected void InstrumentEntryPoints()
+    private void InstrumentEntryPoints()
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentImplementation(impl);
@@ -122,10 +132,10 @@ namespace whoop
       }
     }
 
-    protected void InstrumentOtherFuncs()
+    private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.mainFunc.Name.Equals(impl.Name)) continue;
+        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;

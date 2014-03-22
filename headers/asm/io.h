@@ -61,4 +61,10 @@ void writeb(unsigned char value, void __iomem *addr) { }
 void writew(unsigned short value, void __iomem *addr) { }
 void writel(unsigned int value, void __iomem *addr) { }
 
+
+void memcpy_fromio(void *dst, const volatile void __iomem *src, size_t count)
+{
+	memcpy(dst, (const void *) src, count);
+}
+
 #endif /* _ASM_IO_H */
