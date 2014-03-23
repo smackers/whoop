@@ -42,6 +42,15 @@ namespace whoop
         wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
           Util.GetCommandLineOptions().SoundLoopUnrolling);
 
+      VC.ConditionGeneration vcgen = null;
+      try {
+        vcgen = new VC.VCGen(wp.program, Util.GetCommandLineOptions().SimplifyLogFilePath,
+          Util.GetCommandLineOptions().SimplifyLogFileAppend, new List<Checker>());
+      } catch (ProverException e) {
+        whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
+        Environment.Exit((int) Outcome.FatalError);
+      }
+
       // operate on a stable copy, in case it gets updated while we're running
       var decls = wp.program.TopLevelDeclarations.ToArray();
 
@@ -49,15 +58,6 @@ namespace whoop
         Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
           Find(val => val.Name.Equals(initFunc.Name));
         Contract.Assert(funcToAnalyse != null);
-
-        VC.ConditionGeneration vcgen = null;
-        try {
-          vcgen = new VC.VCGen(wp.program, Util.GetCommandLineOptions().SimplifyLogFilePath,
-            Util.GetCommandLineOptions().SimplifyLogFileAppend, new List<Checker>());
-        } catch (ProverException e) {
-          whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
-          Environment.Exit((int) Outcome.FatalError);
-        }
 
         int prevAssertionCount = vcgen.CumulativeAssertionCount;
 
@@ -101,11 +101,10 @@ namespace whoop
 
         if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
           Console.Out.Flush();
-
-        vcgen.Close();
-        cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       }
 
+      vcgen.Close();
+      cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       whoop.IO.WriteTrailer(stats);
 
       if ((stats.ErrorCount + stats.InconclusiveCount + stats.TimeoutCount + stats.OutOfMemoryCount) > 0)
