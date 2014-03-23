@@ -32,8 +32,8 @@ static inline bool netif_running(const struct net_device *dev)
 	return val;
 }
 
-void netif_device_detach(struct net_device *dev);
 void netif_device_attach(struct net_device *dev);
+void netif_device_detach(struct net_device *dev);
 
 void netif_stop_queue(struct net_device *dev);
 void netif_tx_stop_all_queues(struct net_device *dev);

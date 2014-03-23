@@ -145,6 +145,7 @@ namespace whoop
     {
       foreach (var kvp in wp.entryPoints) {
         foreach (var ep in kvp.Value) {
+          if (!wp.program.TopLevelDeclarations.OfType<Implementation>().ToList().Any(val => val.Name.Equals(ep.Value))) continue;
           wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value).Proc);
           wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value));
           wp.program.TopLevelDeclarations.Remove(wp.GetConstant(ep.Value));

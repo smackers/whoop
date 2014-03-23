@@ -7,14 +7,13 @@
 struct work_struct {
     void (*func)(void *);
     void *data;
-
     int init;
 };
 
-#define DECLARE_WORK(n, f, d) \
-	struct work_struct n = { \
-           .func = (f), \
-           .data = (d), \
+#define DECLARE_WORK(_work, _func, _data) \
+	struct work_struct _work = { \
+           .func = (_func), \
+           .data = (_data), \
            .init = 1, \
         }
 
@@ -22,7 +21,7 @@ struct work_struct {
 	do { \
 		(_work)->func = _func; \
 		(_work)->data = _data; \
-                (_work)->init = 1; \
+    (_work)->init = 1; \
 	} while (0)
 
 #define INIT_WORK(_work, _func, _data) \
@@ -30,7 +29,7 @@ struct work_struct {
 		PREPARE_WORK((_work), (_func), (_data)); \
 	} while (0)
 
-static bool schedule_work(struct work_struct *work);
+bool schedule_work(struct work_struct *work);
 void flush_scheduled_work(void);
 
 #endif
