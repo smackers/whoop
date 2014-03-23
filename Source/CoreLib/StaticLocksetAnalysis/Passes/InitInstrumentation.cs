@@ -79,11 +79,27 @@ namespace whoop
 
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
         b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
           Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
+
+      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
+          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+
+        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
+          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+      }
+
+//      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+//        Variable offset = wp.GetRaceCheckingVariables().Find(val =>
+//          val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
+//
+//        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
+//          Expr.Eq(new IdentifierExpr(offset.tok, offset), new LiteralExpr(Token.NoToken, BigNum.FromInt(0)))));
+//      }
 
       string[] str =  impl.Name.Split(new Char[] { '$' });
       Contract.Requires(str.Length == 3);
@@ -110,13 +126,16 @@ namespace whoop
         impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
 
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
-        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+        Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
+          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+        Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>
+          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
-        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(raceCheck.Name))) {
-          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
+        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(raceCheckW.Name))) {
+          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
+          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));
           impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
       }

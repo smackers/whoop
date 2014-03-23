@@ -33,6 +33,9 @@ namespace whoop
 
       if (error is AssertCounterexample) {
         AssertCounterexample cex = error as AssertCounterexample;
+//        Console.WriteLine("Error: " + cex.FailingAssert);
+//        Console.WriteLine("Line: " + cex.FailingAssert.Line);
+//        Console.WriteLine();
         if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking")) {
           errors = ReportRace(cex);
         } else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking")) {
@@ -41,10 +44,6 @@ namespace whoop
           errors++;
           Console.WriteLine("Error: AssertCounterexample");
         }
-
-        Console.WriteLine("Error: " + cex.FailingAssert);
-        Console.WriteLine("Line: " + cex.FailingAssert.Line);
-        Console.WriteLine();
       } else if (error is CallCounterexample) {
         errors++;
         ReportRequiresFailure(error as CallCounterexample);
@@ -64,7 +63,7 @@ namespace whoop
       string accessOffset = "ACCESS_OFFSET_" + GetSharedResourceName(conflictingAction.Attributes);
       string access2 = GetAccessType(conflictingAction.Attributes);
       string raceName, access1;
-      ulong raceyOffset = GetOffset(cex, conflictingAction.Attributes);
+      string raceyOffset = GetOffset(cex, conflictingAction.Attributes);
 
       SourceLocationInfo sourceInfoForSecondAccess = new SourceLocationInfo(conflictingAction.Attributes);
       List<AssumeCmd> potentialConflictingActions = DetermineConflictingActions(cex, conflictingAction,
@@ -90,7 +89,7 @@ namespace whoop
         DetermineNatureOfRace(potentialConflictingActions[i], out raceName, out access1, access2);
 
         ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
-          "potential " + raceName + " race:", ErrorMsgType.Error);
+          "potential " + raceName + " race:\n", ErrorMsgType.Error);
 
         Console.Error.Write(access1 + " by entry point " + eps.Item2 + ", ");
         Console.Error.WriteLine(sourceLocationsForFirstAccess[i].ToString());
@@ -110,7 +109,7 @@ namespace whoop
       return arrName;
     }
 
-    private ulong GetOffset(AssertCounterexample cex, QKeyValue attributes)
+    private string GetOffset(AssertCounterexample cex, QKeyValue attributes)
     {
       string stateName = QKeyValue.FindStringAttribute(attributes, "captureState");
       Contract.Requires(stateName != null);
@@ -119,6 +118,7 @@ namespace whoop
 
       Block b = cex.Trace[cex.Trace.Count - 2];
       if (check) {
+        Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
         foreach (var v in b.Cmds) {
           Console.WriteLine(v);
@@ -149,10 +149,17 @@ namespace whoop
         Console.WriteLine("*** END_STATE", checkState.Name);
       }
 
-      Model.Integer aoff = checkState.TryGet(expr) as Model.Integer;
+      Model.Element aoff = checkState.TryGet(expr);
       Contract.Requires(aoff != null);
 
-      return Convert.ToUInt64(aoff.Numeral);
+      if (check) {
+        if (aoff == null) Console.WriteLine("TEST1");
+        Console.WriteLine("TEST3");
+        Console.WriteLine(aoff);
+        Console.WriteLine("TEST2");
+      }
+
+      return aoff.ToString();
     }
 
     private string GetAccessType(QKeyValue attributes)
@@ -163,7 +170,7 @@ namespace whoop
     }
 
     private List<AssumeCmd> DetermineConflictingActions(AssertCounterexample cex, AssumeCmd conflictingAction,
-      string accessOffset, ulong raceyOffset, string otherAccess)
+      string accessOffset, string raceyOffset, string otherAccess)
     {
       string checkStateName = QKeyValue.FindStringAttribute(conflictingAction.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
@@ -189,8 +196,8 @@ namespace whoop
           Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          Model.Integer aoff = logState.TryGet(accessOffset) as Model.Integer;
-          if (aoff == null || Convert.ToUInt64(aoff.Numeral, 10) != raceyOffset) continue;
+          Model.Element aoff = logState.TryGet(accessOffset);
+          if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 
           Dictionary<Model.Integer, Model.Boolean> logStateLocksDictionary = null;
           logStateLocksDictionary = GetStateLocksDictionary(cex, logState, true);
@@ -279,7 +286,7 @@ namespace whoop
       Contract.Requires(sourceLocationsForUnreleasedLocks.Count > 0);
 
       ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
-        "potential source of deadlock:", ErrorMsgType.Error);
+        "potential source of deadlock:\n", ErrorMsgType.Error);
 
       foreach (var v in sourceLocationsForUnreleasedLocks) {
         Console.Error.Write("the following lock is not released when " + entryPoint + " returns, ");
@@ -358,23 +365,23 @@ namespace whoop
     public void Write(Model model)
     {
       Console.WriteLine("*** MODEL");
-      foreach (var f in model.Functions.OrderBy(f => f.Name))
-        if (f.Arity == 0) {
-          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
-        }
-      foreach (var f in model.Functions)
-        if (f.Arity != 0) {
-          Console.WriteLine("{0} -> {1}", f.Name, "{");
-          foreach (var app in f.Apps) {
-            Console.Write("  ");
-            foreach (var a in app.Args)
-              Console.Write("{0} ", a);
-            Console.WriteLine("-> {0}", app.Result);
-          }
-          if (f.Else != null)
-            Console.WriteLine("  else -> {0}", f.Else);
-          Console.WriteLine("}");
-        }
+//      foreach (var f in model.Functions.OrderBy(f => f.Name))
+//        if (f.Arity == 0) {
+//          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
+//        }
+//      foreach (var f in model.Functions)
+//        if (f.Arity != 0) {
+//          Console.WriteLine("{0} -> {1}", f.Name, "{");
+//          foreach (var app in f.Apps) {
+//            Console.Write("  ");
+//            foreach (var a in app.Args)
+//              Console.Write("{0} ", a);
+//            Console.WriteLine("-> {0}", app.Result);
+//          }
+//          if (f.Else != null)
+//            Console.WriteLine("  else -> {0}", f.Else);
+//          Console.WriteLine("}");
+//        }
       foreach (var s in model.States) {
         if (s == model.InitialState && s.VariableCount == 0)
           continue;
