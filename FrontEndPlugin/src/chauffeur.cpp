@@ -157,6 +157,7 @@ public:
 		
 		if (!(BaseRD->getNameAsString() == "pci_driver" ||
 			  BaseRD->getNameAsString() == "dev_pm_ops" ||
+				BaseRD->getNameAsString() == "net_device_ops" ||
 			  BaseRD->getNameAsString() == "ethtool_ops" ||
 				BaseRD->getNameAsString() == "test_driver")) {
 			return true;
@@ -184,6 +185,20 @@ public:
 					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_suspend" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_resume" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "runtime_idle" ||
+					/* net_device_ops */
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_open" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_stop" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_get_stats64" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_start_xmit" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_tx_timeout" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_validate_addr" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_change_mtu" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_fix_features" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_set_features" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_set_mac_address" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_do_ioctl" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_set_rx_mode" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ndo_poll_controller" ||
 					/* ethtool_ops */
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_drvinfo" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "get_regs_len" ||

@@ -53,18 +53,22 @@ void iowrite8_rep(void *addr, const void *buf, unsigned long count);
 void iowrite16_rep(void *addr, const void *buf, unsigned long count);
 void iowrite32_rep(void *addr, const void *buf, unsigned long count);
 
-unsigned char readb(const void __iomem *addr) { }
-unsigned short readw(const void __iomem *addr) { }
-unsigned int readl(const void __iomem *addr) { }
+unsigned char readb(const void __iomem *addr);
+unsigned short readw(const void __iomem *addr);
+unsigned int readl(const void __iomem *addr);
 
-void writeb(unsigned char value, void __iomem *addr) { }
-void writew(unsigned short value, void __iomem *addr) { }
-void writel(unsigned int value, void __iomem *addr) { }
+void writeb(unsigned char value, void __iomem *addr);
+void writew(unsigned short value, void __iomem *addr);
+void writel(unsigned int value, void __iomem *addr);
 
 
 void memcpy_fromio(void *dst, const volatile void __iomem *src, size_t count)
 {
 	memcpy(dst, (const void *) src, count);
 }
+
+void memory_barrier(bool value);
+
+#define mmiowb() memory_barrier(true)
 
 #endif /* _ASM_IO_H */
