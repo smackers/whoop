@@ -53,8 +53,6 @@ struct pci_driver {
 	struct pci_dynids dynids;
 };
 
-#define DEFINE_PCI_DEVICE_TABLE(_table) const struct pci_device_id _table[]
-
 int pci_register_driver(struct pci_driver *);
 void pci_unregister_driver(struct pci_driver *dev);
 
@@ -63,9 +61,21 @@ static inline const char *pci_name(const struct pci_dev *pdev)
 	return dev_name(&pdev->dev);
 }
 
-#define module_pci_driver(__pci_driver) \
-	module_driver(__pci_driver, pci_register_driver, \
-		       pci_unregister_driver)
+static inline void *pci_get_drvdata(struct pci_dev *pdev)
+{
+	return dev_get_drvdata(&pdev->dev);
+}
+
+static inline void pci_set_drvdata(struct pci_dev *pdev, void *data)
+{
+	dev_set_drvdata(&pdev->dev, data);
+}
+
+#define	to_pci_dev(n) container_of(n, struct pci_dev, dev)
+
+#define DEFINE_PCI_DEVICE_TABLE(_table) const struct pci_device_id _table[]
+
+#define module_pci_driver(__pci_driver) module_driver(__pci_driver, pci_register_driver, pci_unregister_driver)
 
 #define PCI_DEVFN(slot, func)	((((slot) & 0x1f) << 3) | ((func) & 0x07))
 #define PCI_SLOT(devfn)		(((devfn) >> 3) & 0x1f)

@@ -25,6 +25,16 @@ struct device_driver {
 	const struct dev_pm_ops *pm;
 };
 
+static inline void * dev_get_drvdata (struct device *dev)
+{
+	return dev->driver_data;
+}
+
+static inline void dev_set_drvdata (struct device *dev, void *data)
+{
+	dev->driver_data = data;
+}
+
 #define module_driver(__driver, __register, __unregister, ...) \
 static int __init __driver##_init(void) \
 { \
