@@ -53,7 +53,7 @@ typedef __u32 __bitwise __wsum;
 #define __aligned_be64 __be64 __attribute__((aligned(8)))
 #define __aligned_le64 __le64 __attribute__((aligned(8)))
 
-#define DECLARE_BITMAP(name,bits) void // unsigned long name[BITS_TO_LONGS(bits)]
+#define DECLARE_BITMAP(name,bits) unsigned long name[BITS_TO_LONGS(bits)]
 
 typedef __u32 __kernel_dev_t;
 

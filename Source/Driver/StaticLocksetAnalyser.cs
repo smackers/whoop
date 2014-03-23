@@ -150,12 +150,12 @@ namespace whoop
           break;
         
         case VC.VCGen.Outcome.Errors:
+          Contract.Assert(errors != null);
           if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed) {
             whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;
           }
 
-          Contract.Assert(errors != null);
           errors.Sort(new CounterexampleComparer());
           foreach (Counterexample error in errors)
             stats.ErrorCount += errorReporter.ReportCounterexample(error);
