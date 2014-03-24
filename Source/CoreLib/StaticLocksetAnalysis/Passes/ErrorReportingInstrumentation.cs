@@ -139,14 +139,15 @@ namespace whoop
             call.callee.Contains("_LOG_READ_LS_")) {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "log_state_" + logCounter }, assume.Attributes);
+            logCounter++;
           } else {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-              new List<object>() { "check_state_" + logCounter }, assume.Attributes);
+              new List<object>() { "check_state_" + checkCounter }, assume.Attributes);
+            checkCounter++;
           }
 
           assume.Attributes = new QKeyValue(Token.NoToken, "resource",
             new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
-          logCounter++;
 
           if (call.callee.Contains("_LOG_WRITE_LS_") ||
             call.callee.Contains("_LOG_READ_LS_")) {

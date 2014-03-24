@@ -4,6 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/timer.h>
 #include <linux/netdev_features.h>
+#include <linux/socket.h>
 #include <whoop.h>
 
 #define	NETDEV_ALIGN 32
@@ -16,8 +17,16 @@ enum netdev_tx {
 };
 typedef enum netdev_tx netdev_tx_t;
 
-struct net_device {	
-	netdev_features_t	features;
+struct net_device {
+	netdev_features_t	features;	
+	netdev_features_t	hw_features;
+	netdev_features_t	wanted_features;
+	netdev_features_t	vlan_features;
+	netdev_features_t	hw_enc_features;
+	netdev_features_t	mpls_features;
+	
+	unsigned char		addr_len;	// hardware address length
+	unsigned char *dev_addr; // hw address
 };
 
 struct net_device_ops {
