@@ -39,7 +39,7 @@ namespace whoop
       AddCheckAccessFuncs(AccessType.READ);
 
       InstrumentEntryPoints();
-      InstrumentOtherFuncs();
+//      InstrumentOtherFuncs();
     }
 
     private void AddAccessCheckingGlobalVars(AccessType access)

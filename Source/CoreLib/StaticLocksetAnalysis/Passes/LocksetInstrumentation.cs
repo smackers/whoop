@@ -35,7 +35,7 @@ namespace whoop
       AddUpdateLocksetFunc();
 
       InstrumentEntryPoints();
-      InstrumentOtherFuncs();
+//      InstrumentOtherFuncs();
     }
 
     private void AddCurrentLockset()
@@ -147,7 +147,36 @@ namespace whoop
 
     private void InstrumentImplementation(Implementation impl)
     {
-      Contract.Requires(impl != null);
+      Contract.Requires(impl != null && impl.Blocks.Count > 0);
+
+      List<Variable> dummiesCLS = new List<Variable>();
+      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+        Microsoft.Boogie.Type.Int));
+      dummiesCLS.Add(dummyLock);
+
+      AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
+                              new ForallExpr(Token.NoToken, dummiesCLS,
+                                Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                                  new List<Expr>(new Expr[] {
+              new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+              new IdentifierExpr(dummyLock.tok, dummyLock)
+            })), Expr.False)));
+
+      string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
+      int originalLength = wp.GetImplementation(label).Blocks.Count;
+      string alreadyVisited = label;
+
+      impl.Blocks[0].Cmds.Insert(0, assumeCLS);
+
+      foreach (var b in impl.Blocks) {
+        string currLabel = b.Label.Split(new char[] { '$' })[0];
+        if ((currLabel.Equals(label) && Convert.ToInt32(b.Label.Split(new char[] { '$' })[1]) == originalLength))
+          b.Cmds.Insert(0, assumeCLS);
+        if (currLabel.Equals(alreadyVisited)) continue;
+        alreadyVisited = currLabel;
+        b.Cmds.Insert(0, assumeCLS);
+      }
+
       foreach (Block b in impl.Blocks) {
         foreach (var c in b.Cmds.OfType<CallCmd>()) {
           if (c.callee.Equals("mutex_lock")) {
@@ -179,13 +208,6 @@ namespace whoop
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
         Microsoft.Boogie.Type.Int));
       dummiesCLS.Add(dummyLock);
-
-      proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesCLS,
-        Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] {
-            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-            new IdentifierExpr(dummyLock.tok, dummyLock)
-          })), Expr.False))));
 
       List<Variable> dummiesLS = new List<Variable>();
       Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",

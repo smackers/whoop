@@ -31,7 +31,7 @@ namespace whoop
     public void Run()
     {
       InstrumentEntryPoints();
-      InstrumentOtherFuncs();
+//      InstrumentOtherFuncs();
 
       CleanUp();
     }

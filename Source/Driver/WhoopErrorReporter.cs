@@ -324,13 +324,13 @@ namespace whoop
                             val.Contains("isLocked"));
           Contract.Requires(isLocked != null);
 
-          Model.Integer lockId = logState.TryGet(lockName) as Model.Integer;
+          Model.Element lockId = logState.TryGet(lockName) as Model.Element;
           if (lockId == null) continue;
           Model.Boolean lockVal = logState.TryGet(isLocked) as Model.Boolean;
           if (lockVal == null) continue;
 
-          locksLeftLocked.RemoveAll(val => val.Item1.Equals(lockId.Numeral));
-          if (lockVal.Value) locksLeftLocked.Add(new Tuple<string, string>(lockId.Numeral, stateName));
+          locksLeftLocked.RemoveAll(val => val.Item1.Equals(lockId.ToString()));
+          if (lockVal.Value) locksLeftLocked.Add(new Tuple<string, string>(lockId.ToString(), stateName));
         }
       }
 

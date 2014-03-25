@@ -48,15 +48,6 @@ namespace whoop
                              Microsoft.Boogie.Type.Int));
       dummiesCLS.Add(dummyLock);
 
-      b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-        new ForallExpr(Token.NoToken, dummiesCLS,
-          Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-            new List<Expr>(new Expr[] {
-              new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
-              new IdentifierExpr(dummyLock.tok, dummyLock)
-            })),
-            Expr.False))));
-
       List<Variable> dummiesLS = new List<Variable>();
       Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
                             Microsoft.Boogie.Type.Int));
