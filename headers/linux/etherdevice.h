@@ -3,6 +3,8 @@
 
 #include <linux/if_ether.h>
 #include <linux/netdevice.h>
+#include <linux/crc32.h>
+#include <linux/bitrev.h>
 
 struct net_device *alloc_etherdev(int sizeof_priv)
 {
@@ -16,5 +18,7 @@ static inline bool is_valid_ether_addr(const u8 *addr)
 	__SMACK_code("havoc @;", val);
 	return val;
 }
+
+#define ether_crc(length, data) bitrev32(crc32_le(~0, data, length))
 
 #endif	/* _LINUX_ETHERDEVICE_H */

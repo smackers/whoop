@@ -4,6 +4,7 @@
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/timer.h>
+#include <linux/list.h>
 
 typedef struct pm_message {
 	int event;

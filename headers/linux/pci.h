@@ -12,6 +12,7 @@
 #include <linux/pci_regs.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>
+#include <linux/list.h>
 
 #define DEVICE_COUNT_RESOURCE	11
 

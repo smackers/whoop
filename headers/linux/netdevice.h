@@ -5,8 +5,10 @@
 #include <linux/timer.h>
 #include <linux/netdev_features.h>
 #include <linux/socket.h>
+#include <linux/if.h>
 #include <whoop.h>
 
+#define MAX_ADDR_LEN 32
 #define	NETDEV_ALIGN 32
 
 enum netdev_tx {
@@ -17,6 +19,29 @@ enum netdev_tx {
 };
 typedef enum netdev_tx netdev_tx_t;
 
+struct netdev_hw_addr {
+	struct list_head list;
+	unsigned char addr[MAX_ADDR_LEN];
+#define NETDEV_HW_ADDR_T_LAN		1
+#define NETDEV_HW_ADDR_T_SAN		2
+#define NETDEV_HW_ADDR_T_SLAVE		3
+#define NETDEV_HW_ADDR_T_UNICAST	4
+#define NETDEV_HW_ADDR_T_MULTICAST	5
+};
+
+struct netdev_hw_addr_list {
+	struct list_head list;
+	int count;
+};
+
+#define netdev_hw_addr_list_count(l) ((l)->count)
+#define netdev_hw_addr_list_for_each(ha, l) \
+	list_for_each_entry(ha, &(l)->list, list)
+		
+#define netdev_mc_count(dev) netdev_hw_addr_list_count(&(dev)->mc)
+#define netdev_for_each_mc_addr(ha, dev) \
+	netdev_hw_addr_list_for_each(ha, &(dev)->mc)
+
 struct net_device {
 	netdev_features_t	features;	
 	netdev_features_t	hw_features;
@@ -25,7 +50,14 @@ struct net_device {
 	netdev_features_t	hw_enc_features;
 	netdev_features_t	mpls_features;
 	
-	unsigned char		addr_len;	// hardware address length
+	unsigned int flags; // interface flags
+	unsigned int mtu; // interface MTU value
+	
+	struct netdev_hw_addr_list uc;	// Unicast mac addresses
+	struct netdev_hw_addr_list mc;	// Multicast mac addresses
+	struct netdev_hw_addr_list dev_addrs; // list of device hw addresses
+			
+	unsigned char addr_len;	// hardware address length
 	unsigned char *dev_addr; // hw address
 };
 
@@ -123,5 +155,13 @@ void netif_tx_stop_all_queues(struct net_device *dev);
 void napi_enable(struct napi_struct *n); // Enables NAPI from scheduling
 void napi_disable(struct napi_struct *n); // Prevents NAPI from scheduling
 void napi_schedule(struct napi_struct *n); // Schedule NAPI poll routine to be called if it is not already running
+
+#define netif_emerg(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_alert(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_crit(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_err(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_warn(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_notice(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_info(priv, type, dev, fmt, args...) do { } while (0)
 
 #endif	/* _LINUX_NETDEVICE_H */

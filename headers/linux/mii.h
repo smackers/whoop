@@ -16,4 +16,11 @@ struct mii_if_info {
 	void (*mdio_write) (struct net_device *dev, int phy_id, int location, int val);
 };
 
+struct mii_ioctl_data {
+	__u16 phy_id;
+	__u16 reg_num;
+	__u16 val_in;
+	__u16 val_out;
+};
+
 #endif /* __LINUX_MII_H__ */
