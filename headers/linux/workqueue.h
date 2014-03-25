@@ -31,5 +31,6 @@ struct work_struct {
 
 bool schedule_work(struct work_struct *work);
 void flush_scheduled_work(void);
+bool cancel_work_sync(struct work_struct *work);
 
 #endif

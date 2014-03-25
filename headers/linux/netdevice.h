@@ -6,7 +6,7 @@
 #include <linux/netdev_features.h>
 #include <linux/socket.h>
 #include <linux/if.h>
-#include <whoop.h>
+#include <linux/skbuff.h>
 
 #define MAX_ADDR_LEN 32
 #define	NETDEV_ALIGN 32
@@ -18,6 +18,32 @@ enum netdev_tx {
 	NETDEV_TX_LOCKED = 0x20,
 };
 typedef enum netdev_tx netdev_tx_t;
+
+struct net_device_stats {
+	unsigned long	rx_packets;
+	unsigned long	tx_packets;
+	unsigned long	rx_bytes;
+	unsigned long	tx_bytes;
+	unsigned long	rx_errors;
+	unsigned long	tx_errors;
+	unsigned long	rx_dropped;
+	unsigned long	tx_dropped;
+	unsigned long	multicast;
+	unsigned long	collisions;
+	unsigned long	rx_length_errors;
+	unsigned long	rx_over_errors;
+	unsigned long	rx_crc_errors;
+	unsigned long	rx_frame_errors;
+	unsigned long	rx_fifo_errors;
+	unsigned long	rx_missed_errors;
+	unsigned long	tx_aborted_errors;
+	unsigned long	tx_carrier_errors;
+	unsigned long	tx_fifo_errors;
+	unsigned long	tx_heartbeat_errors;
+	unsigned long	tx_window_errors;
+	unsigned long	rx_compressed;
+	unsigned long	tx_compressed;
+};
 
 struct netdev_hw_addr {
 	struct list_head list;
@@ -49,6 +75,8 @@ struct net_device {
 	netdev_features_t	vlan_features;
 	netdev_features_t	hw_enc_features;
 	netdev_features_t	mpls_features;
+	
+	struct net_device_stats	stats;
 	
 	unsigned int flags; // interface flags
 	unsigned int mtu; // interface MTU value
@@ -146,9 +174,14 @@ static inline bool netif_running(const struct net_device *dev)
 	return val;
 }
 
+void netdev_update_features(struct net_device *dev);
+void netdev_change_features(struct net_device *dev);
+
 void netif_device_attach(struct net_device *dev);
 void netif_device_detach(struct net_device *dev);
 
+void netif_wake_queue(struct net_device *dev);
+void netif_tx_wake_all_queues(struct net_device *dev);
 void netif_stop_queue(struct net_device *dev);
 void netif_tx_stop_all_queues(struct net_device *dev);
 

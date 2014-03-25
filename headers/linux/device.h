@@ -6,6 +6,7 @@
 #include <linux/mutex.h>
 #include <linux/pm.h>
 #include <linux/pm_wakeup.h>
+#include <linux/pm_runtime.h>
 #include <linux/list.h>
 
 struct device {

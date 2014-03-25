@@ -15,7 +15,7 @@
 #define likely(x)	x
 #define unlikely(x)	x
 
-void barrier(void);
+#define uninitialized_var(x) x
 
 #define inline  __attribute__((always_inline))
 #define __inline__	__attribute__((always_inline))

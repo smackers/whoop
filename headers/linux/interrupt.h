@@ -12,4 +12,6 @@ typedef int irqreturn_t;
 
 #define IRQ_RETVAL(x) ((x) != 0)
 
+void free_irq(unsigned int, void *);
+
 #endif /* _LINUX_INTERRUPT_H */

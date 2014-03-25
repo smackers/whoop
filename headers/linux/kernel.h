@@ -3,6 +3,7 @@
 
 #include <linux/types.h>
 #include <linux/compiler.h>
+#include <asm/barrier.h>
 #include <asm/bitops.h>
 
 #define USHRT_MAX	((u16)(~0U))

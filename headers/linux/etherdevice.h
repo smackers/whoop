@@ -2,6 +2,7 @@
 #define _LINUX_ETHERDEVICE_H
 
 #include <linux/if_ether.h>
+#include <linux/if_link.h>
 #include <linux/netdevice.h>
 #include <linux/crc32.h>
 #include <linux/bitrev.h>
@@ -20,5 +21,7 @@ static inline bool is_valid_ether_addr(const u8 *addr)
 }
 
 #define ether_crc(length, data) bitrev32(crc32_le(~0, data, length))
+
+int eth_validate_addr(struct net_device *dev);
 
 #endif	/* _LINUX_ETHERDEVICE_H */
