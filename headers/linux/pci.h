@@ -16,6 +16,16 @@
 
 #define DEVICE_COUNT_RESOURCE	11
 
+typedef int pci_power_t;
+
+#define PCI_D0 ((pci_power_t) 0)
+#define PCI_D1 ((pci_power_t) 1)
+#define PCI_D2 ((pci_power_t) 2)
+#define PCI_D3hot ((pci_power_t) 3)
+#define PCI_D3cold ((pci_power_t) 4)
+#define PCI_UNKNOWN ((pci_power_t) 5)
+#define PCI_POWER_ERROR	((pci_power_t) -1)
+
 struct pci_dev {
 	struct pci_bus *bus;
 
@@ -56,6 +66,10 @@ struct pci_driver {
 
 int pci_register_driver(struct pci_driver *);
 void pci_unregister_driver(struct pci_driver *dev);
+
+void pci_clear_master(struct pci_dev *dev);
+int pci_wake_from_d3(struct pci_dev *dev, bool enable);
+int pci_set_power_state(struct pci_dev *dev, pci_power_t state);
 
 static inline const char *pci_name(const struct pci_dev *pdev)
 {

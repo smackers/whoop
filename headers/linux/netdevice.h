@@ -69,6 +69,8 @@ struct netdev_hw_addr_list {
 	netdev_hw_addr_list_for_each(ha, &(dev)->mc)
 
 struct net_device {
+	char name[IFNAMSIZ];
+	
 	netdev_features_t	features;	
 	netdev_features_t	hw_features;
 	netdev_features_t	wanted_features;
@@ -84,7 +86,8 @@ struct net_device {
 	struct netdev_hw_addr_list uc;	// Unicast mac addresses
 	struct netdev_hw_addr_list mc;	// Multicast mac addresses
 	struct netdev_hw_addr_list dev_addrs; // list of device hw addresses
-			
+	
+	unsigned char perm_addr[MAX_ADDR_LEN]; // permanent hw address
 	unsigned char addr_len;	// hardware address length
 	unsigned char *dev_addr; // hw address
 };
@@ -162,6 +165,8 @@ struct napi_struct {
 	unsigned int napi_id;
 };
 
+void netif_napi_del(struct napi_struct *napi);
+
 static inline void *netdev_priv(const struct net_device *dev)
 {
 	return (char *)dev + ALIGN(sizeof(struct net_device), NETDEV_ALIGN);
@@ -174,11 +179,17 @@ static inline bool netif_running(const struct net_device *dev)
 	return val;
 }
 
+int register_netdev(struct net_device *dev);
+void unregister_netdev(struct net_device *dev);
+
 void netdev_update_features(struct net_device *dev);
 void netdev_change_features(struct net_device *dev);
 
 void netif_device_attach(struct net_device *dev);
 void netif_device_detach(struct net_device *dev);
+
+void netif_start_queue(struct net_device *dev);
+void netif_tx_start_all_queues(struct net_device *dev);
 
 void netif_wake_queue(struct net_device *dev);
 void netif_tx_wake_all_queues(struct net_device *dev);
@@ -188,6 +199,9 @@ void netif_tx_stop_all_queues(struct net_device *dev);
 void napi_enable(struct napi_struct *n); // Enables NAPI from scheduling
 void napi_disable(struct napi_struct *n); // Prevents NAPI from scheduling
 void napi_schedule(struct napi_struct *n); // Schedule NAPI poll routine to be called if it is not already running
+
+void netif_carrier_on(struct net_device *dev);
+void netif_carrier_off(struct net_device *dev);
 
 #define netif_emerg(priv, type, dev, fmt, args...) do { } while (0)
 #define netif_alert(priv, type, dev, fmt, args...) do { } while (0)

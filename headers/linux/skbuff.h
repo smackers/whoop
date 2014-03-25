@@ -1,6 +1,9 @@
 #ifndef _LINUX_SKBUFF_H
 #define _LINUX_SKBUFF_H
 
+#include <linux/net.h>
+#include <linux/slab.h>
+
 #define MAX_SKB_FRAGS 16UL
 
 typedef struct skb_frag_struct skb_frag_t;

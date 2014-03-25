@@ -154,7 +154,7 @@ class DefaultCmdLineOptions(object):
     self.debugging = False
     self.time = False
     self.timeCSVLabel = None
-    self.componentTimeout = 300
+    self.componentTimeout = 500
     self.solver = "z3"
     self.logic = "QF_ALL_SUPPORTED"
     self.stopAtRe = False
