@@ -95,8 +95,12 @@ struct net_device {
 	unsigned char addr_len;	// hardware address length
 	unsigned char *dev_addr; // hw address
 	
+	int watchdog_timeo;
+	
 	struct device dev;
 };
+
+#define SET_ETHTOOL_OPS(netdev,ops) ((netdev)->ethtool_ops = (ops))
 
 struct net_device_ops {
 	int (*ndo_init)(struct net_device *dev);
@@ -171,6 +175,8 @@ struct napi_struct {
 	unsigned int napi_id;
 };
 
+void netif_napi_add(struct net_device *dev, struct napi_struct *napi,
+		    int (*poll)(struct napi_struct *, int), int weight);
 void netif_napi_del(struct napi_struct *napi);
 
 static inline void *netdev_priv(const struct net_device *dev)
