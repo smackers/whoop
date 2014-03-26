@@ -128,7 +128,7 @@ namespace whoop
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentImplementation(impl);
-        InstrumentProcedure(impl.Proc, false);
+        InstrumentProcedure(impl.Proc);
       }
     }
 
@@ -141,7 +141,7 @@ namespace whoop
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
         InstrumentImplementation(impl);
-        InstrumentProcedure(impl.Proc, true);
+        InstrumentProcedure(impl.Proc);
       }
     }
 
@@ -190,45 +190,17 @@ namespace whoop
       }
     }
 
-    private bool InstrumentProcedure(Procedure proc, bool modifiesOnly)
+    private void InstrumentProcedure(Procedure proc)
     {
       Contract.Requires(proc != null);
 
       if (proc.Modifies.Exists(val => val.Name.Equals(wp.currLockset.id.Name)))
-        return false;
+        return;
 
       proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
       foreach (var ls in wp.locksets) {
         proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
       }
-
-      if (modifiesOnly) return false;
-
-      List<Variable> dummiesCLS = new List<Variable>();
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-        Microsoft.Boogie.Type.Int));
-      dummiesCLS.Add(dummyLock);
-
-      List<Variable> dummiesLS = new List<Variable>();
-      Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-        Microsoft.Boogie.Type.Int));
-      dummiesLS.Add(dummyPtr);
-      dummiesLS.Add(dummyLock);
-
-      foreach (var ls in wp.locksets) {
-        proc.Requires.Add(new Requires(false, new ForallExpr(Token.NoToken, dummiesLS,
-          Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-            new List<Expr>(new Expr[] {
-              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] {
-                  new IdentifierExpr(ls.id.tok, ls.id),
-                  new IdentifierExpr(dummyPtr.tok, dummyPtr),
-                })),
-              new IdentifierExpr(dummyLock.tok, dummyLock)
-            })), Expr.True))));
-      }
-
-      return true;
     }
   }
 }

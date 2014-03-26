@@ -262,7 +262,7 @@ namespace whoop
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentWriteAccesses(impl);
         InstrumentReadAccesses(impl);
-        InstrumentProcedure(impl.Proc, false);
+        InstrumentProcedure(impl.Proc);
       }
     }
 
@@ -278,7 +278,7 @@ namespace whoop
         bool[] guard = { false, false };
         guard[0] = InstrumentOtherFuncsWriteAccesses(impl);
         guard[1] = InstrumentOtherFuncsReadAccesses(impl);
-        if (guard.Contains(true)) InstrumentProcedure(impl.Proc, true);
+        if (guard.Contains(true)) InstrumentProcedure(impl.Proc);
       }
     }
 
@@ -432,7 +432,7 @@ namespace whoop
       return hasInstrumented;
     }
 
-    private void InstrumentProcedure(Procedure proc, bool modifiesOnly)
+    private void InstrumentProcedure(Procedure proc)
     {
       foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
         Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
@@ -441,13 +441,6 @@ namespace whoop
           val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
-
-        if (!modifiesOnly) {
-          proc.Requires.Add(new Requires(false,
-            Expr.Iff(new IdentifierExpr(raceCheckW.tok, raceCheckW), Expr.False)));
-          proc.Requires.Add(new Requires(false,
-            Expr.Iff(new IdentifierExpr(raceCheckR.tok, raceCheckR), Expr.False)));
-        }
 
         proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
         proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));

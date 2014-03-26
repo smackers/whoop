@@ -215,6 +215,7 @@ void netif_tx_stop_all_queues(struct net_device *dev);
 void napi_enable(struct napi_struct *n); // Enables NAPI from scheduling
 void napi_disable(struct napi_struct *n); // Prevents NAPI from scheduling
 void napi_schedule(struct napi_struct *n); // Schedule NAPI poll routine to be called if it is not already running
+void napi_complete(struct napi_struct *n); // Mark NAPI processing as complete
 
 void netif_carrier_on(struct net_device *dev);
 void netif_carrier_off(struct net_device *dev);
