@@ -95,9 +95,9 @@ namespace whoop
       string[] str =  impl.Name.Split(new Char[] { '$' });
       Contract.Requires(str.Length == 3);
 
-      CallCmd c1 = (impl.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
+      CallCmd c1 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
                    (val as CallCmd).callee.Equals(str[1])) as CallCmd);
-      CallCmd c2 = (impl.Blocks[0].Cmds.Find(val => (val is CallCmd) &&
+      CallCmd c2 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
                    (val as CallCmd).callee.Equals(str[2])) as CallCmd);
 
       List<Expr> ins = new List<Expr>();
@@ -134,8 +134,11 @@ namespace whoop
 
     private void CleanUp(Implementation impl)
     {
-      impl.Blocks[0].Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
-        val2.Name.Contains(impl.Name.Substring(5))));
+      foreach (var b in impl.Blocks) {
+        if (b.Label.Equals("$checker")) break;
+        b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
+          val2.Name.Contains(impl.Name.Substring(5))));
+      }
     }
   }
 }

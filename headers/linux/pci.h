@@ -64,6 +64,9 @@ struct pci_driver {
 	struct pci_dynids dynids;
 };
 
+int pci_request_regions(struct pci_dev *, const char *);
+void pci_release_regions(struct pci_dev *);
+
 int pci_register_driver(struct pci_driver *);
 void pci_unregister_driver(struct pci_driver *dev);
 
@@ -71,20 +74,45 @@ void pci_clear_master(struct pci_dev *dev);
 int pci_wake_from_d3(struct pci_dev *dev, bool enable);
 int pci_set_power_state(struct pci_dev *dev, pci_power_t state);
 
+bool pci_dev_run_wake(struct pci_dev *dev);
+
 static inline const char *pci_name(const struct pci_dev *pdev)
 {
 	return dev_name(&pdev->dev);
 }
 
-static inline void *pci_get_drvdata(struct pci_dev *pdev)
-{
-	return dev_get_drvdata(&pdev->dev);
-}
+#define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+#define pci_resource_end(dev, bar)	((dev)->resource[(bar)].end)
+#define pci_resource_flags(dev, bar)	((dev)->resource[(bar)].flags)
+#define pci_resource_len(dev,bar) \
+	((pci_resource_start((dev), (bar)) == 0 &&	\
+	  pci_resource_end((dev), (bar)) ==		\
+	  pci_resource_start((dev), (bar))) ? 0 :	\
+							\
+	 (pci_resource_end((dev), (bar)) -		\
+	  pci_resource_start((dev), (bar)) + 1))
 
-static inline void pci_set_drvdata(struct pci_dev *pdev, void *data)
-{
-	dev_set_drvdata(&pdev->dev, data);
-}
+static inline void *pci_get_drvdata(struct pci_dev *pdev);
+static inline void pci_set_drvdata(struct pci_dev *pdev, void *data);
+
+int pci_enable_device(struct pci_dev *dev);
+void pci_disable_device(struct pci_dev *dev);
+
+void pci_set_master(struct pci_dev *dev);
+void pci_clear_master(struct pci_dev *dev);
+
+int pci_set_mwi(struct pci_dev *dev);
+void pci_clear_mwi(struct pci_dev *dev);
+
+void pci_disable_msi(struct pci_dev *dev);
+
+int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
+
+#define PCIE_LINK_STATE_L0S 1
+#define PCIE_LINK_STATE_L1 2
+#define PCIE_LINK_STATE_CLKPM 4
+
+void pci_disable_link_state(struct pci_dev *pdev, int state);
 
 #define	to_pci_dev(n) container_of(n, struct pci_dev, dev)
 
@@ -101,5 +129,14 @@ static inline void pci_set_drvdata(struct pci_dev *pdev, void *data)
 #define PCIIOC_MMAP_IS_IO	(PCIIOC_BASE | 0x01)
 #define PCIIOC_MMAP_IS_MEM	(PCIIOC_BASE | 0x02)
 #define PCIIOC_WRITE_COMBINE	(PCIIOC_BASE | 0x03)
+
+int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+
+#define pci_enable_msi(pdev) pci_enable_msi_block(pdev, 1)
+
+static inline bool pci_is_pcie(struct pci_dev *dev)
+{
+	return true;
+}
 
 #endif /* LINUX_PCI_H */

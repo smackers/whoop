@@ -62,7 +62,7 @@ namespace whoop
     public void Run()
     {
       ConvertEntryPoints();
-      ConvertOtherFuncs();
+//      ConvertOtherFuncs();
 
       SplitCallsInEntryPoints();
     }
