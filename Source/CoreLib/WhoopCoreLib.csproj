@@ -88,6 +88,7 @@
     <Compile Include="StaticLocksetAnalysis\Passes\DeadlockInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\InitConverter.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\InitInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\ModelCleaner.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />
