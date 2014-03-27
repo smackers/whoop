@@ -39,6 +39,30 @@ struct pci_dev {
   
   unsigned int irq;
   struct resource resource[DEVICE_COUNT_RESOURCE];
+	
+	unsigned int transparent:1;
+	unsigned int multifunction:1;
+	unsigned int is_added:1;
+	unsigned int is_busmaster:1;
+	unsigned int no_msi:1;
+	unsigned int block_cfg_access:1;
+	unsigned int broken_parity_status:1;
+	unsigned int irq_reroute_variant:2;
+	unsigned int msi_enabled:1;
+	unsigned int msix_enabled:1;
+	unsigned int ari_enabled:1;
+	unsigned int is_managed:1;
+	unsigned int is_pcie:1;
+	unsigned int needs_freset:1;
+	unsigned int state_saved:1;
+	unsigned int is_physfn:1;
+	unsigned int is_virtfn:1;
+	unsigned int reset_fn:1;
+	unsigned int is_hotplug_bridge:1;
+	unsigned int __aer_firmware_first_valid:1;
+	unsigned int __aer_firmware_first:1;
+	unsigned int broken_intx_masking:1;
+	unsigned int io_window_1k:1;
 };
 
 struct pci_dynids {
@@ -138,5 +162,12 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 {
 	return true;
 }
+
+static inline int pci_read_config_byte(const struct pci_dev *dev, int where, u8 *val);
+static inline int pci_read_config_word(const struct pci_dev *dev, int where, u16 *val);
+static inline int pci_read_config_dword(const struct pci_dev *dev, int where, u32 *val);
+static inline int pci_write_config_byte(const struct pci_dev *dev, int where, u8 val);
+static inline int pci_write_config_word(const struct pci_dev *dev, int where, u16 val);
+static inline int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val);
 
 #endif /* LINUX_PCI_H */

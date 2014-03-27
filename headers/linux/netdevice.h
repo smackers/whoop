@@ -270,5 +270,7 @@ static inline u32 netif_msg_init(int debug_value, int default_msg_enable_bits)
 #define netif_warn(priv, type, dev, fmt, args...) do { } while (0)
 #define netif_notice(priv, type, dev, fmt, args...) do { } while (0)
 #define netif_info(priv, type, dev, fmt, args...) do { } while (0)
+#define netif_dbg(priv, type, netdev, format, args...) do { } while (0)
+#define netif_dbg(priv, type, dev, format, args...) do { } while (0)
 
 #endif	/* _LINUX_NETDEVICE_H */
