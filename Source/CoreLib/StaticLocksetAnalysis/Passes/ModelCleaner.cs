@@ -28,12 +28,32 @@ namespace whoop
       this.wp = wp;
     }
 
-    public void Run()
+    public void InitialCleanUp()
+    {
+      RemoveUnecesseryAssumes();
+    }
+
+    public void FinalCleanUp()
     {
       RemoveEmptyBlocks();
       RemoveEmptyBlocksInEntryPoints();
+
       RemoveUnecesseryReturns();
-      CleanUpOldEntryPoints();
+
+      RemoveOldEntryPoints();
+
+      RemoveMemoryRegions();
+      RemoveUnusedVars();
+    }
+
+    private void RemoveUnecesseryAssumes()
+    {
+      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+        foreach (Block b in impl.Blocks) {
+          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes == null &&
+            (val as AssumeCmd).Expr.Equals(Expr.True));
+        }
+      }
     }
 
     private void RemoveEmptyBlocks()
@@ -110,7 +130,7 @@ namespace whoop
       }
     }
 
-    private void CleanUpOldEntryPoints()
+    private void RemoveOldEntryPoints()
     {
       foreach (var kvp in wp.entryPoints) {
         foreach (var ep in kvp.Value) {
@@ -121,6 +141,15 @@ namespace whoop
         }
       }
     }
+
+    private void RemoveMemoryRegions()
+    {
+
+    }
+
+    private void RemoveUnusedVars()
+    {
+
+    }
   }
 }
-

@@ -22,16 +22,18 @@ namespace whoop
   public class InstrumentationEngine
   {
     WhoopProgram wp;
+    ModelCleaner cleaner;
 
     public InstrumentationEngine(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
+      this.cleaner = new ModelCleaner(wp);
     }
 
     public void Run()
     {
-      RemoveUnecesseryAssumes();
+      cleaner.InitialCleanUp();
 
       new PairConverter(wp).Run();
       new InitConverter(wp).Run();
@@ -47,21 +49,11 @@ namespace whoop
       new ErrorReportingInstrumentation(wp).Run();
       new InitInstrumentation(wp).Run();
 
-      new ModelCleaner(wp).Run();
+      cleaner.FinalCleanUp();
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       whoop.IO.EmitProgram(wp.program, Util.GetCommandLineOptions().Files[
         Util.GetCommandLineOptions().Files.Count - 1], "wbpl");
-    }
-
-    private void RemoveUnecesseryAssumes()
-    {
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        foreach (Block b in impl.Blocks) {
-          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes == null &&
-          (val as AssumeCmd).Expr.Equals(Expr.True));
-        }
-      }
     }
   }
 }
