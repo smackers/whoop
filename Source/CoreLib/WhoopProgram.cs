@@ -32,6 +32,7 @@ namespace whoop
     public Microsoft.Boogie.Type memoryModelType;
 
     internal Implementation initFunc;
+    internal List<Tuple<string, List<string>>> entryPointPairs;
     internal SharedStateAnalyser sharedStateAnalyser;
 
     public WhoopProgram(Program program, ResolutionContext rc)
@@ -43,6 +44,7 @@ namespace whoop
       this.program = program;
       this.resContext = rc;
       this.locksets = new List<Lockset>();
+      this.entryPointPairs = new List<Tuple<string, List<string>>>();
 
       if (Util.GetCommandLineOptions().MemoryModel.Equals("default")) {
         this.memoryModelType = Microsoft.Boogie.Type.Int;
@@ -66,7 +68,7 @@ namespace whoop
     public List<Implementation> GetImplementationsToAnalyse()
     {
       return program.TopLevelDeclarations.OfType<Implementation>().ToList().
-        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entry_pair"));
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entryPair"));
     }
 
     public List<Implementation> GetInitFunctions()

@@ -21,42 +21,50 @@ namespace whoop
   public class PairConverter
   {
     WhoopProgram wp;
-    List<Tuple<string, List<string>>> entryPointPairs;
 
     public PairConverter(WhoopProgram wp)
     {
       Contract.Requires(wp != null);
       this.wp = wp;
       wp.DetectInitFunction();
-      entryPointPairs = new List<Tuple<string, List<string>>>();
 
-//      foreach (var kvp1 in wp.entryPoints) {
-//        foreach (var ep1 in kvp1.Value) {
-//          List<string> funcs = new List<string>();
-//
-//          foreach (var kvp2 in wp.entryPoints) {
-//            foreach (var ep2 in kvp2.Value) {
-//              if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
-//              if (!IsNewPair(ep1.Value, ep2.Value)) continue;
-//              funcs.Add(ep2.Value);
-//            }
-//          }
-//
-//          entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
-//        }
-//      }
+      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+        foreach (var kvp1 in wp.entryPoints) {
+          foreach (var ep1 in kvp1.Value) {
+            List<string> funcs = new List<string>();
 
-      foreach (var kvp1 in wp.entryPoints) {
-        foreach (var ep1 in kvp1.Value) {
-          foreach (var kvp2 in wp.entryPoints) {
-            foreach (var ep2 in kvp2.Value) {
-              if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
-              if (!IsNewPair(ep1.Value, ep2.Value)) continue;
-              entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
+            foreach (var kvp2 in wp.entryPoints) {
+              foreach (var ep2 in kvp2.Value) {
+                if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+                if (!IsNewPair(ep1.Value, ep2.Value)) continue;
+                funcs.Add(ep2.Value);
+              }
+            }
+
+            if (funcs.Count == 0) continue;
+            wp.entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
+          }
+        }
+      } else {
+        foreach (var kvp1 in wp.entryPoints) {
+          foreach (var ep1 in kvp1.Value) {
+            foreach (var kvp2 in wp.entryPoints) {
+              foreach (var ep2 in kvp2.Value) {
+                if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+                if (!IsNewPair(ep1.Value, ep2.Value)) continue;
+                wp.entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
+              }
             }
           }
         }
       }
+
+//      foreach (var v in wp.entryPointPairs) {
+//        Console.WriteLine("Entry Point: " + v.Item1);
+//        foreach (var z in v.Item2) {
+//          Console.WriteLine(" :: " + z);
+//        }
+//      }
     }
 
     public void Run()
@@ -69,7 +77,7 @@ namespace whoop
 
     private void ConvertEntryPoints()
     {
-      foreach (var ep in entryPointPairs) {
+      foreach (var ep in wp.entryPointPairs) {
         Implementation impl = wp.GetImplementation(ep.Item1);
         List<Implementation> implList = new List<Implementation>();
 
@@ -107,14 +115,20 @@ namespace whoop
     private void CreateNewpair(Implementation impl, List<Implementation> implList)
     {
       Contract.Requires(impl != null);
-      string name = "pair_" + "$" + impl.Name + "$" + implList[0].Name;
+      string name = "$";
+
+      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+        name += impl.Name;
+      } else {
+        name += impl.Name + "$" + implList[0].Name;
+      }
 
       Procedure newProc = new Procedure(Token.NoToken, name,
                             new List<TypeVariable>(), ProcessInParams(impl, implList), 
                             new List<Variable>(), new List<Requires>(),
                             new List<IdentifierExpr>(), new List<Ensures>());
 
-      newProc.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
+      newProc.Attributes = new QKeyValue(Token.NoToken, "entryPair", new List<object>(), null);
       newProc.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
         new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
       }, newProc.Attributes);
@@ -125,7 +139,7 @@ namespace whoop
         ProcessListOfBlocks(impl, implList));
 
       newImpl.Proc = newProc;
-      newImpl.Attributes = new QKeyValue(Token.NoToken, "entry_pair", new List<object>(), null);
+      newImpl.Attributes = new QKeyValue(Token.NoToken, "entryPair", new List<object>(), null);
       newImpl.Attributes = new QKeyValue(Token.NoToken, "inline", new List<object> {
         new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
       }, newImpl.Attributes);
@@ -371,7 +385,13 @@ namespace whoop
 
     private void CreateNewConstant(Constant cons, List<Constant> consList)
     {
-      string consName = "pair_" + "$" + cons.Name + "$" + consList[0].Name;
+      string consName = "$";
+
+      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+        consName += cons.Name;
+      } else {
+        consName += cons.Name + "$" + consList[0].Name;
+      }
 
       Constant newCons = new Constant(Token.NoToken,
                            new TypedIdent(Token.NoToken, consName,
@@ -398,8 +418,8 @@ namespace whoop
 
     private bool IsNewPair(string ep1, string ep2)
     {
-      if ((entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
-          (entryPointPairs.Exists(val => (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
+      if ((wp.entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
+        (wp.entryPointPairs.Exists(val => (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
         return false;
       return true;
     }

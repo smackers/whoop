@@ -217,7 +217,7 @@ public:
 					/* test_driver */
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep1" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep2" ||
-					DIE->getDesignator(0)->getFieldName()->getName() == "ep2" ||
+					DIE->getDesignator(0)->getFieldName()->getName() == "ep3" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep4" ||
 					DIE->getDesignator(0)->getFieldName()->getName() == "ep5")
 				funcname = DIE->getDesignator(0)->getFieldName()->getName();

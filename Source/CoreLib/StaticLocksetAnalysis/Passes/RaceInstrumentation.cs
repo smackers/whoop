@@ -99,24 +99,6 @@ namespace whoop
             new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(offset.tok, offset))
           }, new List<Expr> { new IdentifierExpr(v.tok, v) }));
 
-//        if (access == AccessType.WRITE) {
-//          Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
-//            val.Name.Contains("_HAS_OCCURRED_") && val.Name.Contains(ls.targetName));
-//
-//          proc.Modifies.Add(new IdentifierExpr(raceCheck.tok, raceCheck));
-//
-//          b.Cmds.Add(new AssignCmd(Token.NoToken,
-//            new List<AssignLhs>() {
-//              new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(raceCheck.tok, raceCheck))
-//            },
-//            new List<Expr> {
-//              new NAryExpr(Token.NoToken, new IfThenElse(Token.NoToken),
-//                new List<Expr>(new Expr[] { new IdentifierExpr(trackParam.tok, trackParam),
-//                  Expr.True, new IdentifierExpr(raceCheck.tok, raceCheck)
-//                }))
-//            }));
-//        }
-
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains(access.ToString() + "_HAS_OCCURRED_") && val.Name.Contains(ls.targetName));
 

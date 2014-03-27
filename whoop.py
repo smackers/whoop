@@ -146,6 +146,7 @@ class DefaultCmdLineOptions(object):
     self.defines = clangCoreDefines
     self.onlyRaces = False
     self.onlyDeadlocks = False
+    self.quadraticPairing = False
     self.memoryModel = "default"
     self.verbose = False
     self.silent = False
@@ -199,8 +200,8 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --clang-opt=...         Specify option to be passed to Clang
     --smack-opt=...         Specify option to be passed to SMACK
-    --whoop-opt=...          Specify option to be passed to Whoop
-    --whoop-file=X.bpl       Specify a supporting .bpl file to be used during verification
+    --whoop-opt=...         Specify option to be passed to Whoop
+    --whoop-file=X.bpl      Specify a supporting .bpl file to be used during verification
     --debug                 Enable debugging of verify components: exceptions will
                             not be suppressed
     --keep-temps            Keep intermediate bc and bpl
@@ -210,6 +211,7 @@ def showHelpAndExit():
     --stop-at-wbpl          Stop after generating wbpl
     --time-as-csv=label     Print timing as CSV row with label
     --silent                Silent on success; only show errors/timing 
+    --quadratic-pairing     Generates quadratic pairs of entry points
   
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file
@@ -282,6 +284,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
+    if o == "--quadratic-pairing":
+      CommandLineOptions.quadraticPairing = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--time":
@@ -466,8 +470,8 @@ def startToolChain(argv):
               'time', 'time-as-csv=', 'keep-temps',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'gen-smt2',
-              'solver=', 'logic=',
+              'quadratic-pairing',
+              'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
   except getopt.GetoptError as getoptError:
@@ -534,6 +538,8 @@ def startToolChain(argv):
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
   
+  if CommandLineOptions.quadraticPairing:
+    CommandLineOptions.whoopEngineOptions += [ "/quadraticPairing" ]
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
   

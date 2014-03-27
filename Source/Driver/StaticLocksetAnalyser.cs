@@ -135,7 +135,7 @@ namespace whoop
 //          start = DateTime.UtcNow;
 //          if (Util.GetCommandLineOptions().Trace) {
 //            Console.WriteLine("");
-//            Console.WriteLine("Verifying {0} ...", "pair_" + funcToAnalyse.Name.Substring(5));
+//            Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
 //          }
 //        }
 //

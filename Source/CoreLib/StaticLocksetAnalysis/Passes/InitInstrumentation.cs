@@ -84,27 +84,36 @@ namespace whoop
           Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
-//      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
-//        Variable offset = wp.GetRaceCheckingVariables().Find(val =>
-//          val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
-//
-//        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-//          Expr.Eq(new IdentifierExpr(offset.tok, offset), new LiteralExpr(Token.NoToken, BigNum.FromInt(0)))));
-//      }
-
-      string[] str =  impl.Name.Split(new Char[] { '$' });
-      Contract.Requires(str.Length == 3);
-
-      CallCmd c1 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
-                   (val as CallCmd).callee.Equals(str[1])) as CallCmd);
-      CallCmd c2 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
-                   (val as CallCmd).callee.Equals(str[2])) as CallCmd);
-
       List<Expr> ins = new List<Expr>();
-      foreach (var e in c1.Ins) ins.Add(e.Clone() as Expr);
-      foreach (var e in c2.Ins) ins.Add(e.Clone() as Expr);
 
-      b.Cmds.Add(new CallCmd(Token.NoToken, "pair_" + impl.Name.Substring(5),
+      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+        string[] str =  impl.Name.Split(new Char[] { '$' });
+        Contract.Requires(str.Length == 2);
+
+        CallCmd c = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
+          (val as CallCmd).callee.Equals(str[1])) as CallCmd);
+        foreach (var e in c.Ins) ins.Add(e.Clone() as Expr);
+
+        List<string> eps = wp.entryPointPairs.Find(val => val.Item1.Equals(str[1])).Item2;
+        foreach (var ep in eps) {
+          CallCmd cep = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
+                        (val as CallCmd).callee.Equals(ep)) as CallCmd);
+          foreach (var e in cep.Ins) ins.Add(e.Clone() as Expr);
+        }
+      } else {
+        string[] str =  impl.Name.Split(new Char[] { '$' });
+        Contract.Requires(str.Length == 3);
+
+        CallCmd c1 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
+          (val as CallCmd).callee.Equals(str[1])) as CallCmd);
+        CallCmd c2 = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
+          (val as CallCmd).callee.Equals(str[2])) as CallCmd);
+
+        foreach (var e in c1.Ins) ins.Add(e.Clone() as Expr);
+        foreach (var e in c2.Ins) ins.Add(e.Clone() as Expr);
+      }
+
+      b.Cmds.Add(new CallCmd(Token.NoToken, impl.Name.Substring(5),
         ins, new List<IdentifierExpr>()));
 
       impl.Blocks.Add(b);

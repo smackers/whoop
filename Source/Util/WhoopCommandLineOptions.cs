@@ -18,6 +18,7 @@ namespace whoop
   {
     public bool DebugWhoop = false;
     public string OriginalFile = "";
+    public bool QuadraticPairing = false;
     public bool OnlyRaceChecking = false;
     public string MemoryModel = "default";
 
@@ -37,6 +38,11 @@ namespace whoop
         if (ps.ConfirmArgumentCount(1)) {
           OriginalFile = ps.args[ps.i];
         }
+        return true;
+      }
+
+      if (name == "quadraticPairing") {
+        QuadraticPairing = true;
         return true;
       }
 

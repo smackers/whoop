@@ -38,7 +38,7 @@ namespace whoop
     private void CreateInitFunction(Implementation impl)
     {
       Contract.Requires(impl != null);
-      string name = "init_" + impl.Name.Substring(5);
+      string name = "init_" + impl.Name;
 
       List<Variable> inParams = new List<Variable>();
       foreach (var v in wp.initFunc.Proc.InParams) {
