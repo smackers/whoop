@@ -31,12 +31,18 @@ namespace whoop
       if (!Util.GetCommandLineOptions().QuadraticPairing) {
         foreach (var kvp1 in wp.entryPoints) {
           foreach (var ep1 in kvp1.Value) {
+            if (wp.entryPointPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
             List<string> funcs = new List<string>();
+
+            if (CanRunConcurrently(ep1.Value, ep1.Value)) {
+              funcs.Add(ep1.Value);
+            }
 
             foreach (var kvp2 in wp.entryPoints) {
               foreach (var ep2 in kvp2.Value) {
                 if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
                 if (!IsNewPair(ep1.Value, ep2.Value)) continue;
+                if (funcs.Contains(ep2.Value)) continue;
                 funcs.Add(ep2.Value);
               }
             }
@@ -48,6 +54,7 @@ namespace whoop
       } else {
         foreach (var kvp1 in wp.entryPoints) {
           foreach (var ep1 in kvp1.Value) {
+            if (wp.entryPointPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
             foreach (var kvp2 in wp.entryPoints) {
               foreach (var ep2 in kvp2.Value) {
                 if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
@@ -59,12 +66,14 @@ namespace whoop
         }
       }
 
-//      foreach (var v in wp.entryPointPairs) {
-//        Console.WriteLine("Entry Point: " + v.Item1);
-//        foreach (var z in v.Item2) {
-//          Console.WriteLine(" :: " + z);
-//        }
-//      }
+      if (Util.GetCommandLineOptions().DebugWhoop) {
+        foreach (var v in wp.entryPointPairs) {
+          Console.WriteLine("Entry Point: " + v.Item1);
+          foreach (var z in v.Item2) {
+            Console.WriteLine(" :: " + z);
+          }
+        }
+      }
     }
 
     public void Run()

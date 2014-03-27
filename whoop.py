@@ -197,6 +197,15 @@ def showHelpAndExit():
     --time                  Show timing information
     -V, --version           Show version information.
   
+  MODELLING OPTIONS:
+    --quadratic-pairing     Generates quadratic pairs of entry points
+  
+  SOLVER OPTIONS:
+    --gen-smt2              Generate smt2 file
+    --solver=X              Choose which SMT Theorem Prover to use in the backend.
+                            Available options: 'Z3' or 'cvc4' (default is '{solver}')
+    --logic=X               Define the logic to be used by the CVC4 SMT solver backend
+                            (default is {logic})
   ADVANCED OPTIONS:
     --clang-opt=...         Specify option to be passed to Clang
     --smack-opt=...         Specify option to be passed to SMACK
@@ -210,15 +219,7 @@ def showHelpAndExit():
     --stop-at-bpl           Stop after generating bpl
     --stop-at-wbpl          Stop after generating wbpl
     --time-as-csv=label     Print timing as CSV row with label
-    --silent                Silent on success; only show errors/timing 
-    --quadratic-pairing     Generates quadratic pairs of entry points
-  
-  SOLVER OPTIONS:
-    --gen-smt2              Generate smt2 file
-    --solver=X              Choose which SMT Theorem Prover to use in the backend.
-                            Available options: 'Z3' or 'cvc4' (default is '{solver}')
-    --logic=X               Define the logic to be used by the CVC4 SMT solver backend
-                            (default is {logic})
+    --silent                Silent on success; only show errors/timing
   """.format(**stringReplacements))
   raise ReportAndExit(ErrorCodes.SUCCESS)
 
@@ -532,6 +533,10 @@ def startToolChain(argv):
   if CommandLineOptions.generateSmt2:
     CommandLineOptions.whoopDriverOptions += [ "/proverLog:" + smt2Filename ]
   
+  if CommandLineOptions.debugging:
+    CommandLineOptions.whoopEngineOptions += [ "/debugWhoop" ]
+    CommandLineOptions.whoopDriverOptions += [ "/debugWhoop" ]
+    
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", "filename" ]
   CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", filename ]
