@@ -38,6 +38,9 @@ namespace whoop
 
     private void InstrumentImplementation(Implementation impl)
     {
+      Implementation pairImpl = wp.GetImplementation(impl.Name.Substring(5));
+      List<Variable> vars = wp.sharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
+
       impl.Blocks[impl.Blocks.Count - 1].TransferCmd =
         new GotoCmd(Token.NoToken, new List<string>() { "$checker" });
 
@@ -45,16 +48,18 @@ namespace whoop
 
       List<Variable> dummiesCLS = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-                             Microsoft.Boogie.Type.Int));
+                             wp.memoryModelType));
       dummiesCLS.Add(dummyLock);
 
       List<Variable> dummiesLS = new List<Variable>();
       Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-                            Microsoft.Boogie.Type.Int));
+                            wp.memoryModelType));
       dummiesLS.Add(dummyPtr);
       dummiesLS.Add(dummyLock);
 
       foreach (var ls in wp.locksets) {
+        if (!vars.Any(val => val.Name.Equals(ls.targetName))) continue;
+
         b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
           new ForallExpr(Token.NoToken, dummiesLS,
             Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
@@ -68,7 +73,9 @@ namespace whoop
               })), Expr.True))));
       }
 
-      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+      foreach (var v in wp.memoryRegions) {
+        if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
+
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
@@ -76,7 +83,9 @@ namespace whoop
           Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
-      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+      foreach (var v in wp.memoryRegions) {
+        if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
+
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
@@ -121,11 +130,18 @@ namespace whoop
 
     private void InstrumentProcedure(Implementation impl)
     {
-      impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, wp.currLockset.id));
-      foreach (var ls in wp.locksets)
-        impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
+      Implementation pairImpl = wp.GetImplementation(impl.Name.Substring(5));
+      List<Variable> vars = wp.sharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
 
-      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+      impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, wp.currLockset.id));
+      foreach (var ls in wp.locksets) {
+        if (!vars.Any(val => val.Name.Equals(ls.targetName))) continue;
+        impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
+      }
+
+      foreach (var v in wp.memoryRegions) {
+        if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
+
         Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
         Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>

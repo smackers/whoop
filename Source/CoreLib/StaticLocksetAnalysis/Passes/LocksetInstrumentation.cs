@@ -43,7 +43,7 @@ namespace whoop
       wp.currLockset = new Lockset(new GlobalVariable(Token.NoToken,
         new TypedIdent(Token.NoToken, "CLS",
           new MapType(Token.NoToken, new List<TypeVariable>(),
-            new List<Microsoft.Boogie.Type> { Microsoft.Boogie.Type.Int },
+            new List<Microsoft.Boogie.Type> { wp.memoryModelType },
             Microsoft.Boogie.Type.Bool))));
       wp.currLockset.id.AddAttribute("lockset", new object[] { });
       wp.program.TopLevelDeclarations.Add(wp.currLockset.id);
@@ -55,7 +55,7 @@ namespace whoop
         wp.locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
           new TypedIdent(Token.NoToken, "LS_" + wp.memoryRegions[i].Name,
             new MapType(Token.NoToken, new List<TypeVariable>(),
-              new List<Microsoft.Boogie.Type> { Microsoft.Boogie.Type.Int },
+              new List<Microsoft.Boogie.Type> { wp.memoryModelType },
               wp.currLockset.id.TypedIdent.Type)))));
         wp.locksets[i].id.AddAttribute("lockset", new object[] { });
         wp.program.TopLevelDeclarations.Add(wp.locksets[i].id);
@@ -65,7 +65,7 @@ namespace whoop
     private void AddUpdateLocksetFunc()
     {
       List<Variable> inParams = new List<Variable>();
-      Variable in1 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock", Microsoft.Boogie.Type.Int));
+      Variable in1 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock", wp.memoryModelType));
       Variable in2 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "isLocked", Microsoft.Boogie.Type.Bool));
       inParams.Add(in1);
       inParams.Add(in2);
@@ -128,20 +128,20 @@ namespace whoop
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentImplementation(impl);
-        InstrumentProcedure(impl.Proc);
+        InstrumentProcedure(impl);
       }
     }
 
     private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
         InstrumentImplementation(impl);
-        InstrumentProcedure(impl.Proc);
+        InstrumentProcedure(impl);
       }
     }
 
@@ -151,7 +151,7 @@ namespace whoop
 
       List<Variable> dummiesCLS = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-        Microsoft.Boogie.Type.Int));
+                             wp.memoryModelType));
       dummiesCLS.Add(dummyLock);
 
       AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
@@ -190,16 +190,19 @@ namespace whoop
       }
     }
 
-    private void InstrumentProcedure(Procedure proc)
+    private void InstrumentProcedure(Implementation impl)
     {
-      Contract.Requires(proc != null);
+      Contract.Requires(impl.Proc != null);
 
-      if (proc.Modifies.Exists(val => val.Name.Equals(wp.currLockset.id.Name)))
+      if (impl.Proc.Modifies.Exists(val => val.Name.Equals(wp.currLockset.id.Name)))
         return;
 
-      proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
+      impl.Proc.Modifies.Add(new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id));
+
+      List<Variable> vars = wp.sharedStateAnalyser.GetAccessedMemoryRegions(impl);
       foreach (var ls in wp.locksets) {
-        proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
+        if (!vars.Any(val => val.Name.Equals(ls.targetName))) continue;
+        impl.Proc.Modifies.Add(new IdentifierExpr(ls.id.tok, ls.id));
       }
     }
   }

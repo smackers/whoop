@@ -33,23 +33,30 @@ namespace whoop
 
     public void Run()
     {
-      cleaner.InitialCleanUp();
+      cleaner.RemoveUnecesseryAssumes();
 
       new PairConverter(wp).Run();
       new InitConverter(wp).Run();
 
       new LocksetInstrumentation(wp).Run();
+
       new RaceInstrumentation(wp).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
         new DeadlockInstrumentation(wp).Run();
 
+      new InitInstrumentation(wp).Run();
+
       new SharedStateAbstractor(wp).Run();
 
       new ErrorReportingInstrumentation(wp).Run();
-      new InitInstrumentation(wp).Run();
 
-      cleaner.FinalCleanUp();
+      cleaner.RemoveEmptyBlocks();
+      cleaner.RemoveEmptyBlocksInEntryPoints();
+      cleaner.RemoveUnecesseryReturns();
+      cleaner.RemoveUncalledFuncs();
+      cleaner.RemoveMemoryRegions();
+      cleaner.RemoveUnusedVars();
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       whoop.IO.EmitProgram(wp.program, Util.GetCommandLineOptions().Files[

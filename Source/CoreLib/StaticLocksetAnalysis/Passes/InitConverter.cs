@@ -74,7 +74,7 @@ namespace whoop
       newImpl.Attributes = new QKeyValue(Token.NoToken, "init", new List<object>(), null);
 
       foreach (var v in wp.program.TopLevelDeclarations.OfType<GlobalVariable>()) {
-        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr") || v.Name.Contains("$M.")) {
+        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr")) {
           newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
         }
       }

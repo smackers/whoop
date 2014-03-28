@@ -57,7 +57,7 @@ namespace whoop
 
       List<Variable> dummies = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-        Microsoft.Boogie.Type.Int));
+                             wp.memoryModelType));
       dummies.Add(dummyLock);
 
       ForallExpr forall = new ForallExpr(Token.NoToken, dummies,

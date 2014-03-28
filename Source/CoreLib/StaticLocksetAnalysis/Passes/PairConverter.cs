@@ -154,7 +154,7 @@ namespace whoop
       }, newImpl.Attributes);
 
       foreach (var v in wp.program.TopLevelDeclarations.OfType<GlobalVariable>()) {
-        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr") || v.Name.Contains("$M.")) {
+        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr")) {
           newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
         }
       }

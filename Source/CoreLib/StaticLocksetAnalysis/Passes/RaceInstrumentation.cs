@@ -57,8 +57,8 @@ namespace whoop
     {
       for (int i = 0; i < wp.memoryRegions.Count; i++) {
         Variable aoff = new GlobalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
-          "ACCESS_OFFSET_" + wp.memoryRegions[i].Name,
-          Microsoft.Boogie.Type.Int));
+                          "ACCESS_OFFSET_" + wp.memoryRegions[i].Name,
+                          wp.memoryModelType));
         aoff.AddAttribute("access_checking", new object[] { });
         wp.program.TopLevelDeclarations.Add(aoff);
       }
@@ -68,7 +68,7 @@ namespace whoop
     {
       foreach (var ls in wp.locksets) {
         List<Variable> inParams = new List<Variable>();
-        Variable v = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr", Microsoft.Boogie.Type.Int));
+        Variable v = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr", wp.memoryModelType));
         inParams.Add(v);
 
         Procedure proc = new Procedure(Token.NoToken, "_LOG_" + access.ToString() + "_LS_" + ls.targetName,
@@ -83,7 +83,7 @@ namespace whoop
         List<Variable> localVars = new List<Variable>();
         Variable tempParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "temp",
                                new MapType(Token.NoToken, new List<TypeVariable>(),
-                                 new List<Microsoft.Boogie.Type> { Microsoft.Boogie.Type.Int },
+                                 new List<Microsoft.Boogie.Type> { wp.memoryModelType },
                                  Microsoft.Boogie.Type.Bool)));
         localVars.Add(tempParam);
 
@@ -111,7 +111,7 @@ namespace whoop
 
         List<Variable> dummies = new List<Variable>();
         Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-          Microsoft.Boogie.Type.Int));
+                               wp.memoryModelType));
         dummies.Add(dummyLock);
 
         b.Cmds.Add(new AssumeCmd(Token.NoToken, new ForallExpr(Token.NoToken, dummies,
@@ -150,7 +150,7 @@ namespace whoop
     {
       foreach (var ls in wp.locksets) {
         List<Variable> inParams = new List<Variable>();
-        Variable v = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr", Microsoft.Boogie.Type.Int));
+        Variable v = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr", wp.memoryModelType));
         inParams.Add(v);
 
         Procedure proc = new Procedure(Token.NoToken, "_CHECK_" + access.ToString() + "_LS_" + ls.targetName,
@@ -171,7 +171,7 @@ namespace whoop
 
         List<Variable> dummies = new List<Variable>();
         Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-          Microsoft.Boogie.Type.Int));
+                               wp.memoryModelType));
         dummies.Add(dummyLock);
 
         ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
@@ -244,23 +244,23 @@ namespace whoop
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         InstrumentWriteAccesses(impl);
         InstrumentReadAccesses(impl);
-        InstrumentProcedure(impl.Proc);
+        InstrumentProcedure(impl);
       }
     }
 
     private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
         if (!(impl.Name.Contains("$log") || impl.Name.Contains("$check"))) continue;
 
         bool[] guard = { false, false };
         guard[0] = InstrumentOtherFuncsWriteAccesses(impl);
         guard[1] = InstrumentOtherFuncsReadAccesses(impl);
-        if (guard.Contains(true)) InstrumentProcedure(impl.Proc);
+        if (guard.Contains(true)) InstrumentProcedure(impl);
       }
     }
 
@@ -279,7 +279,6 @@ namespace whoop
               !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
               continue;
 
-            newCmds.RemoveAt(newCmds.Count - 1);
             var ind = lhs.Indexes[0];
             if ((ind as IdentifierExpr).Name.Contains("$1")) {
               CallCmd call = new CallCmd(Token.NoToken,
@@ -414,9 +413,14 @@ namespace whoop
       return hasInstrumented;
     }
 
-    private void InstrumentProcedure(Procedure proc)
+    private void InstrumentProcedure(Implementation impl)
     {
-      foreach (var v in wp.sharedStateAnalyser.GetMemoryRegions()) {
+      Contract.Requires(impl.Proc != null);
+
+      List<Variable> vars = wp.sharedStateAnalyser.GetAccessedMemoryRegions(impl);
+      foreach (var v in wp.memoryRegions) {
+        if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
+
         Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
         Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>
@@ -424,9 +428,9 @@ namespace whoop
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
-        proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
-        proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));
-        proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
+        impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
+        impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));
+        impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
       }
     }
 

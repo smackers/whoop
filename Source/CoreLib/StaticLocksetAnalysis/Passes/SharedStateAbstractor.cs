@@ -31,6 +31,7 @@ namespace whoop
     public void Run()
     {
       AbstractEntryPoints();
+      AbstractInitFuncs();
       AbstractOtherFuncs();
     }
 
@@ -38,18 +39,28 @@ namespace whoop
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         AbstractReadAccesses(impl);
+        AbstractWriteAccesses(impl);
+      }
+    }
+
+    private void AbstractInitFuncs()
+    {
+      foreach (var impl in wp.GetInitFunctions()) {
+        AbstractReadAccesses(impl);
+        AbstractWriteAccesses(impl);
       }
     }
 
     private void AbstractOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
         AbstractReadAccesses(impl);
+        AbstractWriteAccesses(impl);
       }
     }
 
@@ -70,6 +81,27 @@ namespace whoop
             b.Cmds[k] = havoc;
           }
         }
+      }
+    }
+
+    private void AbstractWriteAccesses(Implementation impl)
+    {
+      foreach (var b in impl.Blocks) {
+        List<Cmd> cmdsToRemove = new List<Cmd>();
+
+        for (int k = 0; k < b.Cmds.Count; k++) {
+          if (!(b.Cmds[k] is AssignCmd)) continue;
+
+          foreach (var lhs in (b.Cmds[k] as AssignCmd).Lhss.OfType<MapAssignLhs>()) {
+            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+              !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+              continue;
+
+            cmdsToRemove.Add(b.Cmds[k]);
+          }
+        }
+
+        foreach (var c in cmdsToRemove) b.Cmds.Remove(c);
       }
     }
   }

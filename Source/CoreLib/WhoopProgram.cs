@@ -24,16 +24,16 @@ namespace whoop
     public ResolutionContext resContext;
 
     public Dictionary<string, Dictionary<string, string>> entryPoints;
-    public List<Variable> memoryRegions;
-
     public Lockset currLockset;
     public List<Lockset> locksets;
 
-    public Microsoft.Boogie.Type memoryModelType;
+    internal SharedStateAnalyser sharedStateAnalyser;
 
     internal Implementation initFunc;
     internal List<Tuple<string, List<string>>> entryPointPairs;
-    internal SharedStateAnalyser sharedStateAnalyser;
+    internal List<Variable> memoryRegions;
+
+    internal Microsoft.Boogie.Type memoryModelType;
 
     public WhoopProgram(Program program, ResolutionContext rc)
       : base((IErrorSink)null)

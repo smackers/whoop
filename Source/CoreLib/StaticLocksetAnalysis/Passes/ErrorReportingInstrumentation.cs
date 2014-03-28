@@ -50,9 +50,9 @@ namespace whoop
     private void InstrumentOtherFuncs()
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!wp.isCalledByAnEntryPoint(impl)) continue;
 
         InstrumentSourceLocationInfo(impl);
