@@ -109,7 +109,7 @@ namespace whoop
         if (wp.initFunc.Name.Equals(impl.Name)) continue;
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl)) continue;
+        if (!wp.isCalledByAnyFunc(impl)) continue;
         if (!wp.isImplementationRacing(impl)) continue;
 
         SplitFunc(impl, "log");
@@ -340,6 +340,9 @@ namespace whoop
     {
       if (c is CallCmd) {
         CallCmd call = c as CallCmd;
+
+        if (call.callee.Contains("$memcpy") || call.callee.Contains("memcpy_fromio"))
+          return;
 
         List<Expr> newIns = new List<Expr>();
         List<IdentifierExpr> newOuts = new List<IdentifierExpr>();

@@ -54,6 +54,7 @@ namespace whoop
       cleaner.RemoveEmptyBlocks();
       cleaner.RemoveEmptyBlocksInEntryPoints();
       cleaner.RemoveUnecesseryReturns();
+      cleaner.RemoveOldEntryPoints();
       cleaner.RemoveUncalledFuncs();
       cleaner.RemoveMemoryRegions();
       cleaner.RemoveUnusedVars();

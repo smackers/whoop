@@ -110,13 +110,17 @@ namespace whoop
       return false;
     }
 
-    public bool isCalledByAnEntryPoint(Implementation impl)
+    public bool isCalledByAnyFunc(Implementation impl)
     {
       Contract.Requires(impl != null);
-      foreach (var ep in GetImplementationsToAnalyse()) {
+      foreach (var ep in program.TopLevelDeclarations.OfType<Implementation>()) {
         foreach (var b in ep.Blocks) {
           foreach (var c in b.Cmds.OfType<CallCmd>()) {
             if (c.callee.Equals(impl.Name)) return true;
+            foreach (var expr in c.Ins) {
+              if (!(expr is IdentifierExpr)) continue;
+              if ((expr as IdentifierExpr).Name.Equals(impl.Name)) return true;
+            }
           }
         }
       }

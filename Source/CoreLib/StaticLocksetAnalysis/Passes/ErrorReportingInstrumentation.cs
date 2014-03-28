@@ -53,7 +53,7 @@ namespace whoop
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl)) continue;
+        if (!wp.isCalledByAnyFunc(impl)) continue;
 
         InstrumentSourceLocationInfo(impl);
         InstrumentRaceCheckingCaptureStates(impl);

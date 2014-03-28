@@ -57,10 +57,11 @@ namespace whoop
         if (wp.isWhoopFunc(impl)) continue;
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnEntryPoint(impl)) continue;
+        if (!wp.isCalledByAnyFunc(impl)) continue;
 
         AbstractReadAccesses(impl);
         AbstractWriteAccesses(impl);
+        RemoveModset(impl);
       }
     }
 
@@ -103,6 +104,11 @@ namespace whoop
 
         foreach (var c in cmdsToRemove) b.Cmds.Remove(c);
       }
+    }
+
+    private void RemoveModset(Implementation impl)
+    {
+      impl.Proc.Modifies.RemoveAll(val => !(val.Name.Equals("$Alloc") || val.Name.Equals("$CurrAddr")));
     }
   }
 }

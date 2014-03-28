@@ -112,16 +112,32 @@ namespace whoop
       }
     }
 
+    public void RemoveOldEntryPoints()
+    {
+      foreach (var kvp in wp.entryPoints) {
+        foreach (var ep in kvp.Value) {
+          if (!wp.program.TopLevelDeclarations.OfType<Implementation>().ToList().Any(val => val.Name.Equals(ep.Value))) continue;
+          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value).Proc);
+          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value));
+          wp.program.TopLevelDeclarations.Remove(wp.GetConstant(ep.Value));
+        }
+      }
+    }
+
     public void RemoveUncalledFuncs()
     {
-      List<Implementation> uncalled = new List<Implementation>();
+      HashSet<Implementation> uncalled = new HashSet<Implementation>();
 
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.isWhoopFunc(impl)) continue;
-        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (wp.isCalledByAnEntryPoint(impl)) continue;
-        uncalled.Add(impl);
+      while (true) {
+        int fixpoint = uncalled.Count;
+        foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
+          if (wp.isWhoopFunc(impl)) continue;
+          if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+          if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
+          if (wp.isCalledByAnyFunc(impl)) continue;
+          uncalled.Add(impl);
+        }
+        if (uncalled.Count == fixpoint) break;
       }
 
       foreach (var impl in uncalled) {
