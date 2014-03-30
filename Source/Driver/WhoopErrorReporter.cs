@@ -116,7 +116,7 @@ namespace whoop
 
       bool check = false;
 
-      Block b = cex.Trace[cex.Trace.Count - 2];
+      Block b = cex.Trace[cex.Trace.Count - 1];
       if (check) {
         Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
@@ -125,13 +125,13 @@ namespace whoop
         }
       }
 
-      AssumeCmd assume = b.Cmds[b.Cmds.Count - 2] as AssumeCmd;
-      Contract.Requires(assume != null);
+      AssertCmd assert = b.Cmds[b.Cmds.Count - 1] as AssertCmd;
+      Contract.Requires(assert != null);
       if (check) {
-        Console.WriteLine("assume: " + assume);
+        Console.WriteLine("assert: " + assert);
       }
 
-      string expr = assume.Expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None)[0]
+      string expr = assert.Expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None)[1]
         .Split(new string[] { "@" }, StringSplitOptions.None)[0];
       Contract.Requires(expr != null && expr.Contains("inline$"));
 

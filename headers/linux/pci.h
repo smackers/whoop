@@ -170,4 +170,6 @@ static inline int pci_write_config_byte(const struct pci_dev *dev, int where, u8
 static inline int pci_write_config_word(const struct pci_dev *dev, int where, u16 val);
 static inline int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val);
 
+static inline int pcie_capability_set_word(struct pci_dev *dev, int pos, u16 set);
+
 #endif /* LINUX_PCI_H */
