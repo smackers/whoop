@@ -5,6 +5,8 @@
 #include <linux/compiler.h>
 #include <asm/barrier.h>
 #include <asm/bitops.h>
+#include <asm/byteorder.h>
+#include <asm/bug.h>
 
 extern enum system_states {
 	SYSTEM_BOOTING,
@@ -59,5 +61,22 @@ int snprintf(char * buf, size_t size, const char * fmt, ...);
 #define KERN_DEBUG	KERN_SOH "7"	/* debug-level messages */
 #define KERN_DEFAULT	KERN_SOH "d"	/* the default kernel loglevel */
 #define KERN_CONT	""
+
+#define min(x,y) ({ \
+	typeof(x) _x = (x);	\
+	typeof(y) _y = (y);	\
+	(void) (&_x == &_y);		\
+	_x < _y ? _x : _y; })
+
+#define max(x,y) ({ \
+	typeof(x) _x = (x);	\
+	typeof(y) _y = (y);	\
+	(void) (&_x == &_y);		\
+	_x > _y ? _x : _y; })
+
+#define min_t(type,x,y) \
+	({ type __x = (x); type __y = (y); __x < __y ? __x: __y; })
+#define max_t(type,x,y) \
+	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 
 #endif

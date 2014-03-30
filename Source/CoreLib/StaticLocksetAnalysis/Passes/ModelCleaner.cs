@@ -149,9 +149,9 @@ namespace whoop
 
     public void RemoveMemoryRegions()
     {
-      foreach (var v in wp.program.TopLevelDeclarations) {
-
-      }
+//      foreach (var v in wp.memoryRegions) {
+//        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
+//      }
     }
 
     public void RemoveUnusedVars()

@@ -220,6 +220,23 @@ void napi_complete(struct napi_struct *n); // Mark NAPI processing as complete
 void netif_carrier_on(struct net_device *dev);
 void netif_carrier_off(struct net_device *dev);
 
+enum gro_result {
+	GRO_MERGED,
+	GRO_MERGED_FREE,
+	GRO_HELD,
+	GRO_NORMAL,
+	GRO_DROP,
+};
+typedef enum gro_result gro_result_t;
+
+int netif_rx(struct sk_buff *skb);
+int netif_rx_ni(struct sk_buff *skb);
+int netif_receive_skb(struct sk_buff *skb);
+gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb);
+void napi_gro_flush(struct napi_struct *napi, bool flush_old);
+
+int skb_checksum_help(struct sk_buff *skb);
+
 enum {
 	NETIF_MSG_DRV		= 0x0001,
 	NETIF_MSG_PROBE		= 0x0002,

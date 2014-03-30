@@ -4,6 +4,11 @@
 #include <linux/net.h>
 #include <linux/slab.h>
 
+#define CHECKSUM_NONE 0
+#define CHECKSUM_UNNECESSARY 1
+#define CHECKSUM_COMPLETE 2
+#define CHECKSUM_PARTIAL 3
+
 #define MAX_SKB_FRAGS 16UL
 
 typedef struct skb_frag_struct skb_frag_t;
@@ -40,6 +45,9 @@ typedef unsigned char *sk_buff_data_t;
 
 struct skb_shared_info {
 	unsigned char	nr_frags;
+	unsigned short gso_size;
+	unsigned short gso_segs;
+	unsigned short gso_type;
 	skb_frag_t frags[MAX_SKB_FRAGS];
 };
 
@@ -50,6 +58,17 @@ struct sk_buff {
 	struct net_device	*dev;
 	
 	unsigned int len, data_len;
+	
+	__u8 local_df:1, cloned:1, ip_summed:2, nohdr:1, nfctinfo:3;
+	
+	__be16 protocol;
+	
+	__u16			inner_transport_header;
+	__u16			inner_network_header;
+	__u16			inner_mac_header;
+	__u16			transport_header;
+	__u16			network_header;
+	__u16			mac_header;
 	
 	sk_buff_data_t tail;
 	sk_buff_data_t end;
@@ -83,6 +102,18 @@ static inline void *skb_frag_address(const skb_frag_t *frag)
 	return page_address(skb_frag_page(frag)) + frag->page_offset;
 }
 
+static inline unsigned char *skb_network_header(const struct sk_buff *skb)
+{
+	return skb->head + skb->network_header;
+}
+
 void skb_tx_timestamp(struct sk_buff *skb);
+
+unsigned char *skb_put(struct sk_buff *skb, unsigned int len);
+
+void consume_skb(struct sk_buff *skb);
+void skb_checksum_none_assert(const struct sk_buff *skb);
+
+#define dev_kfree_skb(a) consume_skb(a)
 
 #endif	/* _LINUX_SKBUFF_H */
