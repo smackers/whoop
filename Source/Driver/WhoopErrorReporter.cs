@@ -228,7 +228,7 @@ namespace whoop
     private void DetermineNatureOfRace(AssumeCmd assume, out string raceName, out string access1, string access2)
     {
       access1 = QKeyValue.FindStringAttribute(assume.Attributes, "access");
-      raceName = access2 + "-" + access1;
+      raceName = access1 + "-" + access2;
     }
 
     private Tuple<string, string> GetEntryPointNames(AssumeCmd a, AssumeCmd b)
