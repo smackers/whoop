@@ -162,7 +162,7 @@ namespace whoop
       foreach (var b in impl.Blocks) {
         if (b.Label.Equals("$checker")) break;
         b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
-          val2.Name.Contains(impl.Name.Substring(5))));
+          val2.Name.Contains((val1 as CallCmd).callee)));
       }
     }
   }

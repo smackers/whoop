@@ -163,13 +163,20 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 	return true;
 }
 
-static inline int pci_read_config_byte(const struct pci_dev *dev, int where, u8 *val);
-static inline int pci_read_config_word(const struct pci_dev *dev, int where, u16 *val);
-static inline int pci_read_config_dword(const struct pci_dev *dev, int where, u32 *val);
-static inline int pci_write_config_byte(const struct pci_dev *dev, int where, u8 val);
-static inline int pci_write_config_word(const struct pci_dev *dev, int where, u16 val);
-static inline int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val);
+int pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val);
+int pcie_capability_read_dword(struct pci_dev *dev, int pos, u32 *val);
+int pcie_capability_write_word(struct pci_dev *dev, int pos, u16 val);
+int pcie_capability_write_dword(struct pci_dev *dev, int pos, u32 val);
+int pcie_capability_clear_and_set_word(struct pci_dev *dev, int pos, u16 clear, u16 set);
+int pcie_capability_clear_and_set_dword(struct pci_dev *dev, int pos, u32 clear, u32 set);
 
-static inline int pcie_capability_set_word(struct pci_dev *dev, int pos, u16 set);
+inline int pci_read_config_byte(const struct pci_dev *dev, int where, u8 *val);
+inline int pci_read_config_word(const struct pci_dev *dev, int where, u16 *val);
+inline int pci_read_config_dword(const struct pci_dev *dev, int where, u32 *val);
+inline int pci_write_config_byte(const struct pci_dev *dev, int where, u8 val);
+inline int pci_write_config_word(const struct pci_dev *dev, int where, u16 val);
+inline int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val);
+
+inline int pcie_capability_set_word(struct pci_dev *dev, int pos, u16 set);
 
 #endif /* LINUX_PCI_H */
