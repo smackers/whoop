@@ -210,7 +210,7 @@ namespace whoop
             newCmds.Add(assume);
           } else {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-              new List<object>() { "check_deadlock_state_" + checkCounter }, assume.Attributes);
+              new List<object>() { "check_deadlock_state" }, assume.Attributes);
             checkCounter++;
 
             newCmds.Add(assume);

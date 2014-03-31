@@ -101,9 +101,6 @@ namespace whoop
           returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
       }
 
-      Implementation checkLocksReleased = wp.GetImplementation("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED");
-      Contract.Requires(checkLocksReleased != null);
-
       CallCmd call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
                        new List<Expr> { }, new List<IdentifierExpr>());
 
@@ -115,16 +112,6 @@ namespace whoop
         if (returnIdxs.Exists(val => val == Convert.ToInt32(thisLabel[1]))) {
           b.Cmds.Add(call);
           alreadyInstrumented.Add(thisLabel[0]);
-        }
-      }
-
-      Contract.Requires(original.Blocks.Count < impl.Blocks.Count);
-      for (int i = original.Blocks.Count; i < impl.Blocks.Count; i++) {
-        string thisLabel = impl.Blocks[i].Label.Split(new char[] { '$' })[0];
-        if (alreadyInstrumented.Exists(val => val.Equals(thisLabel))) continue;
-        if (impl.Blocks[i].TransferCmd is ReturnCmd) {
-          impl.Blocks[i].Cmds.Add(call);
-          alreadyInstrumented.Add(thisLabel);
         }
       }
     }

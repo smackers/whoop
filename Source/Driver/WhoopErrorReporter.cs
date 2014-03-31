@@ -177,7 +177,7 @@ namespace whoop
       Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
       Dictionary<Model.Integer, Model.Boolean> checkStateLocksDictionary = null;
-      checkStateLocksDictionary = GetStateLocksDictionary(cex, checkState, true);
+      checkStateLocksDictionary = GetCheckStateLocksDictionary(cex, checkState);
 
       List<AssumeCmd> logAssumes = new List<AssumeCmd>();
 
@@ -200,7 +200,7 @@ namespace whoop
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 
           Dictionary<Model.Integer, Model.Boolean> logStateLocksDictionary = null;
-          logStateLocksDictionary = GetStateLocksDictionary(cex, logState, true);
+          logStateLocksDictionary = GetLogStateLocksDictionary(cex, logState);
 
           if (checkStateLocksDictionary.Count == 0 || logStateLocksDictionary.Count == 0) {
             logAssumes.Add(c);
@@ -241,36 +241,57 @@ namespace whoop
       return eps;
     }
 
-    private Dictionary<Model.Integer, Model.Boolean> GetStateLocksDictionary(AssertCounterexample cex,
-      Model.CapturedState state, bool isRecursive=false)
+    private Dictionary<Model.Integer, Model.Boolean> GetCheckStateLocksDictionary(AssertCounterexample cex,
+      Model.CapturedState state)
     {
-      Dictionary<Model.Integer, Model.Boolean> stateLocksDictionary = new Dictionary<Model.Integer, Model.Boolean>();
-      List<string> checkStateLocks = state.Variables.Where(val =>
-        val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
+      Dictionary<Model.Integer, Model.Boolean> checkStateLocksDictionary =
+        new Dictionary<Model.Integer, Model.Boolean>();
+      List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
 
-      if (checkStateLocks.Count == 0 && !isRecursive)
-        return stateLocksDictionary;
+      bool canAddStates = false;
+      foreach (var s in cex.Model.States) {
+        if (s.Name.Equals("check_deadlock_state")) canAddStates = true;
+        if (!canAddStates) continue;
+        if (!s.Name.Contains("update_cls_state_")) continue;
+        locksetStates.Add(s);
+      }
 
-      if (checkStateLocks.Count == 0 && state.Name.Contains("check_")) {
-        List<Model.CapturedState> captured = cex.Model.States.Where(val => val.Name.Contains("check_")).ToList();
-        for (int i = captured.Count - 1; i >= 0; i--) {
-          stateLocksDictionary = GetStateLocksDictionary(cex, captured[i]);
-          if (stateLocksDictionary.Count > 0) break;
-        }
-      } else if (checkStateLocks.Count == 0 && state.Name.Contains("log_")) {
-        List<Model.CapturedState> captured = cex.Model.States.Where(val => val.Name.Contains("log_")).ToList();
-        for (int i = captured.Count - 1; i >= 0; i--) {
-          stateLocksDictionary = GetStateLocksDictionary(cex, captured[i]);
-          if (stateLocksDictionary.Count > 0) break;
-        }
-      } else {
+      foreach (var s in locksetStates) {
+        List<string> checkStateLocks = s.Variables.Where(val =>
+          val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
         for (int i = 0; i < checkStateLocks.Count; i += 2) {
-          stateLocksDictionary.Add(state.TryGet(checkStateLocks[i]) as Model.Integer,
-            state.TryGet(checkStateLocks[i + 1]) as Model.Boolean);
+          checkStateLocksDictionary[state.TryGet(checkStateLocks[i]) as Model.Integer] =
+            state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
         }
       }
 
-      return stateLocksDictionary;
+      return checkStateLocksDictionary;
+    }
+
+    private Dictionary<Model.Integer, Model.Boolean> GetLogStateLocksDictionary(AssertCounterexample cex,
+      Model.CapturedState state)
+    {
+      Dictionary<Model.Integer, Model.Boolean> logStateLocksDictionary =
+        new Dictionary<Model.Integer, Model.Boolean>();
+      List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
+
+      foreach (var s in cex.Model.States) {
+        if (s.Name.Equals(state.Name)) break;
+        if (s.Name.Equals("check_deadlock_state")) break;
+        if (!s.Name.Contains("update_cls_state_")) continue;
+        locksetStates.Add(s);
+      }
+
+      foreach (var s in locksetStates) {
+        List<string> checkStateLocks = s.Variables.Where(val =>
+          val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
+        for (int i = 0; i < checkStateLocks.Count; i += 2) {
+          logStateLocksDictionary[state.TryGet(checkStateLocks[i]) as Model.Integer] =
+            state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
+        }
+      }
+
+      return logStateLocksDictionary;
     }
 
     private int ReportUnreleasedLock(AssertCounterexample cex)
