@@ -176,7 +176,7 @@ namespace whoop
       Contract.Requires(checkStateName != null);
       Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
-      Dictionary<Model.Integer, Model.Boolean> checkStateLocksDictionary = null;
+      Dictionary<string, bool> checkStateLocksDictionary = null;
       checkStateLocksDictionary = GetCheckStateLocksDictionary(cex, checkState);
 
       List<AssumeCmd> logAssumes = new List<AssumeCmd>();
@@ -199,7 +199,7 @@ namespace whoop
           Model.Element aoff = logState.TryGet(accessOffset);
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 
-          Dictionary<Model.Integer, Model.Boolean> logStateLocksDictionary = null;
+          Dictionary<string, bool> logStateLocksDictionary = null;
           logStateLocksDictionary = GetLogStateLocksDictionary(cex, logState);
 
           if (checkStateLocksDictionary.Count == 0 || logStateLocksDictionary.Count == 0) {
@@ -209,10 +209,10 @@ namespace whoop
 
           bool thereIsAtLeastOneCommonLock = false;
           foreach (var kvp in checkStateLocksDictionary) {
-            Model.Boolean logValue;
+            bool logValue;
             logStateLocksDictionary.TryGetValue(kvp.Key, out logValue);
             if (logValue == null) continue;
-            if (kvp.Value.Value && logValue.Value) {
+            if (kvp.Value && logValue) {
               thereIsAtLeastOneCommonLock = true;
               break;
             }
@@ -241,11 +241,10 @@ namespace whoop
       return eps;
     }
 
-    private Dictionary<Model.Integer, Model.Boolean> GetCheckStateLocksDictionary(AssertCounterexample cex,
+    private Dictionary<string, bool> GetCheckStateLocksDictionary(AssertCounterexample cex,
       Model.CapturedState state)
     {
-      Dictionary<Model.Integer, Model.Boolean> checkStateLocksDictionary =
-        new Dictionary<Model.Integer, Model.Boolean>();
+      Dictionary<string, bool> checkStateLocksDictionary = new Dictionary<string, bool>();
       List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
 
       bool canAddStates = false;
@@ -260,19 +259,18 @@ namespace whoop
         List<string> checkStateLocks = s.Variables.Where(val =>
           val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
         for (int i = 0; i < checkStateLocks.Count; i += 2) {
-          checkStateLocksDictionary[state.TryGet(checkStateLocks[i]) as Model.Integer] =
-            state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
+          checkStateLocksDictionary[(state.TryGet(checkStateLocks[i]) as Model.Element).ToString()] =
+            (state.TryGet(checkStateLocks[i + 1]) as Model.Boolean).Value;
         }
       }
 
       return checkStateLocksDictionary;
     }
 
-    private Dictionary<Model.Integer, Model.Boolean> GetLogStateLocksDictionary(AssertCounterexample cex,
+    private Dictionary<string, bool> GetLogStateLocksDictionary(AssertCounterexample cex,
       Model.CapturedState state)
     {
-      Dictionary<Model.Integer, Model.Boolean> logStateLocksDictionary =
-        new Dictionary<Model.Integer, Model.Boolean>();
+      Dictionary<string, bool> logStateLocksDictionary = new Dictionary<string, bool>();
       List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
 
       foreach (var s in cex.Model.States) {
@@ -286,8 +284,8 @@ namespace whoop
         List<string> checkStateLocks = s.Variables.Where(val =>
           val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
         for (int i = 0; i < checkStateLocks.Count; i += 2) {
-          logStateLocksDictionary[state.TryGet(checkStateLocks[i]) as Model.Integer] =
-            state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
+          logStateLocksDictionary[(state.TryGet(checkStateLocks[i]) as Model.Element).ToString()] =
+            (state.TryGet(checkStateLocks[i + 1]) as Model.Boolean).Value;
         }
       }
 
