@@ -238,10 +238,17 @@ namespace whoop
           }
 
           errors.Sort(new CounterexampleComparer());
+          int errorCount = 0;
           foreach (Counterexample error in errors)
-            stats.ErrorCount += errorReporter.ReportCounterexample(error);
+            errorCount += errorReporter.ReportCounterexample(error);
 
-          whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errors.Count == 1 ? "" : "s"));
+          if (errorCount == 0) {
+            whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+            stats.VerifiedCount++;
+          } else {
+            whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
+            stats.ErrorCount += errorCount;
+          }
           break;
 
         default:
