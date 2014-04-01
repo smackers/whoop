@@ -10,6 +10,13 @@
 struct net_device *alloc_etherdev(int sizeof_priv)
 {
 	struct net_device *dev = (struct net_device *) malloc(sizeof_priv);
+	
+	// INIT_LIST_HEAD(&dev->napi_list);
+//   INIT_LIST_HEAD(&dev->unreg_list);
+//   INIT_LIST_HEAD(&dev->link_watch_list);
+//   INIT_LIST_HEAD(&dev->upper_dev_list);
+//   INIT_LIST_HEAD(&dev->lower_dev_list);
+	
 	return dev;
 }
 

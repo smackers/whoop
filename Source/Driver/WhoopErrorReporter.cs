@@ -42,6 +42,10 @@ namespace whoop
           errors = ReportUnreleasedLock(cex);
         } else {
           errors++;
+          if (Util.GetCommandLineOptions().DebugWhoop) {
+            PopulateModelWithStatesIfNecessary(cex);
+            Write(cex.Model);
+          }
           Console.WriteLine("Error: AssertCounterexample");
         }
       } else if (error is CallCounterexample) {
@@ -114,10 +118,8 @@ namespace whoop
       string stateName = QKeyValue.FindStringAttribute(attributes, "captureState");
       Contract.Requires(stateName != null);
 
-      bool check = false;
-
       Block b = cex.Trace[cex.Trace.Count - 1];
-      if (check) {
+      if (Util.GetCommandLineOptions().DebugWhoop) {
         Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
         foreach (var v in b.Cmds) {
@@ -127,7 +129,7 @@ namespace whoop
 
       AssertCmd assert = b.Cmds[b.Cmds.Count - 1] as AssertCmd;
       Contract.Requires(assert != null);
-      if (check) {
+      if (Util.GetCommandLineOptions().DebugWhoop) {
         Console.WriteLine("assert: " + assert);
       }
 
@@ -135,14 +137,14 @@ namespace whoop
         .Split(new string[] { "@" }, StringSplitOptions.None)[0];
       Contract.Requires(expr != null && expr.Contains("inline$"));
 
-      if (check) {
+      if (Util.GetCommandLineOptions().DebugWhoop) {
         Console.WriteLine("expr: " + expr);
       }
 
       Model.CapturedState checkState = GetStateFromModel(stateName, cex.Model);
       Contract.Requires(checkState != null);
 
-      if (check) {
+      if (Util.GetCommandLineOptions().DebugWhoop) {
         Console.WriteLine("*** STATE {0}", checkState.Name);
         foreach (var v in checkState.Variables)
           Console.WriteLine("  {0} -> {1}", v, checkState.TryGet(v));
@@ -152,11 +154,8 @@ namespace whoop
       Model.Element aoff = checkState.TryGet(expr);
       Contract.Requires(aoff != null);
 
-      if (check) {
-        if (aoff == null) Console.WriteLine("TEST1");
-        Console.WriteLine("TEST3");
+      if (Util.GetCommandLineOptions().DebugWhoop) {
         Console.WriteLine(aoff);
-        Console.WriteLine("TEST2");
       }
 
       return aoff.ToString();
@@ -196,8 +195,29 @@ namespace whoop
           Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          Model.Element aoff = logState.TryGet(accessOffset);
+          Model.Element aoffMap = logState.TryGet(accessOffset);
+          if (aoffMap == null) continue;
+
+          string ptrName = logState.Variables.LastOrDefault(val =>
+            val.Contains(accessOffset.Substring(13)) && val.Contains("$ptr"));
+          if (ptrName == null) continue;
+
+          Model.Element ptrVal = logState.TryGet(ptrName);
+          if (ptrVal == null) continue;
+
+          Model.Func mapSelectFunc = cex.Model.GetFunc("Select_[$int]$int");
+          if (mapSelectFunc == null && mapSelectFunc.Arity != 0) continue;
+
+          Model.Element aoff = null;
+          foreach (var app in mapSelectFunc.Apps) {
+            if (!app.Args[0].ToString().Equals(aoffMap.ToString())) continue;
+            if (!app.Args[1].ToString().Equals(ptrVal.ToString())) continue;
+            aoff = app.Result;
+            break;
+          }
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
+
+          if (Util.GetCommandLineOptions().DebugWhoop) Console.WriteLine("aoff: " + aoff.ToString());
 
           Dictionary<string, bool> logStateLocksDictionary = null;
           logStateLocksDictionary = GetLogStateLocksDictionary(cex, logState);
@@ -384,23 +404,23 @@ namespace whoop
     public void Write(Model model)
     {
       Console.WriteLine("*** MODEL");
-//      foreach (var f in model.Functions.OrderBy(f => f.Name))
-//        if (f.Arity == 0) {
-//          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
-//        }
-//      foreach (var f in model.Functions)
-//        if (f.Arity != 0) {
-//          Console.WriteLine("{0} -> {1}", f.Name, "{");
-//          foreach (var app in f.Apps) {
-//            Console.Write("  ");
-//            foreach (var a in app.Args)
-//              Console.Write("{0} ", a);
-//            Console.WriteLine("-> {0}", app.Result);
-//          }
-//          if (f.Else != null)
-//            Console.WriteLine("  else -> {0}", f.Else);
-//          Console.WriteLine("}");
-//        }
+      foreach (var f in model.Functions.OrderBy(f => f.Name))
+        if (f.Arity == 0) {
+          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
+        }
+      foreach (var f in model.Functions)
+        if (f.Arity != 0) {
+          Console.WriteLine("{0} -> {1}", f.Name, "{");
+          foreach (var app in f.Apps) {
+            Console.Write("  ");
+            foreach (var a in app.Args)
+              Console.Write("{0} ", a);
+            Console.WriteLine("-> {0}", app.Result);
+          }
+          if (f.Else != null)
+            Console.WriteLine("  else -> {0}", f.Else);
+          Console.WriteLine("}");
+        }
       foreach (var s in model.States) {
         if (s == model.InitialState && s.VariableCount == 0)
           continue;

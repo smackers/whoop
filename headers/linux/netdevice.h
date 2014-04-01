@@ -72,6 +72,12 @@ struct netdev_hw_addr_list {
 struct net_device {
 	char name[IFNAMSIZ];
 	
+	struct list_head dev_list;
+	struct list_head napi_list;
+	struct list_head unreg_list;
+	struct list_head upper_dev_list;
+	struct list_head lower_dev_list;
+	
 	netdev_features_t	features;	
 	netdev_features_t	hw_features;
 	netdev_features_t	wanted_features;
@@ -96,6 +102,8 @@ struct net_device {
 	unsigned char *dev_addr; // hw address
 	
 	int watchdog_timeo;
+	
+	struct list_head link_watch_list;
 	
 	struct device dev;
 };
@@ -175,11 +183,10 @@ struct napi_struct {
 	unsigned int napi_id;
 };
 
-void netif_napi_add(struct net_device *dev, struct napi_struct *napi,
-		    int (*poll)(struct napi_struct *, int), int weight);
+void netif_napi_add(struct net_device *dev, struct napi_struct *napi, int (*poll)(struct napi_struct *, int), int weight);
 void netif_napi_del(struct napi_struct *napi);
 
-static inline void *netdev_priv(const struct net_device *dev)
+void *netdev_priv(const struct net_device *dev)
 {
 	return (char *)dev + ALIGN(sizeof(struct net_device), NETDEV_ALIGN);
 }

@@ -33,9 +33,11 @@ namespace whoop
       AddAccessCheckingGlobalVars(AccessType.WRITE);
       AddAccessCheckingGlobalVars(AccessType.READ);
       AddAccessOffsetGlobalVars();
+
       AddLogAccessFuncs(AccessType.WRITE);
-      AddCheckAccessFuncs(AccessType.WRITE);
       AddLogAccessFuncs(AccessType.READ);
+
+      AddCheckAccessFuncs(AccessType.WRITE);
       AddCheckAccessFuncs(AccessType.READ);
 
       InstrumentEntryPoints();
@@ -56,9 +58,14 @@ namespace whoop
     private void AddAccessOffsetGlobalVars()
     {
       for (int i = 0; i < wp.memoryRegions.Count; i++) {
+//        Variable aoff = new GlobalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+//                          "ACCESS_OFFSET_" + wp.memoryRegions[i].Name,
+//                          wp.memoryModelType));
         Variable aoff = new GlobalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
                           "ACCESS_OFFSET_" + wp.memoryRegions[i].Name,
-                          wp.memoryModelType));
+                          new MapType(Token.NoToken, new List<TypeVariable>(),
+                            new List<Microsoft.Boogie.Type> { wp.memoryModelType },
+                            wp.memoryModelType)));
         aoff.AddAttribute("access_checking", new object[] { });
         wp.program.TopLevelDeclarations.Add(aoff);
       }
@@ -94,9 +101,16 @@ namespace whoop
 
         proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
 
+//        b.Cmds.Add(new AssignCmd(Token.NoToken,
+//          new List<AssignLhs>() {
+//            new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(offset.tok, offset))
+//          }, new List<Expr> { new IdentifierExpr(v.tok, v) }));
+
         b.Cmds.Add(new AssignCmd(Token.NoToken,
-          new List<AssignLhs>() {
-            new SimpleAssignLhs(Token.NoToken, new IdentifierExpr(offset.tok, offset))
+          new List<AssignLhs>() { new MapAssignLhs(Token.NoToken,
+              new SimpleAssignLhs(Token.NoToken,
+                new IdentifierExpr(offset.tok, offset)),
+              new List<Expr>(new Expr[] { new IdentifierExpr(v.tok, v) }))
           }, new List<Expr> { new IdentifierExpr(v.tok, v) }));
 
         Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
@@ -129,8 +143,8 @@ namespace whoop
         )));
 
         b.Cmds.Add(new AssignCmd(Token.NoToken,
-          new List<AssignLhs>() { new MapAssignLhs(wp.currLockset.id.tok,
-              new SimpleAssignLhs(wp.currLockset.id.tok,
+          new List<AssignLhs>() { new MapAssignLhs(Token.NoToken,
+            new SimpleAssignLhs(Token.NoToken,
                 new IdentifierExpr(ls.id.tok, ls.id)),
               new List<Expr>(new Expr[] { new IdentifierExpr(v.tok, v) }))
           }, new List<Expr> { new IdentifierExpr(tempParam.tok, tempParam) }));
@@ -188,27 +202,29 @@ namespace whoop
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(ls.targetName));
 
+        NAryExpr offsetExpr = new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                                new List<Expr>(new Expr[] {
+            new IdentifierExpr(offset.tok, offset),
+            new IdentifierExpr(v.tok, v),
+          }));
+
         if (access == AccessType.WRITE) {
           AssertCmd assertW = null;
           AssertCmd assertR = null;
-
-//          assert = new AssertCmd(Token.NoToken, Expr.Imp(
-//            Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
-//              Expr.Eq(new IdentifierExpr(offset.tok, offset),
-//                new IdentifierExpr(v.tok, v))), exists));
 
           Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
             val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(ls.targetName));
           assertW = new AssertCmd(Token.NoToken, Expr.Imp(
             Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
               Expr.And(new IdentifierExpr(raceCheckW.tok, raceCheckW),
-                Expr.Eq(new IdentifierExpr(offset.tok, offset), new IdentifierExpr(v.tok, v)))), exists));
+                Expr.Eq(offsetExpr, new IdentifierExpr(v.tok, v)))), exists));
+
           Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>
             val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(ls.targetName));
           assertR = new AssertCmd(Token.NoToken, Expr.Imp(
             Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
               Expr.And(new IdentifierExpr(raceCheckR.tok, raceCheckR),
-                Expr.Eq(new IdentifierExpr(offset.tok, offset), new IdentifierExpr(v.tok, v)))), exists));
+                Expr.Eq(offsetExpr, new IdentifierExpr(v.tok, v)))), exists));
 
           assertW.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
           assertR.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
@@ -222,7 +238,7 @@ namespace whoop
           assert = new AssertCmd(Token.NoToken, Expr.Imp(
             Expr.And(new IdentifierExpr(trackParam.tok, trackParam),
               Expr.And(new IdentifierExpr(raceCheck.tok, raceCheck),
-                Expr.Eq(new IdentifierExpr(offset.tok, offset), new IdentifierExpr(v.tok, v)))), exists));
+                Expr.Eq(offsetExpr, new IdentifierExpr(v.tok, v)))), exists));
 
           assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
           b.Cmds.Add(assert);
