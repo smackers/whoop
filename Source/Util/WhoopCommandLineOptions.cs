@@ -17,7 +17,9 @@ namespace whoop
   public class WhoopCommandLineOptions : CommandLineOptions
   {
     public bool DebugWhoop = false;
+    public bool PrintPairs = false;
     public string OriginalFile = "";
+    public string AnalyseOnly = "";
     public bool QuadraticPairing = false;
     public bool OnlyRaceChecking = false;
     public string MemoryModel = "default";
@@ -34,9 +36,21 @@ namespace whoop
         return true;
       }
 
+      if (name == "printPairs") {
+        PrintPairs = true;
+        return true;
+      }
+
       if (name == "originalFile") {
         if (ps.ConfirmArgumentCount(1)) {
           OriginalFile = ps.args[ps.i];
+        }
+        return true;
+      }
+
+      if (name == "analyseOnly") {
+        if (ps.ConfirmArgumentCount(1)) {
+          AnalyseOnly = ps.args[ps.i];
         }
         return true;
       }

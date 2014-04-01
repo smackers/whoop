@@ -76,21 +76,21 @@ namespace whoop
       foreach (var v in wp.memoryRegions) {
         if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
-        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+//        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
+//          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
-        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+//        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
+//          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
       foreach (var v in wp.memoryRegions) {
         if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
-        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+//        Variable raceCheck = wp.GetRaceCheckingVariables().Find(val =>
+//          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
 
-        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
+//        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
+//          Expr.Iff(new IdentifierExpr(raceCheck.tok, raceCheck), Expr.False)));
       }
 
       List<Expr> ins = new List<Expr>();
@@ -142,16 +142,16 @@ namespace whoop
       foreach (var v in wp.memoryRegions) {
         if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
-        Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
-        Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+//        Variable raceCheckW = wp.GetRaceCheckingVariables().Find(val =>
+//          val.Name.Contains("WRITE_HAS_OCCURRED_") && val.Name.Contains(v.Name));
+//        Variable raceCheckR = wp.GetRaceCheckingVariables().Find(val =>
+//          val.Name.Contains("READ_HAS_OCCURRED_") && val.Name.Contains(v.Name));
         Variable offset = wp.GetRaceCheckingVariables().Find(val =>
           val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
 
-        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(raceCheckW.Name))) {
-          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
-          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));
+        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(offset.Name))) {
+//          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckW.tok, raceCheckW));
+//          impl.Proc.Modifies.Add(new IdentifierExpr(raceCheckR.tok, raceCheckR));
           impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
       }

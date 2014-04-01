@@ -144,12 +144,14 @@ class DefaultCmdLineOptions(object):
     self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
     self.includes = clangCoreIncludes
     self.defines = clangCoreDefines
+    self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
     self.quadraticPairing = False
     self.memoryModel = "default"
     self.verbose = False
     self.silent = False
+    self.printPairs = False
     self.generateSmt2 = False
     self.keepTemps = False
     self.debugging = False
@@ -188,38 +190,42 @@ def showHelpAndExit():
   USAGE: whoop.py [options] <inputs>
   
   GENERAL OPTIONS:
-    -h, --help              Display this message
-    -I <value>              Add directory to include search path
-    -D <value>              Define symbol
+    -h, --help              Display this message.
+    -I <value>              Add directory to include search path.
+    -D <value>              Define symbol.
     --timeout=X             Allow each tool in the toolchain to run for X seconds before giving up.
                             A timeout of 0 disables the timeout. The default is {componentTimeout} seconds.
-    --verbose               Show commands to run and use verbose output
-    --time                  Show timing information
+    --verbose               Show commands to run and use verbose output.
+    --time                  Show timing information.
     -V, --version           Show version information.
+    
+  ADVANCED OPTIONS:
+    --print-pairs           Print information about the entry point pairs.
+    --analyse-only=X        Specify entry point to be analysed. All others are skipped.
   
   MODELLING OPTIONS:
-    --quadratic-pairing     Generates quadratic pairs of entry points
+    --quadratic-pairing     Generates quadratic pairs of entry points.
   
   SOLVER OPTIONS:
-    --gen-smt2              Generate smt2 file
+    --gen-smt2              Generate smt2 file.
     --solver=X              Choose which SMT Theorem Prover to use in the backend.
-                            Available options: 'Z3' or 'cvc4' (default is '{solver}')
+                            Available options: 'Z3' or 'cvc4' (default is '{solver}').
     --logic=X               Define the logic to be used by the CVC4 SMT solver backend
-                            (default is {logic})
-  ADVANCED OPTIONS:
-    --clang-opt=...         Specify option to be passed to Clang
-    --smack-opt=...         Specify option to be passed to SMACK
-    --whoop-opt=...         Specify option to be passed to Whoop
-    --whoop-file=X.bpl      Specify a supporting .bpl file to be used during verification
+                            (default is {logic}).
+  TOOL OPTIONS:
+    --clang-opt=...         Specify option to be passed to Clang.
+    --smack-opt=...         Specify option to be passed to SMACK.
+    --whoop-opt=...         Specify option to be passed to Whoop.
+    --whoop-file=X.bpl      Specify a supporting .bpl file to be used during verification.
     --debug                 Enable debugging of verify components: exceptions will
-                            not be suppressed
-    --keep-temps            Keep intermediate bc and bpl
-    --stop-at-re            Stop after generating the refactored driver source code
-    --stop-at-bc            Stop after generating bc
-    --stop-at-bpl           Stop after generating bpl
-    --stop-at-wbpl          Stop after generating wbpl
-    --time-as-csv=label     Print timing as CSV row with label
-    --silent                Silent on success; only show errors/timing
+                            not be suppressed.
+    --keep-temps            Keep intermediate bc and bpl.
+    --stop-at-re            Stop after generating the refactored driver source code.
+    --stop-at-bc            Stop after generating bc.
+    --stop-at-bpl           Stop after generating bpl.
+    --stop-at-wbpl          Stop after generating wbpl.
+    --time-as-csv=label     Print timing as CSV row with label.
+    --silent                Silent on success; only show errors/timing.
   """.format(**stringReplacements))
   raise ReportAndExit(ErrorCodes.SUCCESS)
 
@@ -279,8 +285,12 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.verbose = True
     if o == "--silent":
       CommandLineOptions.silent = True
+    if o == "--print-pairs":
+      CommandLineOptions.printPairs = True
     if o == "--debug":
       CommandLineOptions.debugging = True
+    if o == "--analyse-only":
+      CommandLineOptions.analyseOnly += str(a)
     if o == "--only-race-checking":
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
@@ -468,9 +478,10 @@ def startToolChain(argv):
     opts, args = getopt.gnu_getopt(argv,'hVD:I:', 
              ['help', 'version', 'debug', 'verbose', 'silent',
               'only-race-checking', 'only-deadlock-checking',
-              'time', 'time-as-csv=', 'keep-temps',
+              'time', 'time-as-csv=', 'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
+              'analyse-only=',
               'quadratic-pairing',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
@@ -533,6 +544,8 @@ def startToolChain(argv):
   if CommandLineOptions.generateSmt2:
     CommandLineOptions.whoopDriverOptions += [ "/proverLog:" + smt2Filename ]
   
+  if CommandLineOptions.printPairs:
+    CommandLineOptions.whoopEngineOptions += [ "/printPairs" ]
   if CommandLineOptions.debugging:
     CommandLineOptions.whoopEngineOptions += [ "/debugWhoop" ]
     CommandLineOptions.whoopDriverOptions += [ "/debugWhoop" ]
@@ -547,6 +560,9 @@ def startToolChain(argv):
     CommandLineOptions.whoopEngineOptions += [ "/quadraticPairing" ]
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
+  
+  if CommandLineOptions.analyseOnly != "":
+    CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
   
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ wbplFilename ]

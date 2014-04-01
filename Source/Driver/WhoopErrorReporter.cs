@@ -134,28 +134,21 @@ namespace whoop
       }
 
       string expr = assert.Expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None)[1]
-        .Split(new string[] { "@" }, StringSplitOptions.None)[0];
+        .Split(new string[] { " ==> " }, StringSplitOptions.None)[0];
       Contract.Requires(expr != null && expr.Contains("inline$"));
 
-      if (Util.GetCommandLineOptions().DebugWhoop) {
-        Console.WriteLine("expr: " + expr);
+      Model.Func aoffFunc = cex.Model.GetFunc(expr);
+      Contract.Requires(aoffFunc != null && aoffFunc.Apps.Count() == 1);
+
+      Model.Element aoff = null;
+      foreach (var app in aoffFunc.Apps) {
+        aoff = app.Result;
+        break;
       }
-
-      Model.CapturedState checkState = GetStateFromModel(stateName, cex.Model);
-      Contract.Requires(checkState != null);
-
-      if (Util.GetCommandLineOptions().DebugWhoop) {
-        Console.WriteLine("*** STATE {0}", checkState.Name);
-        foreach (var v in checkState.Variables)
-          Console.WriteLine("  {0} -> {1}", v, checkState.TryGet(v));
-        Console.WriteLine("*** END_STATE", checkState.Name);
-      }
-
-      Model.Element aoff = checkState.TryGet(expr);
       Contract.Requires(aoff != null);
 
       if (Util.GetCommandLineOptions().DebugWhoop) {
-        Console.WriteLine(aoff);
+        Console.WriteLine(aoffFunc.Name + " :: " + aoff);
       }
 
       return aoff.ToString();
@@ -202,6 +195,13 @@ namespace whoop
             val.Contains(accessOffset.Substring(13)) && val.Contains("$ptr"));
           if (ptrName == null) continue;
 
+          if (Util.GetCommandLineOptions().DebugWhoop) {
+            Console.WriteLine("*** STATE {0}", logState.Name);
+            foreach (var v in logState.Variables)
+              Console.WriteLine("  {0} -> {1}", v, logState.TryGet(v));
+            Console.WriteLine("*** END_STATE", logState.Name);
+          }
+
           Model.Element ptrVal = logState.TryGet(ptrName);
           if (ptrVal == null) continue;
 
@@ -216,8 +216,6 @@ namespace whoop
             break;
           }
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
-
-          if (Util.GetCommandLineOptions().DebugWhoop) Console.WriteLine("aoff: " + aoff.ToString());
 
           Dictionary<string, bool> logStateLocksDictionary = null;
           logStateLocksDictionary = GetLogStateLocksDictionary(cex, logState);

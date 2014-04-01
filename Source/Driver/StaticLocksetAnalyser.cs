@@ -124,6 +124,8 @@ namespace whoop
       // operate on a stable copy, in case it gets updated while we're running
       var decls = wp.program.TopLevelDeclarations.ToArray();
       foreach (var initFunc in wp.GetInitFunctions()) {
+        if (!initFunc.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
+
         VC.ConditionGeneration vcgen = null;
         try {
           vcgen = new VC.VCGen(wp.program, Util.GetCommandLineOptions().SimplifyLogFilePath,

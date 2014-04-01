@@ -3,11 +3,23 @@
 
 unsigned int ksize(const void *);
 
-void *kmalloc(size_t size, gfp_t flags);
+void *kmalloc(size_t size, gfp_t flags)
+{
+	void *memory = (void *) malloc(size);
+	return memory;
+}
 
-void *kzalloc(size_t size, gfp_t flags);
+void *kzalloc(size_t size, gfp_t flags)
+{
+	void *memory = (void *) malloc(size);
+	return memory;
+}
 
-void *__kmalloc_node(size_t size, gfp_t flags, int node);
+void *kmalloc_node(size_t size, gfp_t flags, int node)
+{
+	void *memory = (void *) malloc(size);
+	return memory;
+}
 
 void kfree(const void *);
 

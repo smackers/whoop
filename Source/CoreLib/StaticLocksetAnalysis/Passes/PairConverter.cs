@@ -66,7 +66,7 @@ namespace whoop
         }
       }
 
-      if (Util.GetCommandLineOptions().DebugWhoop) {
+      if (Util.GetCommandLineOptions().PrintPairs) {
         foreach (var v in wp.entryPointPairs) {
           Console.WriteLine("Entry Point: " + v.Item1);
           foreach (var z in v.Item2) {
