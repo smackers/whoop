@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
 
+sudo apt-get update
+sudo apt-get install -y python-software-properties
+sudo apt-get install -y build-essential automake checkinstall intltool git subversion
+
+sudo add-apt-repository ppa:keks9n/monodevelop-latest
+sudo apt-get update
+sudo apt-get install -y monodevelop-latest
+# apt-get install -y g++
+
 export BUILD_ROOT=/vagrant/build
 
-cd ${BUILD_ROOT}
-export MONO_VERSION=3.0.7
-wget http://download.mono-project.com/sources/mono/mono-${MONO_VERSION}.tar.bz2
-tar jxf mono-${MONO_VERSION}.tar.bz2
-rm mono-${MONO_VERSION}.tar.bz2
-cd ${BUILD_ROOT}/mono-${MONO_VERSION}
-./configure --prefix=${BUILD_ROOT}/local --with-large-heap=yes --enable-nls=no
-make
-make install
-
-export PATH=${BUILD_ROOT}/local/bin:$PATH
+# cd ${BUILD_ROOT}
+# export MONO_VERSION=3.0.7
+# wget http://download.mono-project.com/sources/mono/mono-${MONO_VERSION}.tar.bz2
+# tar jxf mono-${MONO_VERSION}.tar.bz2
+# rm mono-${MONO_VERSION}.tar.bz2
+# cd ${BUILD_ROOT}/mono-${MONO_VERSION}
+# ./configure --prefix=${BUILD_ROOT}/local --with-large-heap=yes --enable-nls=no
+# make
+# make install
+# 
+# export PATH=${BUILD_ROOT}/local/bin:$PATH
 
 export LLVM_RELEASE=34
 mkdir -p ${BUILD_ROOT}/llvm_and_clang
