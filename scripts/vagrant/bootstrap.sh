@@ -18,7 +18,7 @@ cd ${BUILD_ROOT}
 
 echo Getting CMAKE ${CMAKE_VERSION} ...
 
-http://www.cmake.org/files/v2.8/cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
+wget http://www.cmake.org/files/v2.8/cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
 
 echo Unpacking CMAKE ${CMAKE_VERSION} ...
 
