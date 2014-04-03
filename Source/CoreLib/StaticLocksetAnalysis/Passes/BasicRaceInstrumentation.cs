@@ -88,8 +88,8 @@ namespace whoop
       List<Variable> dummies = new List<Variable>();
       dummies.Add(lockVar);
 
+      IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
       IdentifierExpr lsExpr = new IdentifierExpr(ls.id.tok, ls.id);
-      IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
 
       AssumeCmd assume = new AssumeCmd(Token.NoToken, new ForallExpr(Token.NoToken, dummies,
                            Expr.Iff(RaceInstrumentationUtil.MakeMapSelect(temp, lockVar),
@@ -97,7 +97,7 @@ namespace whoop
                                new List<Expr>(new Expr[] {
               new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                 new List<Expr>(new Expr[] {
-                  lsExpr, lockExpr
+                  lsExpr, ptrExpr
                 })), new IdentifierExpr(lockVar.tok, lockVar)
             })), RaceInstrumentationUtil.MakeMapSelect(wp.currLockset.id, lockVar)))));
 
