@@ -65,7 +65,6 @@ namespace whoop
     private AssignCmd MakeLogOffsetAssignCmd(Lockset ls)
     {
       Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(wp.memoryModelType);
-      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(wp.memoryModelType);
       Variable offset = wp.GetRaceCheckingVariables().Find(val =>
         val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.targetName)));
 

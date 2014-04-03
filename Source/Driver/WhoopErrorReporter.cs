@@ -243,7 +243,6 @@ namespace whoop
           foreach (var kvp in checkStateLocksDictionary) {
             bool logValue;
             logStateLocksDictionary.TryGetValue(kvp.Key, out logValue);
-            if (logValue == null) continue;
             if (kvp.Value && logValue) {
               thereIsAtLeastOneCommonLock = true;
               break;
