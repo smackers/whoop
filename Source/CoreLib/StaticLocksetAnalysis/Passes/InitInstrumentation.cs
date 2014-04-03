@@ -46,31 +46,9 @@ namespace whoop
 
       Block b = new Block(Token.NoToken, "$checker", new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      List<Variable> dummiesCLS = new List<Variable>();
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-                             wp.memoryModelType));
-      dummiesCLS.Add(dummyLock);
-
-      List<Variable> dummiesLS = new List<Variable>();
-      Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-                            wp.memoryModelType));
-      dummiesLS.Add(dummyPtr);
-      dummiesLS.Add(dummyLock);
-
       foreach (var ls in wp.locksets) {
         if (!vars.Any(val => val.Name.Equals(ls.targetName))) continue;
-
-        b.Cmds.Insert(b.Cmds.Count, new AssumeCmd(Token.NoToken,
-          new ForallExpr(Token.NoToken, dummiesLS,
-            Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-              new List<Expr>(new Expr[] {
-                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                  new List<Expr>(new Expr[] {
-                    new IdentifierExpr(ls.id.tok, ls.id),
-                    new IdentifierExpr(dummyPtr.tok, dummyPtr)
-                  })),
-                new IdentifierExpr(dummyLock.tok, dummyLock)
-              })), Expr.True))));
+        b.Cmds.Insert(b.Cmds.Count, MakeLocksetAssumeCmd(ls));
       }
 
       List<Expr> ins = new List<Expr>();
@@ -108,6 +86,47 @@ namespace whoop
       impl.Blocks.Add(b);
     }
 
+    private AssumeCmd MakeLocksetAssumeCmd(Lockset ls)
+    {
+      AssumeCmd assume = null;
+
+      List<Variable> dummies = new List<Variable>();
+      Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+        wp.memoryModelType));
+      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+        wp.memoryModelType));
+
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+        dummies.Add(dummyPtr);
+        dummies.Add(dummyLock);
+
+        assume = new AssumeCmd(Token.NoToken,
+          new ForallExpr(Token.NoToken, dummies,
+            Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                  new List<Expr>(new Expr[] {
+                    new IdentifierExpr(ls.id.tok, ls.id),
+                    new IdentifierExpr(dummyPtr.tok, dummyPtr)
+                  })),
+                new IdentifierExpr(dummyLock.tok, dummyLock)
+              })), Expr.True)));
+      } else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG) {
+        dummies.Add(dummyLock);
+
+        assume = new AssumeCmd(Token.NoToken,
+          new ForallExpr(Token.NoToken, dummies,
+            Expr.Iff(
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new IdentifierExpr(ls.id.tok, ls.id),
+                  new IdentifierExpr(dummyLock.tok, dummyLock)
+                })), Expr.True)));
+      }
+
+      return assume;
+    }
+
     private void InstrumentProcedure(Implementation impl)
     {
       Implementation pairImpl = wp.GetImplementation(impl.Name.Substring(5));
@@ -119,13 +138,13 @@ namespace whoop
         impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
       }
 
-      foreach (var v in wp.memoryRegions) {
-        if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+        foreach (var v in wp.memoryRegions) {
+          if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
-        Variable offset = wp.GetRaceCheckingVariables().Find(val =>
-          val.Name.Contains("ACCESS_OFFSET_") && val.Name.Contains(v.Name));
+          Variable offset = wp.GetRaceCheckingVariables().Find(val =>
+            val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(v.Name)));
 
-        if (!impl.Proc.Modifies.Exists(val => val.Name.Equals(offset.Name))) {
           impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
       }

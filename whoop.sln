@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoopDriver", "Source\Driver\WhoopDriver.csproj", "{11F99710-0502-4CA4-B0AA-1CF4635A27B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoopUtil", "Source\Util\WhoopUtil.csproj", "{1646810D-F199-4F97-B375-13FC7402B5B7}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoopCoreLib", "Source\CoreLib\WhoopCoreLib.csproj", "{ED690CF6-D197-4E45-BEF3-EA47A491C757}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoopEngine", "Source\Engine\WhoopEngine.csproj", "{B4330697-B2C4-4B40-83BB-75D4C2B4F656}"
@@ -25,14 +23,6 @@ Global
 		{11F99710-0502-4CA4-B0AA-1CF4635A27B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{11F99710-0502-4CA4-B0AA-1CF4635A27B2}.Release|x86.ActiveCfg = Release|x86
 		{11F99710-0502-4CA4-B0AA-1CF4635A27B2}.Release|x86.Build.0 = Release|x86
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Debug|x86.ActiveCfg = Debug|x86
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Debug|x86.Build.0 = Debug|x86
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Release|x86.ActiveCfg = Release|x86
-		{1646810D-F199-4F97-B375-13FC7402B5B7}.Release|x86.Build.0 = Release|x86
 		{B4330697-B2C4-4B40-83BB-75D4C2B4F656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B4330697-B2C4-4B40-83BB-75D4C2B4F656}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4330697-B2C4-4B40-83BB-75D4C2B4F656}.Debug|x86.ActiveCfg = Debug|x86

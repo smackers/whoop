@@ -40,7 +40,10 @@ namespace whoop
 
       new LocksetInstrumentation(wp).Run();
 
-      new RaceInstrumentation(wp).Run();
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+        new BasicRaceInstrumentation(wp).Run();
+      else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
+        new WatchdogRaceInstrumentation(wp).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
         new DeadlockInstrumentation(wp).Run();

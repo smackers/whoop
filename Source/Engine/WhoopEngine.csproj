@@ -46,10 +46,6 @@
       <Project>{ED690CF6-D197-4E45-BEF3-EA47A491C757}</Project>
       <Name>WhoopCoreLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Util\WhoopUtil.csproj">
-      <Project>{1646810D-F199-4F97-B375-13FC7402B5B7}</Project>
-      <Name>WhoopUtil</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

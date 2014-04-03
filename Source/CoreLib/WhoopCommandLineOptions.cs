@@ -55,6 +55,24 @@ namespace whoop
         return true;
       }
 
+      if (name == "analyseOnly") {
+        if (ps.ConfirmArgumentCount(1)) {
+          AnalyseOnly = ps.args[ps.i];
+        }
+        return true;
+      }
+
+      if (name == "raceChecking") {
+        if (ps.ConfirmArgumentCount(1)) {
+          if(ps.args[ps.i] == "BASIC") {
+            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.BASIC;
+          } else if(ps.args[ps.i] == "WATCHDOG") {
+            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
+          }
+        }
+        return true;
+      }
+
       if (name == "quadraticPairing") {
         QuadraticPairing = true;
         return true;

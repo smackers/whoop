@@ -64,14 +64,13 @@ namespace whoop
       PopulateModelWithStatesIfNecessary(cex);
 
       AssumeCmd conflictingAction = GetCorrespondingAssume(cex);
-      string accessOffset = "ACCESS_OFFSET_" + GetSharedResourceName(conflictingAction.Attributes);
       string access2 = GetAccessType(conflictingAction.Attributes);
       string raceName, access1;
       string raceyOffset = GetOffset(cex, conflictingAction.Attributes);
 
       SourceLocationInfo sourceInfoForSecondAccess = new SourceLocationInfo(conflictingAction.Attributes);
       List<AssumeCmd> potentialConflictingActions = DetermineConflictingActions(cex, conflictingAction,
-                                                      accessOffset, raceyOffset, access2);
+                                                      raceyOffset, access2);
 
       foreach (var v in reportedErrors) {
         potentialConflictingActions.RemoveAll(
@@ -162,12 +161,15 @@ namespace whoop
     }
 
     private List<AssumeCmd> DetermineConflictingActions(AssertCounterexample cex, AssumeCmd conflictingAction,
-      string accessOffset, string raceyOffset, string otherAccess)
+      string raceyOffset, string otherAccess)
     {
+      string sharedResourceName = GetSharedResourceName(conflictingAction.Attributes);
       string checkStateName = QKeyValue.FindStringAttribute(conflictingAction.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
+
       Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
+
       Dictionary<string, bool> checkStateLocksDictionary = null;
       checkStateLocksDictionary = GetCheckStateLocksDictionary(cex, checkState);
 
@@ -176,7 +178,7 @@ namespace whoop
       foreach (var b in cex.Trace) {
         foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
           string stateName = null;
-          if (QKeyValue.FindStringAttribute(c.Attributes, "resource") == GetSharedResourceName(conflictingAction.Attributes))
+          if (QKeyValue.FindStringAttribute(c.Attributes, "resource") == sharedResourceName)
             stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
           else continue;
           if (stateName == null) continue;
@@ -188,13 +190,6 @@ namespace whoop
           Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          Model.Element aoffMap = logState.TryGet(accessOffset);
-          if (aoffMap == null) continue;
-
-          string ptrName = logState.Variables.LastOrDefault(val =>
-            val.Contains(accessOffset.Substring(13)) && val.Contains("$ptr"));
-          if (ptrName == null) continue;
-
           if (Util.GetCommandLineOptions().DebugWhoop) {
             Console.WriteLine("*** STATE {0}", logState.Name);
             foreach (var v in logState.Variables)
@@ -202,19 +197,38 @@ namespace whoop
             Console.WriteLine("*** END_STATE", logState.Name);
           }
 
-          Model.Element ptrVal = logState.TryGet(ptrName);
-          if (ptrVal == null) continue;
-
-          Model.Func mapSelectFunc = cex.Model.GetFunc("Select_[$int]$int");
-          if (mapSelectFunc == null && mapSelectFunc.Arity != 0) continue;
-
           Model.Element aoff = null;
-          foreach (var app in mapSelectFunc.Apps) {
-            if (!app.Args[0].ToString().Equals(aoffMap.ToString())) continue;
-            if (!app.Args[1].ToString().Equals(ptrVal.ToString())) continue;
-            aoff = app.Result;
-            break;
+
+          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+            string accessOffset = "ACCESS_OFFSET_" + sharedResourceName;
+
+            Model.Element aoffMap = logState.TryGet(accessOffset);
+            if (aoffMap == null) continue;
+
+            string ptrName = logState.Variables.LastOrDefault(val =>
+              val.Contains(sharedResourceName) && val.Contains("$ptr"));
+            if (ptrName == null) continue;
+
+            Model.Element ptrVal = logState.TryGet(ptrName);
+            if (ptrVal == null) continue;
+
+            Model.Func mapSelectFunc = cex.Model.GetFunc("Select_[$int]$int");
+            if (mapSelectFunc == null && mapSelectFunc.Arity != 0) continue;
+
+            foreach (var app in mapSelectFunc.Apps) {
+              if (!app.Args[0].ToString().Equals(aoffMap.ToString())) continue;
+              if (!app.Args[1].ToString().Equals(ptrVal.ToString())) continue;
+              aoff = app.Result;
+              break;
+            }
+          } else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG) {
+            string ptrName = logState.Variables.LastOrDefault(val =>
+              val.Contains(sharedResourceName) && val.Contains("$ptr"));
+            if (ptrName == null) continue;
+
+            aoff = logState.TryGet(ptrName);
           }
+
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 
           Dictionary<string, bool> logStateLocksDictionary = null;

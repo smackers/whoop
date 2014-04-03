@@ -148,6 +148,7 @@ class DefaultCmdLineOptions(object):
     self.onlyRaces = False
     self.onlyDeadlocks = False
     self.quadraticPairing = False
+    self.raceChecking = "watchdog"
     self.memoryModel = "default"
     self.verbose = False
     self.silent = False
@@ -202,8 +203,8 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
-  
-  MODELLING OPTIONS:
+    --race-checking=X       Choose which method of race checking to use.  Options are: 'basic' and 'watchdog'.
+                            Default is 'watchdog'.
     --quadratic-pairing     Generates quadratic pairs of entry points.
   
   SOLVER OPTIONS:
@@ -338,6 +339,11 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopDriverOptions += [ a ]
+    if o == "--race-checking":
+      if a.lower() in ("basic","watchdog"):
+        CommandLineOptions.raceChecking = a.lower()
+      else:
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --race-checking must be one of 'basic' or 'watchdog'")
     if o == "--solver":
       if a.lower() in ("z3","cvc4"):
         CommandLineOptions.solver = a.lower()
@@ -482,7 +488,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=',
-              'quadratic-pairing',
+              'race-checking=', 'quadratic-pairing',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -555,6 +561,13 @@ def startToolChain(argv):
   CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", filename ]
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
+  
+  if CommandLineOptions.raceChecking == "watchdog":
+    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:WATCHDOG" ]
+    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:WATCHDOG" ]
+  else:
+    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:BASIC" ]
+    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:BASIC" ]
   
   if CommandLineOptions.quadraticPairing:
     CommandLineOptions.whoopEngineOptions += [ "/quadraticPairing" ]

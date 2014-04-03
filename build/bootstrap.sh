@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
 sudo apt-get update
-sudo apt-get install -y python-software-properties
-sudo apt-get install -y build-essential automake checkinstall intltool git subversion
+# sudo apt-get install -y python-software-properties
+# sudo apt-get install -y build-essential
+sudo apt-get install -y automake git subversion
+# sudo apt-get install -y mono-complete mono-xbuild
 
-sudo add-apt-repository ppa:keks9n/monodevelop-latest
-sudo apt-get update
-sudo apt-get install -y monodevelop-latest
+# sudo add-apt-repository ppa:keks9n/monodevelop-latest
+# sudo apt-get update
+# sudo apt-get install -y monodevelop-latest
 # apt-get install -y g++
 
 export BUILD_ROOT=/vagrant/build
@@ -31,6 +33,7 @@ cd ${BUILD_ROOT}/llvm_and_clang/src/tools
 svn co -q http://llvm.org/svn/llvm-project/cfe/branches/release_${LLVM_RELEASE} clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects
 svn co -q http://llvm.org/svn/llvm-project/compiler-rt/branches/release_${LLVM_RELEASE} compiler-rt
+svn cleanup
 
 mkdir -p ${BUILD_ROOT}/llvm_and_clang/build
 cd ${BUILD_ROOT}/llvm_and_clang/build

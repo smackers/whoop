@@ -48,12 +48,15 @@ namespace whoop
       wp.resContext.AddProcedure(proc);
 
       List<Variable> localVars = new List<Variable>();
-      Variable trackParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "track", Microsoft.Boogie.Type.Bool));
-      localVars.Add(trackParam);
+      Variable trackParam = RaceInstrumentationUtil.MakeTrackLocalVariable();
+
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+        localVars.Add(trackParam);
 
       Block b = new Block(Token.NoToken, "_CHECK_$" + wp.currLockset.id.Name, new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam)}));
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+        b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam)}));
 
       List<Variable> dummies = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",

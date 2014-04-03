@@ -52,11 +52,19 @@ namespace whoop
     private void AddMemoryLocksets()
     {
       for (int i = 0; i < wp.memoryRegions.Count; i++) {
-        wp.locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
-          new TypedIdent(Token.NoToken, "LS_" + wp.memoryRegions[i].Name,
-            new MapType(Token.NoToken, new List<TypeVariable>(),
-              new List<Microsoft.Boogie.Type> { wp.memoryModelType },
-              wp.currLockset.id.TypedIdent.Type)))));
+        if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+          wp.locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
+            new TypedIdent(Token.NoToken, "LS_" + wp.memoryRegions[i].Name,
+              new MapType(Token.NoToken, new List<TypeVariable>(),
+                new List<Microsoft.Boogie.Type> { wp.memoryModelType },
+                wp.currLockset.id.TypedIdent.Type)))));
+        } else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG) {
+          wp.locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
+            new TypedIdent(Token.NoToken, "LS_" + wp.memoryRegions[i].Name,
+              wp.currLockset.id.TypedIdent.Type))));
+        }
+        Contract.Requires(wp.locksets.Count == i + 1 && wp.locksets[i] != null);
+
         wp.locksets[i].id.AddAttribute("lockset", new object[] { });
         wp.program.TopLevelDeclarations.Add(wp.locksets[i].id);
       }
