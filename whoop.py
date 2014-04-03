@@ -9,9 +9,10 @@ import sys
 import threading
 import timeit
 import pprint
+import fnmatch
 import re
 
-VERSION = '0.3'
+VERSION = '0.7'
 
 try:
   import psutil
@@ -147,8 +148,8 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
-    self.quadraticPairing = False
-    self.raceChecking = "watchdog"
+    self.functionPairing = "linear"
+    self.raceChecking = "normal"
     self.memoryModel = "default"
     self.verbose = False
     self.silent = False
@@ -203,9 +204,10 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
-    --race-checking=X       Choose which method of race checking to use.  Options are: 'basic' and 'watchdog'.
-                            Default is 'watchdog'.
-    --quadratic-pairing     Generates quadratic pairs of entry points.
+    --function-pairing=X    Choose which method of function checking to use.  Options are: 'linear', 'triangular'
+                            and 'quadratic'. Default is 'linear'.
+    --race-checking=X       Choose which method of race checking to use.  Options are: 'normal' and 'watchdog'.
+                            Default is 'normal'.
   
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
@@ -296,8 +298,6 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
-    if o == "--quadratic-pairing":
-      CommandLineOptions.quadraticPairing = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--time":
@@ -339,11 +339,16 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopDriverOptions += [ a ]
+    if o == "--function-pairing":
+      if a.lower() in ("linear","triangular","quadratic"):
+        CommandLineOptions.functionPairing = a.lower()
+      else:
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --function-pairing must be one of 'linear', 'triangular' or 'quadratic'")      
     if o == "--race-checking":
-      if a.lower() in ("basic","watchdog"):
+      if a.lower() in ("normal","watchdog"):
         CommandLineOptions.raceChecking = a.lower()
       else:
-        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --race-checking must be one of 'basic' or 'watchdog'")
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --race-checking must be one of 'normal' or 'watchdog'")
     if o == "--solver":
       if a.lower() in ("z3","cvc4"):
         CommandLineOptions.solver = a.lower()
@@ -488,7 +493,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=',
-              'race-checking=', 'quadratic-pairing',
+              'race-checking=', 'function-pairing=',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -507,7 +512,7 @@ def startToolChain(argv):
   reFilename = filename + '.re.c'
   bcFilename = filename + '.bc'
   bplFilename = filename + '.bpl'
-  wbplFilename = filename + '.wbpl'
+  # wbplFilename = filename + '.wbpl'
   infoFilename = filename + '.info'
   smt2Filename = filename + '.smt2'
   if not CommandLineOptions.keepTemps:
@@ -517,11 +522,19 @@ def startToolChain(argv):
       if filename == inputFilename: return
       try: os.remove(filename)
       except OSError: pass
+    def DeleteFilesWithPattern(patern):
+      """ Delete all the files with the given pattern if they exist """
+      thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
+      path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
+      for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
+        if fnmatch.fnmatch(file, thisfile + '$*.wbpl'):
+          try: os.remove(path + file)
+          except OSError: pass
     cleanUpHandler.register(DeleteFile, bcFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, reFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
-    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFile, wbplFilename)
+    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFilesWithPattern, 'filename$*.wbpl')
   
   CommandLineOptions.chauffeurOptions += clangPluginOptions
   CommandLineOptions.chauffeurOptions.append("-o")
@@ -562,15 +575,23 @@ def startToolChain(argv):
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
   
+  if CommandLineOptions.functionPairing == "linear":
+    CommandLineOptions.whoopEngineOptions += [ "/functionPairing:LINEAR" ]
+    CommandLineOptions.whoopDriverOptions += [ "/functionPairing:LINEAR" ]
+  elif CommandLineOptions.functionPairing == "triangular":
+    CommandLineOptions.whoopEngineOptions += [ "/functionPairing:TRIANGULAR" ]
+    CommandLineOptions.whoopDriverOptions += [ "/functionPairing:TRIANGULAR" ]
+  else:
+    CommandLineOptions.whoopEngineOptions += [ "/functionPairing:QUADRATIC" ]
+    CommandLineOptions.whoopDriverOptions += [ "/functionPairing:QUADRATIC" ]
+  
   if CommandLineOptions.raceChecking == "watchdog":
     CommandLineOptions.whoopEngineOptions += [ "/raceChecking:WATCHDOG" ]
     CommandLineOptions.whoopDriverOptions += [ "/raceChecking:WATCHDOG" ]
   else:
-    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:BASIC" ]
-    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:BASIC" ]
+    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:NORMAL" ]
+    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:NORMAL" ]
   
-  if CommandLineOptions.quadraticPairing:
-    CommandLineOptions.whoopEngineOptions += [ "/quadraticPairing" ]
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
   
@@ -578,7 +599,7 @@ def startToolChain(argv):
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
   
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
-  CommandLineOptions.whoopDriverOptions += [ wbplFilename ]
+  CommandLineOptions.whoopDriverOptions += [ bplFilename ]
   
   """ RUN CHAUFFEUR """
   if not CommandLineOptions.skip["chauffeur"]:

@@ -21,10 +21,13 @@ namespace whoop
   public class InitInstrumentation
   {
     WhoopProgram wp;
+    string functionName;
 
-    public InitInstrumentation(WhoopProgram wp)
+    public InitInstrumentation(WhoopProgram wp, string functionName)
     {
+      Contract.Requires(wp != null && functionName != null);
       this.wp = wp;
+      this.functionName = functionName;
     }
 
     public void Run()
@@ -32,7 +35,6 @@ namespace whoop
       foreach (var impl in wp.GetInitFunctions()) {
         InstrumentImplementation(impl);
         InstrumentProcedure(impl);
-        CleanUp(impl);
       }
     }
 
@@ -53,7 +55,7 @@ namespace whoop
 
       List<Expr> ins = new List<Expr>();
 
-      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+      if (FunctionPairingUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC) {
         string[] str =  impl.Name.Split(new Char[] { '$' });
         Contract.Requires(str.Length == 2);
 
@@ -61,7 +63,9 @@ namespace whoop
           (val as CallCmd).callee.Equals(str[1])) as CallCmd);
         foreach (var e in c.Ins) ins.Add(e.Clone() as Expr);
 
-        List<string> eps = wp.entryPointPairs.Find(val => val.Item1.Equals(str[1])).Item2;
+        List<string> eps = FunctionPairingUtil.FunctionPairs[functionName].
+          Find(val => val.Item1.Equals(str[1])).Item2;
+
         foreach (var ep in eps) {
           CallCmd cep = (impl.Blocks.SelectMany(val => val.Cmds).First(val => (val is CallCmd) &&
                         (val as CallCmd).callee.Equals(ep)) as CallCmd);
@@ -96,7 +100,7 @@ namespace whoop
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
         wp.memoryModelType));
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
         dummies.Add(dummyPtr);
         dummies.Add(dummyLock);
 
@@ -138,7 +142,7 @@ namespace whoop
         impl.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.id));
       }
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
         foreach (var v in wp.memoryRegions) {
           if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
@@ -147,15 +151,6 @@ namespace whoop
 
           impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
-      }
-    }
-
-    private void CleanUp(Implementation impl)
-    {
-      foreach (var b in impl.Blocks) {
-        if (b.Label.Equals("$checker")) break;
-        b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && wp.GetImplementationsToAnalyse().Exists(val2 =>
-          val2.Name.Contains((val1 as CallCmd).callee)));
       }
     }
   }

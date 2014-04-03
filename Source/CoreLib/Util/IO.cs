@@ -25,8 +25,10 @@ namespace whoop
     public static Dictionary<string, Dictionary<string, string>> ParseDriverInfo()
     {
       Dictionary<string, Dictionary<string, string>> eps = new Dictionary<string, Dictionary<string, string>>();
-      string driverInfoFile = Util.GetCommandLineOptions().OriginalFile.Substring(0,
-                                Util.GetCommandLineOptions().OriginalFile.IndexOf(".")) + ".info";
+      List<string> files = Util.GetCommandLineOptions().Files;
+
+      string driverInfoFile = files[files.Count - 1].Substring(0,
+                                files[files.Count - 1].IndexOf(".")) + ".info";
 
       StreamReader file = new StreamReader(driverInfoFile);
       string line;
@@ -45,6 +47,20 @@ namespace whoop
 
       file.Close();
       return eps;
+    }
+
+    public static void EmitProgram(Program program, string file, string additional, string extension = "bpl")
+    {
+      string directoryContainingFile = Path.GetDirectoryName(file);
+      if (string.IsNullOrEmpty(directoryContainingFile))
+        directoryContainingFile = Directory.GetCurrentDirectory();
+
+      var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
+        Path.GetFileNameWithoutExtension(file);
+
+      using (TokenTextWriter writer = new TokenTextWriter(fileName + "$" + additional + "." + extension)) {
+        program.Emit(writer);
+      }
     }
 
     public static void EmitProgram(Program program, string file, string extension = "bpl")

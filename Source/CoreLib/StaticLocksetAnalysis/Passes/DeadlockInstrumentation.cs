@@ -50,12 +50,12 @@ namespace whoop
       List<Variable> localVars = new List<Variable>();
       Variable trackParam = RaceInstrumentationUtil.MakeTrackLocalVariable();
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         localVars.Add(trackParam);
 
       Block b = new Block(Token.NoToken, "_CHECK_$" + wp.currLockset.id.Name, new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam)}));
 
       List<Variable> dummies = new List<Variable>();

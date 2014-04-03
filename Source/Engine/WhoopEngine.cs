@@ -17,6 +17,8 @@ using Microsoft.Boogie;
 
 namespace whoop
 {
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+
   public class WhoopEngine
   {
     public static void Main(string[] args)
@@ -58,10 +60,26 @@ namespace whoop
           }
         }
 
-        WhoopProgram wp = new WhoopProgramParser(fileList[fileList.Count - 1], "bpl").ParseNew();
-        if (wp == null) Environment.Exit((int) Outcome.ParsingError);
+        FunctionPairingUtil.ParseEntryPoints();
+        FunctionPairingUtil.GetFunctionPairs();
 
-        new InstrumentationEngine(wp).Run();
+        if (Util.GetCommandLineOptions().PrintPairs) {
+          FunctionPairingUtil.PrintFunctionPairs();
+        }
+
+        List<FunctionPairType> functionPairs = new List<FunctionPairType>();
+
+        foreach (var kvp in FunctionPairingUtil.FunctionPairs) {
+          functionPairs.Add(new Tuple<string, List<Tuple<string, List<string>>>,
+            WhoopProgram>(kvp.Key, kvp.Value,
+              new WhoopProgramParser(fileList[fileList.Count - 1], "bpl").ParseNew()));
+          if (functionPairs[functionPairs.Count - 1].Item3 == null)
+            Environment.Exit((int) Outcome.ParsingError);
+        }
+
+        foreach (var pair in functionPairs) {
+          new InstrumentationEngine(pair).Run();
+        }
 
         Environment.Exit((int) Outcome.Done);
       } catch (Exception e) {

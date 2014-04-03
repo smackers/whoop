@@ -23,14 +23,12 @@ namespace whoop
     public Program program;
     public ResolutionContext resContext;
 
-    public Dictionary<string, Dictionary<string, string>> entryPoints;
     public Lockset currLockset;
     public List<Lockset> locksets;
 
     internal SharedStateAnalyser sharedStateAnalyser;
 
     internal Implementation initFunc;
-    internal List<Tuple<string, List<string>>> entryPointPairs;
     internal List<Variable> memoryRegions;
 
     internal Microsoft.Boogie.Type memoryModelType;
@@ -44,13 +42,11 @@ namespace whoop
       this.program = program;
       this.resContext = rc;
       this.locksets = new List<Lockset>();
-      this.entryPointPairs = new List<Tuple<string, List<string>>>();
 
       if (Util.GetCommandLineOptions().MemoryModel.Equals("default")) {
         this.memoryModelType = Microsoft.Boogie.Type.Int;
       }
 
-      this.entryPoints = IO.ParseDriverInfo();
       this.sharedStateAnalyser = new SharedStateAnalyser(this);
       this.memoryRegions = sharedStateAnalyser.GetMemoryRegions();
     }
@@ -161,23 +157,9 @@ namespace whoop
 
     internal void DetectInitFunction()
     {
-      string initFuncName = null;
-      bool found = false;
-
       try {
-        foreach (var kvp in entryPoints) {
-          foreach (var ep in kvp.Value) {
-            if (ep.Key.Equals("probe")) {
-              initFuncName = ep.Value;
-              found = true;
-              break;
-            }
-          }
-          if (found) break;
-        }
-        if (!found) throw new Exception("no main function found");
         initFunc = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(initFuncName)) as Implementation);
+          (val as Implementation).Name.Equals(FunctionPairingUtil.initFuncName)) as Implementation);
         if (initFunc == null) throw new Exception("no main function found");
       } catch (Exception e) {
         Console.Error.Write("Exception thrown in Whoop: ");

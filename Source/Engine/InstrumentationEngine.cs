@@ -19,28 +19,30 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+
   public class InstrumentationEngine
   {
+    FunctionPairType functionPair;
     WhoopProgram wp;
-    ModelCleaner cleaner;
 
-    public InstrumentationEngine(WhoopProgram wp)
+    public InstrumentationEngine(FunctionPairType functionPair)
     {
-      Contract.Requires(wp != null);
-      this.wp = wp;
-      this.cleaner = new ModelCleaner(wp);
+      Contract.Requires(functionPair.Item3 != null);
+      this.functionPair = functionPair;
+      this.wp = functionPair.Item3;
     }
 
     public void Run()
     {
-      cleaner.RemoveUnecesseryAssumes();
+      ModelCleaner.RemoveUnecesseryAssumes(wp);
 
-      new PairConverter(wp).Run();
+      new PairConverter(wp, functionPair.Item1).Run();
       new InitConverter(wp).Run();
 
       new LocksetInstrumentation(wp).Run();
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         new BasicRaceInstrumentation(wp).Run();
       else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
         new WatchdogRaceInstrumentation(wp).Run();
@@ -48,23 +50,24 @@ namespace whoop
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
         new DeadlockInstrumentation(wp).Run();
 
-      new InitInstrumentation(wp).Run();
+      new InitInstrumentation(wp, functionPair.Item1).Run();
 
       new SharedStateAbstractor(wp).Run();
 
       new ErrorReportingInstrumentation(wp).Run();
 
-      cleaner.RemoveEmptyBlocks();
-      cleaner.RemoveEmptyBlocksInEntryPoints();
-      cleaner.RemoveUnecesseryReturns();
-      cleaner.RemoveOldEntryPoints();
-      cleaner.RemoveUncalledFuncs();
-      cleaner.RemoveMemoryRegions();
-      cleaner.RemoveUnusedVars();
+      ModelCleaner.RemoveOldEntryPointCallsFromInitFuncs(wp);
+      ModelCleaner.RemoveEmptyBlocks(wp);
+      ModelCleaner.RemoveEmptyBlocksInEntryPoints(wp);
+      ModelCleaner.RemoveUnecesseryReturns(wp);
+      ModelCleaner.RemoveOldEntryPoints(wp);
+      ModelCleaner.RemoveUncalledFuncs(wp);
+      ModelCleaner.RemoveMemoryRegions(wp);
+      ModelCleaner.RemoveUnusedVars(wp);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       whoop.IO.EmitProgram(wp.program, Util.GetCommandLineOptions().Files[
-        Util.GetCommandLineOptions().Files.Count - 1], "wbpl");
+        Util.GetCommandLineOptions().Files.Count - 1], functionPair.Item1, "wbpl");
     }
   }
 }

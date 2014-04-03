@@ -21,59 +21,14 @@ namespace whoop
   public class PairConverter
   {
     WhoopProgram wp;
+    string functionName;
 
-    public PairConverter(WhoopProgram wp)
+    public PairConverter(WhoopProgram wp, string functionName)
     {
-      Contract.Requires(wp != null);
+      Contract.Requires(wp != null && functionName != null);
       this.wp = wp;
+      this.functionName = functionName;
       wp.DetectInitFunction();
-
-      if (!Util.GetCommandLineOptions().QuadraticPairing) {
-        foreach (var kvp1 in wp.entryPoints) {
-          foreach (var ep1 in kvp1.Value) {
-            if (wp.entryPointPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
-            List<string> funcs = new List<string>();
-
-            if (CanRunConcurrently(ep1.Value, ep1.Value)) {
-              funcs.Add(ep1.Value);
-            }
-
-            foreach (var kvp2 in wp.entryPoints) {
-              foreach (var ep2 in kvp2.Value) {
-                if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
-                if (!IsNewPair(ep1.Value, ep2.Value)) continue;
-                if (funcs.Contains(ep2.Value)) continue;
-                funcs.Add(ep2.Value);
-              }
-            }
-
-            if (funcs.Count == 0) continue;
-            wp.entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
-          }
-        }
-      } else {
-        foreach (var kvp1 in wp.entryPoints) {
-          foreach (var ep1 in kvp1.Value) {
-            if (wp.entryPointPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
-            foreach (var kvp2 in wp.entryPoints) {
-              foreach (var ep2 in kvp2.Value) {
-                if (!CanRunConcurrently(ep1.Value, ep2.Value)) continue;
-                if (!IsNewPair(ep1.Value, ep2.Value)) continue;
-                wp.entryPointPairs.Add(new Tuple<string, List<string>>(ep1.Value, new List<string> { ep2.Value }));
-              }
-            }
-          }
-        }
-      }
-
-      if (Util.GetCommandLineOptions().PrintPairs) {
-        foreach (var v in wp.entryPointPairs) {
-          Console.WriteLine("Entry Point: " + v.Item1);
-          foreach (var z in v.Item2) {
-            Console.WriteLine(" :: " + z);
-          }
-        }
-      }
     }
 
     public void Run()
@@ -86,7 +41,7 @@ namespace whoop
 
     private void ConvertEntryPoints()
     {
-      foreach (var ep in wp.entryPointPairs) {
+      foreach (var ep in FunctionPairingUtil.FunctionPairs[functionName]) {
         Implementation impl = wp.GetImplementation(ep.Item1);
         List<Implementation> implList = new List<Implementation>();
 
@@ -126,7 +81,7 @@ namespace whoop
       Contract.Requires(impl != null);
       string name = "$";
 
-      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+      if (FunctionPairingUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC) {
         name += impl.Name;
       } else {
         name += impl.Name + "$" + implList[0].Name;
@@ -399,7 +354,7 @@ namespace whoop
     {
       string consName = "$";
 
-      if (!Util.GetCommandLineOptions().QuadraticPairing) {
+      if (FunctionPairingUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC) {
         consName += cons.Name;
       } else {
         consName += cons.Name + "$" + consList[0].Name;
@@ -419,21 +374,6 @@ namespace whoop
       else newLabel = impl.Name + "$" + oldLabel.Substring(3);
       Contract.Requires(newLabel != null);
       return newLabel;
-    }
-
-    private bool CanRunConcurrently(string ep1, string ep2)
-    {
-      if (ep1.Equals(wp.initFunc.Name) || ep2.Equals(wp.initFunc.Name))
-        return false;
-      return true;
-    }
-
-    private bool IsNewPair(string ep1, string ep2)
-    {
-      if ((wp.entryPointPairs.Exists(val => (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
-        (wp.entryPointPairs.Exists(val => (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
-        return false;
-      return true;
     }
   }
 }

@@ -34,10 +34,7 @@ namespace whoop
       if(this.column == -1) throw new Exception();
 
       this.file = Util.GetCommandLineOptions().OriginalFile;
-
-      this.directory = Path.GetDirectoryName(Util.GetCommandLineOptions().
-        Files[Util.GetCommandLineOptions().Files.Count - 1]);
-
+      this.directory = Path.GetDirectoryName(Util.GetCommandLineOptions().OriginalFile);
       this.stackTrace = TrimLeadingSpaces(FetchCodeLine(0), 2);
     }
 

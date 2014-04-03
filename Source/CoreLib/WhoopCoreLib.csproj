@@ -92,6 +92,7 @@
     <Compile Include="Util\WhoopProgramParser.cs" />
     <Compile Include="Util\RaceInstrumentationUtil.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\BasicRaceInstrumentation.cs" />
+    <Compile Include="Util\FunctionPairingUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

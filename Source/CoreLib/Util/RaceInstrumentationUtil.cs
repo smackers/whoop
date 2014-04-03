@@ -19,7 +19,7 @@ using Microsoft.Basetypes;
 namespace whoop
 {
   public enum RaceCheckingMethod {
-    BASIC, WATCHDOG
+    NORMAL, WATCHDOG
   }
 
   public class RaceInstrumentationUtil
@@ -28,7 +28,7 @@ namespace whoop
 
     internal static string MakeOffsetVariableName(string name)
     {
-      if (RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         return "ACCESS_OFFSET_" + name;
       return "WATCHED_ACCESS_OFFSET_" + name;
     }
@@ -37,7 +37,7 @@ namespace whoop
     {
       Microsoft.Boogie.Type type = null;
 
-      if (RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
         type = new MapType(Token.NoToken, new List<TypeVariable>(),
           new List<Microsoft.Boogie.Type> { memoryModelType },
           memoryModelType);
@@ -47,7 +47,7 @@ namespace whoop
 
       TypedIdent ti = new TypedIdent(Token.NoToken, MakeOffsetVariableName(name), type);
 
-      if (RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         return new GlobalVariable(Token.NoToken, ti);
       return new Constant(Token.NoToken, ti, false);
     }
@@ -74,7 +74,7 @@ namespace whoop
 
     internal static LocalVariable MakeTrackLocalVariable()
     {
-      if (RaceCheckingMethod == RaceCheckingMethod.BASIC)
+      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         return new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "track",
           Microsoft.Boogie.Type.Bool));
       return new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",

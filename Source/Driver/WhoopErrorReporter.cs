@@ -199,7 +199,7 @@ namespace whoop
 
           Model.Element aoff = null;
 
-          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.BASIC) {
+          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
             string accessOffset = "ACCESS_OFFSET_" + sharedResourceName;
 
             Model.Element aoffMap = logState.TryGet(accessOffset);

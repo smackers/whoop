@@ -18,34 +18,34 @@ using Microsoft.Boogie;
 
 namespace whoop
 {
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+
   public class StaticLocksetAnalyser
   {
-    List<string> files;
+    List<FunctionPairType> functionPairs;
     PipelineStatistics stats;
     WhoopErrorReporter errorReporter;
 
-    public StaticLocksetAnalyser (List<string> files)
+    public StaticLocksetAnalyser (List<FunctionPairType> functionPairs)
     {
-      Contract.Requires(files != null);
-      this.files = files;
+      Contract.Requires(functionPairs.Count > 0);
+      this.functionPairs = functionPairs;
       this.stats = new PipelineStatistics();
       this.errorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
     {
-      WhoopProgram wp = new WhoopProgramParser(files[files.Count - 1], "wbpl").ParseNew();
-      wp.EliminateDeadVariables();
-      wp.Inline();
+      foreach (var pair in functionPairs) {
+        Contract.Requires(pair.Item3 != null);
 
-      if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
-        wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
-          Util.GetCommandLineOptions().SoundLoopUnrolling);
+        WhoopProgram wp = pair.Item3;
+        wp.EliminateDeadVariables();
+        wp.Inline();
 
-      // operate on a stable copy, in case it gets updated while we're running
-      var decls = wp.program.TopLevelDeclarations.ToArray();
-      foreach (var initFunc in wp.GetInitFunctions()) {
-        if (!initFunc.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
+        if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
+          wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
+            Util.GetCommandLineOptions().SoundLoopUnrolling);
 
         VC.ConditionGeneration vcgen = null;
         try {
@@ -56,52 +56,57 @@ namespace whoop
           Environment.Exit((int) Outcome.FatalError);
         }
 
-        Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
-          Find(val => val.Name.Equals(initFunc.Name));
-        Contract.Assert(funcToAnalyse != null);
+        var decls = wp.program.TopLevelDeclarations.ToArray();
+        foreach (var initFunc in wp.GetInitFunctions()) {
+          if (!initFunc.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
 
-        int prevAssertionCount = vcgen.CumulativeAssertionCount;
+          Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
+            Find(val => val.Name.Equals(initFunc.Name));
+          Contract.Assert(funcToAnalyse != null);
 
-        List<Counterexample> errors;
+          int prevAssertionCount = vcgen.CumulativeAssertionCount;
 
-        DateTime start = new DateTime();
-        if (Util.GetCommandLineOptions().Trace) {
-          start = DateTime.UtcNow;
+          List<Counterexample> errors;
+
+          DateTime start = new DateTime();
           if (Util.GetCommandLineOptions().Trace) {
-            Console.WriteLine("");
-            Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
+            start = DateTime.UtcNow;
+            if (Util.GetCommandLineOptions().Trace) {
+              Console.WriteLine("");
+              Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
+            }
           }
+
+          VC.VCGen.Outcome vcOutcome;
+          try {
+            vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
+          } catch (VC.VCGenException e) {
+            whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
+              e.Message, funcToAnalyse.Name), true, true);
+            errors = null;
+            vcOutcome = VC.VCGen.Outcome.Inconclusive;
+          } catch (UnexpectedProverOutputException e) {
+            whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
+              funcToAnalyse.Name, e.Message);
+            errors = null;
+            vcOutcome = VC.VCGen.Outcome.Inconclusive;
+          }
+
+          string timeIndication = "";
+          DateTime end = DateTime.UtcNow;
+          TimeSpan elapsed = end - start;
+
+          if (Util.GetCommandLineOptions().Trace) {
+            int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
+            timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
+              elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
+          }
+
+          ProcessOutcome(wp, funcToAnalyse, vcOutcome, errors, timeIndication, stats);
+
+          if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
+            Console.Out.Flush();
         }
-
-        VC.VCGen.Outcome vcOutcome;
-        try {
-          vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
-        } catch (VC.VCGenException e) {
-          whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
-            e.Message, funcToAnalyse.Name), true, true);
-          errors = null;
-          vcOutcome = VC.VCGen.Outcome.Inconclusive;
-        } catch (UnexpectedProverOutputException e) {
-          whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
-            funcToAnalyse.Name, e.Message);
-          errors = null;
-          vcOutcome = VC.VCGen.Outcome.Inconclusive;
-        }
-
-        string timeIndication = "";
-        DateTime end = DateTime.UtcNow;
-        TimeSpan elapsed = end - start;
-
-        if (Util.GetCommandLineOptions().Trace) {
-          int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
-          timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
-            elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
-        }
-
-        ProcessOutcome(wp, funcToAnalyse, vcOutcome, errors, timeIndication, stats);
-
-        if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
-          Console.Out.Flush();
 
         vcgen.Close();
         cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();

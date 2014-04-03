@@ -17,6 +17,8 @@ using Microsoft.Boogie;
 
 namespace whoop
 {
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+
   public class WhoopDriver
   {
     public static void Main(string[] args)
@@ -52,13 +54,26 @@ namespace whoop
           if (extension != null) {
             extension = extension.ToLower();
           }
-          if (extension != ".wbpl") {
-            whoop.IO.ErrorWriteLine("Whoop: error: {0} is not a .wbpl file", file);
+          if (extension != ".bpl") {
+            whoop.IO.ErrorWriteLine("Whoop: error: {0} is not a .bpl file", file);
             Environment.Exit((int) Outcome.FatalError);
           }
         }
-          
-        Outcome oc = new StaticLocksetAnalyser(fileList).Run();
+
+        FunctionPairingUtil.ParseEntryPoints();
+        FunctionPairingUtil.GetFunctionPairs();
+
+        List<FunctionPairType> functionPairs = new List<FunctionPairType>();
+
+        foreach (var kvp in FunctionPairingUtil.FunctionPairs) {
+          functionPairs.Add(new Tuple<string, List<Tuple<string, List<string>>>,
+            WhoopProgram>(kvp.Key, kvp.Value, new WhoopProgramParser(
+              fileList[fileList.Count - 1], "wbpl").ParseNew(kvp.Key)));
+          if (functionPairs[functionPairs.Count - 1].Item3 == null)
+            Environment.Exit((int) Outcome.ParsingError);
+        }
+
+        Outcome oc = new StaticLocksetAnalyser(functionPairs).Run();
 
         Environment.Exit((int) oc);
       } catch (Exception e) {

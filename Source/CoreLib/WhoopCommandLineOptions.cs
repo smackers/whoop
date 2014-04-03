@@ -20,7 +20,6 @@ namespace whoop
     public bool PrintPairs = false;
     public string OriginalFile = "";
     public string AnalyseOnly = "";
-    public bool QuadraticPairing = false;
     public bool OnlyRaceChecking = false;
     public string MemoryModel = "default";
 
@@ -64,8 +63,8 @@ namespace whoop
 
       if (name == "raceChecking") {
         if (ps.ConfirmArgumentCount(1)) {
-          if(ps.args[ps.i] == "BASIC") {
-            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.BASIC;
+          if(ps.args[ps.i] == "NORMAL") {
+            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.NORMAL;
           } else if(ps.args[ps.i] == "WATCHDOG") {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
           }
@@ -73,8 +72,16 @@ namespace whoop
         return true;
       }
 
-      if (name == "quadraticPairing") {
-        QuadraticPairing = true;
+      if (name == "functionPairing") {
+        if (ps.ConfirmArgumentCount(1)) {
+          if(ps.args[ps.i] == "LINEAR") {
+            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
+          } else if(ps.args[ps.i] == "TRIANGULAR") {
+            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
+          } else if(ps.args[ps.i] == "QUADRATIC") {
+            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
+          }
+        }
         return true;
       }
 

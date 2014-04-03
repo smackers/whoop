@@ -20,15 +20,18 @@ namespace whoop
 {
   public class ModelCleaner
   {
-    WhoopProgram wp;
-
-    public ModelCleaner(WhoopProgram wp)
+    public static void RemoveOldEntryPointCallsFromInitFuncs(WhoopProgram wp)
     {
-      Contract.Requires(wp != null);
-      this.wp = wp;
+      foreach (var impl in wp.GetInitFunctions()) {
+        foreach (var b in impl.Blocks) {
+          if (b.Label.Equals("$checker")) break;
+          b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && FunctionPairingUtil.FunctionPairs.Keys.Any(val =>
+            val.Equals((val1 as CallCmd).callee)));
+        }
+      }
     }
 
-    public void RemoveUnecesseryAssumes()
+    public static void RemoveUnecesseryAssumes(WhoopProgram wp)
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         foreach (Block b in impl.Blocks) {
@@ -38,7 +41,7 @@ namespace whoop
       }
     }
 
-    public void RemoveEmptyBlocks()
+    public static void RemoveEmptyBlocks(WhoopProgram wp)
     {
       foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
         if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name)))
@@ -65,7 +68,7 @@ namespace whoop
       }
     }
 
-    public void RemoveEmptyBlocksInEntryPoints()
+    public static void RemoveEmptyBlocksInEntryPoints(WhoopProgram wp)
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
@@ -102,7 +105,7 @@ namespace whoop
       }
     }
 
-    public void RemoveUnecesseryReturns()
+    public static void RemoveUnecesseryReturns(WhoopProgram wp)
     {
       foreach (var impl in wp.GetImplementationsToAnalyse()) {
         foreach (var b in impl.Blocks) {
@@ -112,19 +115,19 @@ namespace whoop
       }
     }
 
-    public void RemoveOldEntryPoints()
+    public static void RemoveOldEntryPoints(WhoopProgram wp)
     {
-      foreach (var kvp in wp.entryPoints) {
+      foreach (var kvp in FunctionPairingUtil.FunctionPairs) {
         foreach (var ep in kvp.Value) {
-          if (!wp.program.TopLevelDeclarations.OfType<Implementation>().ToList().Any(val => val.Name.Equals(ep.Value))) continue;
-          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value).Proc);
-          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Value));
-          wp.program.TopLevelDeclarations.Remove(wp.GetConstant(ep.Value));
+          if (!wp.program.TopLevelDeclarations.OfType<Implementation>().ToList().Any(val => val.Name.Equals(ep.Item1))) continue;
+          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Item1).Proc);
+          wp.program.TopLevelDeclarations.Remove(wp.GetImplementation(ep.Item1));
+          wp.program.TopLevelDeclarations.Remove(wp.GetConstant(ep.Item1));
         }
       }
     }
 
-    public void RemoveUncalledFuncs()
+    public static void RemoveUncalledFuncs(WhoopProgram wp)
     {
       HashSet<Implementation> uncalled = new HashSet<Implementation>();
 
@@ -147,14 +150,14 @@ namespace whoop
       }
     }
 
-    public void RemoveMemoryRegions()
+    public static void RemoveMemoryRegions(WhoopProgram wp)
     {
 //      foreach (var v in wp.memoryRegions) {
 //        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
 //      }
     }
 
-    public void RemoveUnusedVars()
+    public static void RemoveUnusedVars(WhoopProgram wp)
     {
 
     }

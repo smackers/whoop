@@ -29,9 +29,12 @@ namespace whoop
       this.ext = ext;
     }
 
-    public WhoopProgram ParseNew()
+    public WhoopProgram ParseNew(string additional=null)
     {
-      file = file.Substring(0, file.IndexOf(Path.GetExtension(file))) + "." + ext;
+      if (additional != null)
+        file = file.Substring(0, file.IndexOf(Path.GetExtension(file))) + "$" + additional + "." + ext;
+      else
+        file = file.Substring(0, file.IndexOf(Path.GetExtension(file))) + "." + ext;
       List<string> filesToParse = new List<string>() { file };
 
       Program program = ExecutionEngine.ParseBoogieProgram(filesToParse, false);
