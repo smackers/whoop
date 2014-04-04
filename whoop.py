@@ -125,8 +125,17 @@ clangCoreIncludes = [
                       findtools.whoopDir + "/Model/asm"
                     ]
 clangCoreDefines = [ ]
+
+if os.name == "posix":
+  if os.path.isfile(findtools.chauffeurDir + "/libchauffeur.so"):
+    chauffeurPlugin = findtools.chauffeurDir + "/libchauffeur.so"
+  elif os.path.isfile(findtools.chauffeurDir + "/libchauffeur.dylib"):
+    chauffeurPlugin = findtools.chauffeurDir + "/libchauffeur.dylib"
+  else:
+    raise ReportAndExit(ErrorCodes.CONFIGURATION_ERROR, 'Could not find chauffeur plugin')
+
 clangPluginOptions = [ "-Xclang", "-load",
-                       "-Xclang", findtools.chauffeurDir + "/libchauffeur.dylib",
+                       "-Xclang", chauffeurPlugin,
                        "-Xclang", "-add-plugin",
                        "-Xclang", "chauffeur"
                      ]
