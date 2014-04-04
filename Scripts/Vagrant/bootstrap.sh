@@ -3,12 +3,14 @@
 echo Getting updates ...
 
 sudo apt-get -y update
-sudo apt-get install -y python-software-properties python g++
-sudo apt-get install -y automake autoconf make
-sudo apt-get install -y wget git subversion
+sudo apt-get install -y g++
+sudo apt-get install -y make
+sudo apt-get install -y python-software-properties python
+sudo apt-get install -y automake autoconf
+sudo apt-get install -y wget git subversion mercurial
 
 export PROJECT_ROOT=/vagrant
-export BUILD_ROOT=/vagrant/VM_BUILD
+export BUILD_ROOT=/home/vagrant/whoop
 export CMAKE_VERSION=2.8.8
 export MONO_VERSION=3.0.7
 export LLVM_RELEASE=34
@@ -69,7 +71,7 @@ git clone https://github.com/smackers/smack.git ${BUILD_ROOT}/smack/src
 
 echo Building SMACK ...
 
-mkdir ${BUILD_ROOT}/smack/build
+mkdir -p ${BUILD_ROOT}/smack/build
 cd ${BUILD_ROOT}/smack/build
 cmake -D LLVM_CONFIG=${BUILD_ROOT}/llvm_and_clang/build/bin -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${BUILD_ROOT}/smack/install ../src
 make -j4
@@ -112,19 +114,21 @@ ln -s cvc4 cvc4.exe
 
 echo Building CHAUFFEUR ...
 
-mkdir ${PROJECT_ROOT}/FrontEndPlugin/build
-cd ${PROJECT_ROOT}/FrontEndPlugin/build
+cp -a ${PROJECT_ROOT}/. ${BUILD_ROOT}/whoop/
+cd ${BUILD_ROOT}/whoop
+mkdir -p ${BUILD_ROOT}/whoop/FrontEndPlugin/build
+cd ${BUILD_ROOT}/whoop/FrontEndPlugin/build
 cmake -D LLVM_CONFIG=${BUILD_ROOT}/llvm_and_clang/build/bin -D CMAKE_BUILD_TYPE=Release ../src
 make -j4
 
 echo Building WHOOP ...
 
-cd ${PROJECT_ROOT}
+cd ${BUILD_ROOT}/whoop
 xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug whoop.sln
 
 echo Configuring WHOOP ...
 
 mv findtools.py findtools-backup.py
-cp ${PROJECT_ROOT}/Scripts/Vagrant/findtools.vagrant.py findtools.py
+cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo Done ...
