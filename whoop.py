@@ -120,9 +120,9 @@ class SourceLanguage(object):
 
 clangCoreIncludes = [
                       findtools.smackSrcDir + "/include/smack",
-                      findtools.whoopDir + "/headers",
-                      findtools.whoopDir + "/headers/linux",
-                      findtools.whoopDir + "/headers/asm"
+                      findtools.whoopDir + "/Model",
+                      findtools.whoopDir + "/Model/linux",
+                      findtools.whoopDir + "/Model/asm"
                     ]
 clangCoreDefines = [ ]
 clangPluginOptions = [ "-Xclang", "-load",

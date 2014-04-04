@@ -6,7 +6,7 @@
 import sys
 
 rootDir = "/vagrant"
-buildDir = "/vagrant/build"
+buildDir = "/vagrant/VM_BUILD"
 
 # path to the directory containing the Whoop project
 whoopDir = rootDir

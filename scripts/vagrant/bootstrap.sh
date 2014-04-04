@@ -8,7 +8,7 @@ sudo apt-get install -y automake autoconf make
 sudo apt-get install -y wget git subversion
 
 export PROJECT_ROOT=/vagrant
-export BUILD_ROOT=/vagrant/vm_build
+export BUILD_ROOT=/vagrant/VM_BUILD
 export CMAKE_VERSION=2.8.8
 export MONO_VERSION=3.0.7
 export LLVM_RELEASE=34
@@ -125,6 +125,6 @@ xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug whoop.sln
 echo Configuring WHOOP ...
 
 mv findtools.py findtools-backup.py
-cp ${PROJECT_ROOT}/scripts/vagrant/findtools.py findtools.py
+cp ${PROJECT_ROOT}/Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo Done ...
