@@ -5,38 +5,37 @@
 """
 import sys
 
-rootDir = "/vagrant"
-buildDir = "/vagrant/VM_BUILD"
+rootDir = "/home/vagrant/whoop"
 
 # path to the directory containing the Whoop project
-whoopDir = rootDir
+whoopDir = rootDir + "/whoop"
 
 # path to the llvm source directory
-llvmSrcDir = buildDir + "/llvm_and_clang/src"
+llvmSrcDir = rootDir + "/llvm_and_clang/src"
 
 # path to the llvm binary directory
-llvmBinDir = buildDir + "/llvm_and_clang/build/bin"
+llvmBinDir = rootDir + "/llvm_and_clang/build/bin"
 
 # path containing the llvm libraries
-llvmLibDir = buildDir + "/llvm_and_clang/build/lib"
+llvmLibDir = rootDir + "/llvm_and_clang/build/lib"
 
 # path to the directory containing the chauffeur clang tool
-chauffeurDir = rootDir + "/FrontEndPlugin/build"
+chauffeurDir = rootDir + "/whoop/FrontEndPlugin/build"
 
 # path to the SMACK source directory
-smackSrcDir = buildDir + "/smack/src"
+smackSrcDir = rootDir + "/smack/src"
 
 # path to the directory where the SMACK executable can be found
-smackBinDir = buildDir + "/smack/install/bin"
+smackBinDir = rootDir + "/smack/install/bin"
 
 #The path to the directory containing the Whoop binaries
-whoopBinDir = buildDir + "/whoop/Binaries"
+whoopBinDir = rootDir + "/whoop/Binaries"
 
 # path to the directory containing the z3 executable
-z3BinDir = buildDir + "/z3/build"
+z3BinDir = rootDir + "/z3/build"
 
 # path to the directory containing the cvc4 executable
-cvc4BinDir = buildDir + "/cvc4/install/bin"
+cvc4BinDir = rootDir + "/cvc4/install/bin"
 
 def init(prefixPath):
   """This method does nothing"""

@@ -7,13 +7,15 @@ sudo apt-get install -y g++
 sudo apt-get install -y make
 sudo apt-get install -y python-software-properties python
 sudo apt-get install -y automake autoconf
+sudo apt-get install -y libtool
 sudo apt-get install -y wget git subversion mercurial
 
 export PROJECT_ROOT=/vagrant
 export BUILD_ROOT=/home/vagrant/whoop
 export CMAKE_VERSION=2.8.8
 export MONO_VERSION=3.0.7
-export LLVM_RELEASE=34
+# export LLVM_RELEASE=34
+export LLVM_RELEASE=release_34
 
 mkdir -p ${BUILD_ROOT}
 cd ${BUILD_ROOT}
@@ -51,11 +53,20 @@ echo Getting LLVM ${LLVM_RELEASE} ...
 
 mkdir -p ${BUILD_ROOT}/llvm_and_clang
 cd ${BUILD_ROOT}/llvm_and_clang
-svn co http://llvm.org/svn/llvm-project/llvm/branches/release_${LLVM_RELEASE} src
+git clone https://github.com/llvm-mirror/llvm.git src
+cd ${BUILD_ROOT}/llvm_and_clang/src
+git checkout release_34
+# svn co http://llvm.org/svn/llvm-project/llvm/branches/release_${LLVM_RELEASE} src
 cd ${BUILD_ROOT}/llvm_and_clang/src/tools
-svn co http://llvm.org/svn/llvm-project/cfe/branches/release_${LLVM_RELEASE} clang
+git clone https://github.com/llvm-mirror/clang.git clang
+cd ${BUILD_ROOT}/llvm_and_clang/src/tools/clang
+git checkout release_34
+# svn co http://llvm.org/svn/llvm-project/cfe/branches/release_${LLVM_RELEASE} clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects
-svn co http://llvm.org/svn/llvm-project/compiler-rt/branches/release_${LLVM_RELEASE} compiler-rt
+git clone https://github.com/llvm-mirror/compiler-rt.git compiler-rt
+cd ${BUILD_ROOT}/llvm_and_clang/src/projects/compiler-rt
+git checkout release_34
+# svn co http://llvm.org/svn/llvm-project/compiler-rt/branches/release_${LLVM_RELEASE} compiler-rt
 
 echo Building LLVM ${LLVM_RELEASE} ...
 
@@ -123,12 +134,12 @@ make -j4
 
 echo Building WHOOP ...
 
+cp -a ${PROJECT_ROOT}/. ${BUILD_ROOT}/whoop/
 cd ${BUILD_ROOT}/whoop
 xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug whoop.sln
 
 echo Configuring WHOOP ...
 
-mv findtools.py findtools-backup.py
 cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo Done ...
