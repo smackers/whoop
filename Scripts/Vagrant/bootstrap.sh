@@ -9,7 +9,7 @@ sudo apt-get install -y g++
 sudo apt-get install -y make
 sudo apt-get install -y python-software-properties python
 sudo apt-get install -y automake autoconf
-sudo apt-get install -y libtool libgmp
+sudo apt-get install -y libtool libgmp-dev
 sudo apt-get install -y wget git subversion mercurial
 sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev 
 
@@ -54,6 +54,10 @@ tar zxvf cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
 rm cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
 export PATH=${BUILD_ROOT}/cmake-${CMAKE_VERSION}-Linux-i386/bin:$PATH
 
+echo $'\n======================='
+echo $'Unpacking CMAKE done ...'
+echo $'=======================\n'
+
 echo $'\n================'
 echo $'Getting MONO ...'
 echo $'================\n'
@@ -67,6 +71,10 @@ echo $'==================\n'
 
 tar jxf mono-${MONO_VERSION}.tar.bz2
 rm mono-${MONO_VERSION}.tar.bz2
+
+echo $'\n======================'
+echo $'Unpacking MONO done ...'
+echo $'======================\n'
 
 echo $'\n================='
 echo $'Building MONO ...'
@@ -142,6 +150,7 @@ autoconf
 python scripts/mk_make.py
 cd build
 make -j4
+make install
 ln -s z3 z3.exe
 
 echo $'\n================'
@@ -156,7 +165,7 @@ echo $'Building CVC4 ...'
 echo $'=================\n'
 
 cd ${BUILD_ROOT}/CVC4/src
-MACHINE_TYPE="x86_64" contrib/get-antlr-3.4
+MACHINE_TYPE=$1 contrib/get-antlr-3.4
 ./autogen.sh
 export ANTLR=${BUILD_ROOT}/CVC4/src/antlr-3.4/bin/antlr3
 ./configure --with-antlr-dir=${BUILD_ROOT}/CVC4/src/antlr-3.4 \
