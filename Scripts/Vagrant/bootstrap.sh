@@ -9,7 +9,7 @@ sudo apt-get install -y g++
 sudo apt-get install -y make
 sudo apt-get install -y python-software-properties python
 sudo apt-get install -y automake autoconf
-sudo apt-get install -y libtool libgmp-dev
+sudo apt-get install -y libtool libgmp-dev libcln-dev
 sudo apt-get install -y wget git subversion mercurial
 sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev 
 
@@ -54,10 +54,6 @@ tar zxvf cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
 rm cmake-${CMAKE_VERSION}-Linux-i386.tar.gz
 export PATH=${BUILD_ROOT}/cmake-${CMAKE_VERSION}-Linux-i386/bin:$PATH
 
-echo $'\n======================='
-echo $'Unpacking CMAKE done ...'
-echo $'=======================\n'
-
 echo $'\n================'
 echo $'Getting MONO ...'
 echo $'================\n'
@@ -71,10 +67,6 @@ echo $'==================\n'
 
 tar jxf mono-${MONO_VERSION}.tar.bz2
 rm mono-${MONO_VERSION}.tar.bz2
-
-echo $'\n======================'
-echo $'Unpacking MONO done ...'
-echo $'======================\n'
 
 echo $'\n================='
 echo $'Building MONO ...'

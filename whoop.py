@@ -126,20 +126,6 @@ clangCoreIncludes = [
                     ]
 clangCoreDefines = [ ]
 
-if os.name == "posix":
-  if os.path.isfile(findtools.chauffeurDir + "/libchauffeur.so"):
-    chauffeurPlugin = findtools.chauffeurDir + "/libchauffeur.so"
-  elif os.path.isfile(findtools.chauffeurDir + "/libchauffeur.dylib"):
-    chauffeurPlugin = findtools.chauffeurDir + "/libchauffeur.dylib"
-  else:
-    raise ReportAndExit(ErrorCodes.CONFIGURATION_ERROR, 'Could not find chauffeur plugin')
-
-clangPluginOptions = [ "-Xclang", "-load",
-                       "-Xclang", chauffeurPlugin,
-                       "-Xclang", "-add-plugin",
-                       "-Xclang", "chauffeur"
-                     ]
-
 """ This class defines all the default options for
 the Drify toolchain.
 """
@@ -147,7 +133,7 @@ class DefaultCmdLineOptions(object):
   def __init__(self):
     self.SL = SourceLanguage.Unknown
     self.sourceFiles = [ ]
-    self.chauffeurOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
+    self.chauffeurOptions = [ ]
     self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
     self.smackOptions = [ ]
     self.whoopEngineOptions = [ ]
@@ -545,10 +531,9 @@ def startToolChain(argv):
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
     if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFilesWithPattern, 'filename$*.wbpl')
   
-  CommandLineOptions.chauffeurOptions += clangPluginOptions
-  CommandLineOptions.chauffeurOptions.append("-o")
-  CommandLineOptions.chauffeurOptions.append(bcFilename)
   CommandLineOptions.chauffeurOptions.append(filename + ext)
+  CommandLineOptions.chauffeurOptions.append("--")
+  CommandLineOptions.chauffeurOptions.append("-w")
   CommandLineOptions.clangOptions.append("-o")
   CommandLineOptions.clangOptions.append(bcFilename)
   CommandLineOptions.clangOptions.append(reFilename)
@@ -579,8 +564,6 @@ def startToolChain(argv):
     CommandLineOptions.whoopDriverOptions += [ "/debugWhoop" ]
     
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
-  CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", "filename" ]
-  CommandLineOptions.chauffeurOptions += [ "-Xclang", "-plugin-arg-chauffeur", "-Xclang", filename ]
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
   
@@ -613,10 +596,10 @@ def startToolChain(argv):
   """ RUN CHAUFFEUR """
   if not CommandLineOptions.skip["chauffeur"]:
     runTool("chauffeur",
-             [findtools.llvmBinDir + "/clang"] +
+             [findtools.chauffeurDir + "/chauffeur"] +
              CommandLineOptions.chauffeurOptions +
-             [("-I" + str(o)) for o in CommandLineOptions.includes] +
-             [("-D" + str(o)) for o in CommandLineOptions.defines],
+             ["-I" + findtools.llvmLibDir + "/clang/3.4/include"] +
+             [("-I" + str(o)) for o in clangCoreIncludes],
              ErrorCodes.CLANG_ERROR,
              CommandLineOptions.componentTimeout)
   if CommandLineOptions.stopAtRe: return 0

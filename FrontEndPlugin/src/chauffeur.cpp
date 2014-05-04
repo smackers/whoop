@@ -3,22 +3,34 @@
 // This file is distributed under the MIT License. See LICENSE for details.
 // 
 
+#include "clang/Driver/Options.h"
 #include "clang/AST/AST.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/AST/Attr.h"
+#include "clang/Frontend/ASTConsumers.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/FrontendPluginRegistry.h"
-#include "clang/Rewrite/Frontend/Rewriters.h"
+#include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Tooling/Tooling.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "llvm/Support/raw_ostream.h"
 
-using namespace clang;
 using namespace std;
+using namespace clang;
+using namespace clang::driver;
+using namespace clang::tooling;
+using namespace llvm;
 
-namespace {
+string FileName;
 	
 class DriverInfo {
+private:
+	map<string, map<string, string> > entry_points;
+	
+	DriverInfo() {}
+	DriverInfo(DriverInfo const&);
+	void operator=(DriverInfo const&);
+	
 public:
 	static DriverInfo& getInstance() {
 		static DriverInfo instance;
@@ -47,7 +59,7 @@ public:
 	}
 	
 	void PrintDriverInfo() {
-		string file = fileName;
+		string file = FileName;
 		file.append(".info");
 		string error_msg;
 		llvm::raw_fd_ostream *FOS = new llvm::raw_fd_ostream(file.c_str(), error_msg, llvm::sys::fs::F_None);
@@ -77,40 +89,30 @@ public:
 		
 		ros->write(output.data(), output.size());
 	}
-	
-	void SetFile(string fn) {
-		this->fileName = fn;
-	}
-	
-	string GetFile() {
-		return fileName;
-	}
-	
-private:
-	string fileName;
-	map<string, map<string, string> > entry_points;
-	
-	DriverInfo() {}
-	DriverInfo(DriverInfo const&);
-	void operator=(DriverInfo const&);
 };
 
 class RewriteVisitor : public RecursiveASTVisitor<RewriteVisitor> {
+private:
+	ASTContext *Context;
+	Rewriter RW;
+	DriverInfo *DI;
+	
 public:
-  RewriteVisitor(CompilerInstance &CI)
-	  : Instance(CI) {
-	  	RW.setSourceMgr(Instance.getSourceManager(), Instance.getLangOpts());
-	  }
-
-	bool VisitFunctionDecl(FunctionDecl* FD) {
-		string fdFileWithExt = Instance.getSourceManager().getFilename(FD->getLocation());
+  explicit RewriteVisitor(CompilerInstance *CI)
+	  : Context(&(CI->getASTContext()))
+	{
+		RW.setSourceMgr(Context->getSourceManager(), Context->getLangOpts());
+	}
+	
+	virtual bool VisitFunctionDecl(FunctionDecl* FD) {
+		string fdFileWithExt = Context->getSourceManager().getFilename(FD->getLocation());
 		string fdFile = fdFileWithExt.substr(0, fdFileWithExt.find_last_of("."));
 		
 		if (DI->getInstance().existsEntryPointWithName(FD->getNameInfo().getName().getAsString())) {			
 			if (FD->getStorageClass() == SC_Static) {
 				RW.RemoveText(FD->getInnerLocStart(), 7);
 			}
-		} else if ((fdFile.size() > 0) && (DI->getInstance().GetFile().find(fdFile) != string::npos)) {
+		} else if ((fdFile.size() > 0) && (FileName.find(fdFile) != string::npos)) {
 			if (FD->getStorageClass() == SC_Static)
 				RW.ReplaceText(FD->getInnerLocStart(), 6, "static inline");
 		}
@@ -119,7 +121,7 @@ public:
 	}
 	
 	void Finalise() {
-		string file = DI->getInstance().GetFile();
+		string file = FileName;
 		file.append(".re.c");
 		
 		string error_msg;
@@ -138,23 +140,23 @@ public:
 		
 		RW.getEditBuffer(RW.getSourceMgr().getMainFileID()).write(*ros);
 	}
-	
-private:
-  CompilerInstance &Instance;
-	Rewriter RW;
-	DriverInfo *DI;
 };
 
 class FindEntryPointsVisitor : public RecursiveASTVisitor<FindEntryPointsVisitor> {
-public:
-  FindEntryPointsVisitor(CompilerInstance &CI)
-		: Instance(CI) {}
+private:
+	ASTContext *Context;
+	DriverInfo *DI;
 
-	bool VisitVarDecl(VarDecl* VD) {
+public:
+  explicit FindEntryPointsVisitor(CompilerInstance *CI)
+		: Context(&(CI->getASTContext()))
+	{}
+	
+	virtual bool VisitVarDecl(VarDecl* VD) {
 		if (!VD->getType()->isRecordType()) return true;
-		
+	
 		RecordDecl *BaseRD = VD->getType()->getAs<RecordType>()->getDecl();
-		
+	
 		if (!(BaseRD->getNameAsString() == "pci_driver" ||
 			  BaseRD->getNameAsString() == "dev_pm_ops" ||
 				BaseRD->getNameAsString() == "net_device_ops" ||
@@ -164,13 +166,13 @@ public:
 		}
 		
 		InitListExpr *ILE = cast<InitListExpr>(VD->getInit())->getSyntacticForm();
-		
+	
 		for (Stmt::child_range range = ILE->children(); range; ++range) {				
 			DesignatedInitExpr *DIE = cast<DesignatedInitExpr>(*range);				
 			if (DIE->size() != 1) continue;
-			
+		
 			string funcname;
-			
+		
 			if (/* pci_driver */
 				  DIE->getDesignator(0)->getFieldName()->getName() == "probe" ||
 				  DIE->getDesignator(0)->getFieldName()->getName() == "remove" ||
@@ -223,83 +225,56 @@ public:
 				funcname = DIE->getDesignator(0)->getFieldName()->getName();
 			else
 				continue;
-			
+		
 			Expr *expr = cast<ImplicitCastExpr>(DIE->getInit())->getSubExpr();
 			while (!isa<DeclRefExpr>(expr))
 				expr = cast<ImplicitCastExpr>(expr)->getSubExpr();
 			DeclRefExpr *DRE = cast<DeclRefExpr>(expr);
-			
-			string fdFileWithExt = Instance.getSourceManager().getFilename(DRE->getDecl()->getLocation());
+					
+			string fdFileWithExt = Context->getSourceManager().getFilename(DRE->getDecl()->getLocation());
 			string fdFile = fdFileWithExt.substr(0, fdFileWithExt.find_last_of("."));
 			
-			if ((fdFile.size() > 0) && (DI->getInstance().GetFile().find(fdFile) != string::npos)) {
+		  if ((fdFile.size() > 0) && (fdFile.find(FileName) != string::npos)) {
 				DI->getInstance().AddEntryPoint(BaseRD->getNameAsString(), funcname, DRE->getNameInfo().getName().getAsString());
 			}
 		}
-		
+	
 		return true;
 	}
 	
 	void PrintEntryPoints() {
 		DI->getInstance().PrintDriverInfo();
-	}
-	
-private:
-	CompilerInstance &Instance;
-	DriverInfo *DI;
+	}	
 };
 
 class ParseDriverConsumer : public ASTConsumer {
+private:
+  FindEntryPointsVisitor *FEPV;
+	RewriteVisitor *RV;
+
 public:
-  explicit ParseDriverConsumer(CompilerInstance &CI)
-    : FEPV(CI), RV(CI) {}
-
-  virtual void HandleTranslationUnit(ASTContext &AT) {
-    FEPV.TraverseDecl(AT.getTranslationUnitDecl());
-		FEPV.PrintEntryPoints();
-		RV.TraverseDecl(AT.getTranslationUnitDecl());
-		RV.Finalise();
-  }
+  explicit ParseDriverConsumer(CompilerInstance *CI)
+    : FEPV(new FindEntryPointsVisitor(CI)), RV(new RewriteVisitor(CI))
+	{}
 	
-private:
-  FindEntryPointsVisitor FEPV;
-	RewriteVisitor RV;
+  virtual void HandleTranslationUnit(ASTContext &Context) {
+    FEPV->TraverseDecl(Context.getTranslationUnitDecl());
+		FEPV->PrintEntryPoints();
+		RV->TraverseDecl(Context.getTranslationUnitDecl());
+		RV->Finalise();
+	}
 };
 
-class ParseDriverASTAction : public PluginASTAction {
-protected:
-  ASTConsumer *CreateASTConsumer(CompilerInstance &CI, llvm::StringRef) {
-    return new ParseDriverConsumer(CI);
-  }
-
-  bool ParseArgs(const CompilerInstance &CI, const vector<string> &args) {		
-		for (unsigned i = 0, e = args.size(); i != e; ++i) {
-			if (args[i] == "help") {
-	      PrintHelp(llvm::errs());
-	      return false;
-			} else if (args[i] == "filename") {
-				++i;
-				DI->getInstance().SetFile(args[i]);
-			} else {
-	      DiagnosticsEngine &D = CI.getDiagnostics();
-	      unsigned DiagID = D.getCustomDiagID(
-	          DiagnosticsEngine::Error, "invalid argument '%0'");
-	      D.Report(DiagID) << args[0];
-	      return false;
-			}
-		}
-		
-    return true;
-  }
-
-  void PrintHelp(llvm::raw_ostream &ros) {
-    ros << "Front end for analysing Linux device drivers\n";
-  }
-	
-private:
-	DriverInfo *DI;
+class ParseDriverASTAction : public ASTFrontendAction {
+public:
+    virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI, StringRef file) {
+        return new ParseDriverConsumer(&CI);
+    }
 };
 
+int main(int argc, const char **argv) {
+	CommonOptionsParser op(argc, argv);
+	ClangTool Tool(op.getCompilations(), op.getSourcePathList());
+	FileName = op.getSourcePathList()[0].substr(0, op.getSourcePathList()[0].find_last_of("."));
+	return Tool.run(newFrontendActionFactory<ParseDriverASTAction>());
 }
-
-static FrontendPluginRegistry::Add<ParseDriverASTAction> X("chauffeur", "front end for analysing Linux device drivers");
