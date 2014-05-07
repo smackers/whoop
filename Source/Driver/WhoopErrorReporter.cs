@@ -290,8 +290,10 @@ namespace whoop
         List<string> checkStateLocks = s.Variables.Where(val =>
           val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
         for (int i = 0; i < checkStateLocks.Count; i += 2) {
-          checkStateLocksDictionary[(state.TryGet(checkStateLocks[i]) as Model.Element).ToString()] =
-            (state.TryGet(checkStateLocks[i + 1]) as Model.Boolean).Value;
+          Model.Element lockId = state.TryGet(checkStateLocks[i]) as Model.Element;
+          Model.Boolean lockVal = state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
+          if (lockVal == null) continue;
+          checkStateLocksDictionary[lockId.ToString()] = lockVal.Value;
         }
       }
 
