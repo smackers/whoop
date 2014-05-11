@@ -18,8 +18,10 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
-  public enum RaceCheckingMethod {
-    NORMAL, WATCHDOG
+  public enum RaceCheckingMethod
+  {
+    NORMAL,
+    WATCHDOG
   }
 
   public class RaceInstrumentationUtil
@@ -37,15 +39,19 @@ namespace whoop
     {
       Microsoft.Boogie.Type type = null;
 
-      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
+      if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)
+      {
         type = new MapType(Token.NoToken, new List<TypeVariable>(),
           new List<Microsoft.Boogie.Type> { memoryModelType },
           memoryModelType);
-      } else if (RaceCheckingMethod == RaceCheckingMethod.WATCHDOG) {
+      }
+      else if (RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
+      {
         type = memoryModelType;
       }
 
-      TypedIdent ti = new TypedIdent(Token.NoToken, MakeOffsetVariableName(name), type);
+      TypedIdent ti = new TypedIdent(Token.NoToken,
+        RaceInstrumentationUtil.MakeOffsetVariableName(name), type);
 
       if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         return new GlobalVariable(Token.NoToken, ti);

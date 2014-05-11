@@ -17,18 +17,18 @@ namespace whoop
 {
   public class Lockset
   {
-    public Variable id;
-    public string targetName;
+    public Variable Id;
+    public string TargetName;
 
     public Lockset(Variable id)
     {
-      this.id = id;
-      this.targetName = GetTargetName();
+      this.Id = id;
+      this.TargetName = GetTargetName();
     }
 
     private string GetTargetName()
     {
-      return id.Name.Substring(3);
+      return this.Id.Name.Substring(3);
     }
   }
 }

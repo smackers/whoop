@@ -37,7 +37,8 @@ namespace whoop
       {
         string type = line.Trim(new char[] { '<', '>' });
         Dictionary<string, string> inner = new Dictionary<string, string>();
-        while ((line = file.ReadLine()) != null) {
+        while ((line = file.ReadLine()) != null)
+        {
           if (line.Equals("</>")) break;
           string[] pair = line.Split(new string[] { "::" }, StringSplitOptions.None);
           inner.Add(pair[0], pair[1]);
@@ -56,9 +57,10 @@ namespace whoop
         directoryContainingFile = Directory.GetCurrentDirectory();
 
       var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
-        Path.GetFileNameWithoutExtension(file);
+                     Path.GetFileNameWithoutExtension(file);
 
-      using (TokenTextWriter writer = new TokenTextWriter(fileName + "$" + additional + "." + extension)) {
+      using(TokenTextWriter writer = new TokenTextWriter(fileName + "$" + additional + "." + extension))
+      {
         program.Emit(writer);
       }
     }
@@ -70,9 +72,10 @@ namespace whoop
         directoryContainingFile = Directory.GetCurrentDirectory();
 
       var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
-        Path.GetFileNameWithoutExtension(file);
+                     Path.GetFileNameWithoutExtension(file);
 
-      using (TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension)) {
+      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension))
+      {
         program.Emit(writer);
       }
     }
@@ -83,14 +86,20 @@ namespace whoop
       Contract.Requires(node != null);
       IToken tok = node.tok;
       string s;
-      if (tok != null && showBplLocation) {
+      if (tok != null && showBplLocation)
+      {
         s = string.Format("{0}({1},{2}): {3}", tok.filename, tok.line, tok.col, message);
-      } else {
+      }
+      else
+      {
         s = message;
       }
-      if (error) {
-        ErrorWriteLine(s);
-      } else {
+      if (error)
+      {
+        IO.ErrorWriteLine(s);
+      }
+      else
+      {
         Console.WriteLine(s);
       }
     }
@@ -105,7 +114,7 @@ namespace whoop
     {
       Contract.Requires(format != null);
       string s = string.Format(format, args);
-      ErrorWriteLine(s);
+      IO.ErrorWriteLine(s);
     }
 
     public static void AdvisoryWriteLine(string format, params object[] args)
@@ -119,7 +128,8 @@ namespace whoop
 
     public static void Inform(string s)
     {
-      if (CommandLineOptions.Clo.Trace || CommandLineOptions.Clo.TraceProofObligations) {
+      if (CommandLineOptions.Clo.Trace || CommandLineOptions.Clo.TraceProofObligations)
+      {
         Console.WriteLine(s);
       }
     }
@@ -128,27 +138,33 @@ namespace whoop
     {
       Contract.Requires(0 <= stats.ErrorCount);
 
-      if (CommandLineOptions.Clo.vcVariety == CommandLineOptions.VCVariety.Doomed) {
+      if (CommandLineOptions.Clo.vcVariety == CommandLineOptions.VCVariety.Doomed)
+      {
         Console.Write("{0} finished with {1} credible, {2} doomed{3}",
           CommandLineOptions.Clo.DescriptiveToolName, stats.VerifiedCount,
           stats.ErrorCount, stats.ErrorCount == 1 ? "" : "s");
-      } else {
+      }
+      else
+      {
         Console.Write("{0} finished with {1} verified, {2} error{3}",
           CommandLineOptions.Clo.DescriptiveToolName, stats.VerifiedCount,
           stats.ErrorCount, stats.ErrorCount == 1 ? "" : "s");
       }
 
-      if (stats.InconclusiveCount != 0) {
+      if (stats.InconclusiveCount != 0)
+      {
         Console.Write(", {0} inconclusive{1}", stats.InconclusiveCount,
           stats.InconclusiveCount == 1 ? "" : "s");
       }
 
-      if (stats.TimeoutCount != 0) {
+      if (stats.TimeoutCount != 0)
+      {
         Console.Write(", {0} time out{1}", stats.TimeoutCount,
           stats.TimeoutCount == 1 ? "" : "s");
       }
 
-      if (stats.OutOfMemoryCount != 0) {
+      if (stats.OutOfMemoryCount != 0)
+      {
         Console.Write(", {0} out of memory", stats.OutOfMemoryCount);
       }
 
@@ -165,19 +181,25 @@ namespace whoop
       #endregion
 
       #region Now try to give the user a specific hint if this looks like a common problem
-      try {
+      try
+      {
         throw e;
-      } catch(ProverException) {
+      }
+      catch (ProverException)
+      {
         Console.Error.WriteLine("Hint: It looks like Whoop is having trouble invoking its");
         Console.Error.WriteLine("supporting theorem prover, which by default is Z3.");
         Console.Error.WriteLine("Have you installed Z3?");
-      } catch(Exception) {
+      }
+      catch (Exception)
+      {
         // Nothing to say about this
       }
       #endregion
 
       #region Write details of the exception to the dump file
-      using (TokenTextWriter writer = new TokenTextWriter(DUMP_FILE)) {
+      using(TokenTextWriter writer = new TokenTextWriter(DUMP_FILE))
+      {
         writer.Write("Exception ToString:");
         writer.Write("===================");
         writer.Write(e.ToString());

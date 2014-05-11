@@ -17,22 +17,22 @@ namespace whoop
 {
   public class ExprModifier : Duplicator
   {
-    WhoopProgram wp;
-    int fid;
+    private AnalysisContext AC;
+    private int Fid;
 
-    public ExprModifier(WhoopProgram wp, int fid)
+    public ExprModifier(AnalysisContext wp, int fid)
     {
       Contract.Requires(wp != null);
       Contract.Requires(fid == 1 || fid == 2);
-      this.wp = wp;
-      this.fid = fid;
+      this.AC = wp;
+      this.Fid = fid;
     }
 
     public override Expr VisitIdentifierExpr(IdentifierExpr node)
     {
       if (!(node.Decl is Constant))
       {
-        return new IdentifierExpr(node.tok, new LocalVariable(node.tok, ModifyTypedIdent(node.Decl)));
+        return new IdentifierExpr(node.tok, new LocalVariable(node.tok, this.ModifyTypedIdent(node.Decl)));
       }
 
       return node;
@@ -42,8 +42,8 @@ namespace whoop
     {
       if (!(node is Constant))
       {
-        node.TypedIdent = ModifyTypedIdent(node);
-        node.Name = node.Name + "$" + fid;
+        node.TypedIdent = this.ModifyTypedIdent(node);
+        node.Name = node.Name + "$" + this.Fid;
         return node;
       }
 
@@ -52,11 +52,12 @@ namespace whoop
 
     private TypedIdent ModifyTypedIdent(Variable v)
     {
-      if (wp.memoryRegions.Exists(val => val.Name.Equals(v.Name))) {
+      if (this.AC.MemoryRegions.Exists(val => val.Name.Equals(v.Name)))
+      {
         return new TypedIdent(v.tok, v.Name, v.TypedIdent.Type);
       }
 
-      return new TypedIdent(v.tok, v.Name + "$" + fid, v.TypedIdent.Type);
+      return new TypedIdent(v.tok, v.Name + "$" + this.Fid, v.TypedIdent.Type);
     }
   }
 }

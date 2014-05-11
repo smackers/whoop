@@ -18,102 +18,103 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
-  public class WhoopProgram : CheckingContext
+  public class AnalysisContext : CheckingContext
   {
-    public Program program;
-    public ResolutionContext resContext;
+    public Program Program;
+    public ResolutionContext ResContext;
+    public Lockset CurrLockset;
+    public List<Lockset> Locksets;
+    internal SharedStateAnalyser SharedStateAnalyser;
+    internal Implementation InitFunc;
+    internal List<Variable> MemoryRegions;
+    internal Microsoft.Boogie.Type MemoryModelType;
 
-    public Lockset currLockset;
-    public List<Lockset> locksets;
-
-    internal SharedStateAnalyser sharedStateAnalyser;
-
-    internal Implementation initFunc;
-    internal List<Variable> memoryRegions;
-
-    internal Microsoft.Boogie.Type memoryModelType;
-
-    public WhoopProgram(Program program, ResolutionContext rc)
+    public AnalysisContext(Program program, ResolutionContext rc)
       : base((IErrorSink)null)
     {
       Contract.Requires(program != null);
       Contract.Requires(rc != null);
 
-      this.program = program;
-      this.resContext = rc;
-      this.locksets = new List<Lockset>();
+      this.Program = program;
+      this.ResContext = rc;
+      this.Locksets = new List<Lockset>();
 
-      if (Util.GetCommandLineOptions().MemoryModel.Equals("default")) {
-        this.memoryModelType = Microsoft.Boogie.Type.Int;
+      if (Util.GetCommandLineOptions().MemoryModel.Equals("default"))
+      {
+        this.MemoryModelType = Microsoft.Boogie.Type.Int;
       }
 
-      this.sharedStateAnalyser = new SharedStateAnalyser(this);
-      this.memoryRegions = sharedStateAnalyser.GetMemoryRegions();
+      this.SharedStateAnalyser = new SharedStateAnalyser(this);
+      this.MemoryRegions = this.SharedStateAnalyser.GetMemoryRegions();
     }
 
     public void EliminateDeadVariables()
     {
-      ExecutionEngine.EliminateDeadVariables(program);
+      ExecutionEngine.EliminateDeadVariables(this.Program);
     }
 
     public void Inline()
     {
-      ExecutionEngine.Inline(program);
+      ExecutionEngine.Inline(this.Program);
     }
 
     public List<Implementation> GetImplementationsToAnalyse()
     {
-      return program.TopLevelDeclarations.OfType<Implementation>().ToList().
+      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entryPair"));
     }
 
     public List<Implementation> GetInitFunctions()
     {
-      return program.TopLevelDeclarations.OfType<Implementation>().ToList().
+      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "init"));
     }
 
     public List<Variable> GetRaceCheckingVariables()
     {
-      return program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking"));
     }
 
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
-      Implementation impl = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-                            (val as Implementation).Name.Equals(name)) as Implementation);
+      Implementation impl = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals(name)) as Implementation);
       return impl;
     }
 
     public Constant GetConstant(string name)
     {
       Contract.Requires(name != null);
-      Constant cons = (program.TopLevelDeclarations.Find(val => (val is Constant) &&
-                      (val as Constant).Name.Equals(name)) as Constant);
+      Constant cons = (this.Program.TopLevelDeclarations.Find(val => (val is Constant) &&
+        (val as Constant).Name.Equals(name)) as Constant);
       return cons;
     }
 
-    public bool isWhoopFunc(Implementation impl)
+    public bool IsWhoopFunc(Implementation impl)
     {
       Contract.Requires(impl != null);
       if (impl.Name.Contains("_UPDATE_CURRENT_LOCKSET") ||
-          impl.Name.Contains("_LOG_WRITE_LS_") || impl.Name.Contains("_LOG_READ_LS_") ||
-          impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
-          impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+        impl.Name.Contains("_LOG_WRITE_LS_") || impl.Name.Contains("_LOG_READ_LS_") ||
+        impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
+        impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
         return true;
       return false;
     }
 
-    public bool isCalledByAnyFunc(Implementation impl)
+    public bool IsCalledByAnyFunc(Implementation impl)
     {
       Contract.Requires(impl != null);
-      foreach (var ep in program.TopLevelDeclarations.OfType<Implementation>()) {
-        foreach (var b in ep.Blocks) {
-          foreach (var c in b.Cmds.OfType<CallCmd>()) {
+      foreach (var ep in this.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        foreach (var b in ep.Blocks)
+        {
+          foreach (var c in b.Cmds.OfType<CallCmd>())
+          {
             if (c.callee.Equals(impl.Name)) return true;
-            foreach (var expr in c.Ins) {
+            foreach (var expr in c.Ins)
+            {
               if (!(expr is IdentifierExpr)) continue;
               if ((expr as IdentifierExpr).Name.Equals(impl.Name)) return true;
             }
@@ -123,15 +124,15 @@ namespace whoop
       return false;
     }
 
-    public bool isImplementationRacing(Implementation impl)
+    public bool IsImplementationRacing(Implementation impl)
     {
       Contract.Requires(impl != null);
-      return sharedStateAnalyser.IsImplementationRacing(impl);
+      return this.SharedStateAnalyser.IsImplementationRacing(impl);
     }
 
     internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)
     {
-      Function f = (Function) resContext.LookUpProcedure(functionName);
+      Function f = (Function)this.ResContext.LookUpProcedure(functionName);
       if (f != null)
         return f;
 
@@ -142,30 +143,32 @@ namespace whoop
         }), new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "", resultType)));
       f.AddAttribute("bvbuiltin", smtName);
 
-      program.TopLevelDeclarations.Add(f);
-      resContext.AddProcedure(f);
+      this.Program.TopLevelDeclarations.Add(f);
+      this.ResContext.AddProcedure(f);
 
       return f;
     }
 
     internal Expr MakeBVFunctionCall(string functionName, string smtName, Microsoft.Boogie.Type resultType, params Expr[] args)
     {
-      Function f = GetOrCreateBVFunction(functionName, smtName, resultType);
+      Function f = this.GetOrCreateBVFunction(functionName, smtName, resultType);
       var e = new NAryExpr(Token.NoToken, new FunctionCall(f), new List<Expr>(args));
       return e;
     }
 
     internal void DetectInitFunction()
     {
-      try {
-        initFunc = (program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(FunctionPairingUtil.initFuncName)) as Implementation);
-        if (initFunc == null) throw new Exception("no main function found");
-      } catch (Exception e) {
+      try
+      {
+        this.InitFunc = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
+          (val as Implementation).Name.Equals(PairConverterUtil.InitFuncName)) as Implementation);
+        if (this.InitFunc == null) throw new Exception("no main function found");
+      }
+      catch (Exception e)
+      {
         Console.Error.Write("Exception thrown in Whoop: ");
         Console.Error.WriteLine(e);
       }
     }
   }
 }
-  

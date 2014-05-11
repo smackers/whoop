@@ -18,46 +18,51 @@ using Microsoft.Boogie;
 
 namespace whoop
 {
-  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
   public class StaticLocksetAnalyser
   {
-    List<FunctionPairType> functionPairs;
-    PipelineStatistics stats;
-    WhoopErrorReporter errorReporter;
+    List<FunctionPairType> FunctionPairs;
+    PipelineStatistics Stats;
+    WhoopErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser (List<FunctionPairType> functionPairs)
+    public StaticLocksetAnalyser(List<FunctionPairType> functionPairs)
     {
       Contract.Requires(functionPairs.Count > 0);
-      this.functionPairs = functionPairs;
-      this.stats = new PipelineStatistics();
-      this.errorReporter = new WhoopErrorReporter();
+      this.FunctionPairs = functionPairs;
+      this.Stats = new PipelineStatistics();
+      this.ErrorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
     {
-      foreach (var pair in functionPairs) {
+      foreach (var pair in this.FunctionPairs)
+      {
         Contract.Requires(pair.Item3 != null);
 
-        WhoopProgram wp = pair.Item3;
-        wp.EliminateDeadVariables();
-        wp.Inline();
+        AnalysisContext ac = pair.Item3;
+        ac.EliminateDeadVariables();
+        ac.Inline();
 
         if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
-          wp.program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
+          ac.Program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
             Util.GetCommandLineOptions().SoundLoopUnrolling);
 
         VC.ConditionGeneration vcgen = null;
-        try {
-          vcgen = new VC.VCGen(wp.program, Util.GetCommandLineOptions().SimplifyLogFilePath,
+        try
+        {
+          vcgen = new VC.VCGen(ac.Program, Util.GetCommandLineOptions().SimplifyLogFilePath,
             Util.GetCommandLineOptions().SimplifyLogFileAppend, new List<Checker>());
-        } catch (ProverException e) {
+        }
+        catch (ProverException e)
+        {
           whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
-          Environment.Exit((int) Outcome.FatalError);
+          Environment.Exit((int)Outcome.FatalError);
         }
 
-        var decls = wp.program.TopLevelDeclarations.ToArray();
-        foreach (var initFunc in wp.GetInitFunctions()) {
+        var decls = ac.Program.TopLevelDeclarations.ToArray();
+        foreach (var initFunc in ac.GetInitFunctions())
+        {
           if (!initFunc.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
 
           Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
@@ -69,23 +74,30 @@ namespace whoop
           List<Counterexample> errors;
 
           DateTime start = new DateTime();
-          if (Util.GetCommandLineOptions().Trace) {
+          if (Util.GetCommandLineOptions().Trace)
+          {
             start = DateTime.UtcNow;
-            if (Util.GetCommandLineOptions().Trace) {
+            if (Util.GetCommandLineOptions().Trace)
+            {
               Console.WriteLine("");
               Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
             }
           }
 
           VC.VCGen.Outcome vcOutcome;
-          try {
+          try
+          {
             vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
-          } catch (VC.VCGenException e) {
+          }
+          catch (VC.VCGenException e)
+          {
             whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
               e.Message, funcToAnalyse.Name), true, true);
             errors = null;
             vcOutcome = VC.VCGen.Outcome.Inconclusive;
-          } catch (UnexpectedProverOutputException e) {
+          }
+          catch (UnexpectedProverOutputException e)
+          {
             whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
               funcToAnalyse.Name, e.Message);
             errors = null;
@@ -96,13 +108,14 @@ namespace whoop
           DateTime end = DateTime.UtcNow;
           TimeSpan elapsed = end - start;
 
-          if (Util.GetCommandLineOptions().Trace) {
+          if (Util.GetCommandLineOptions().Trace)
+          {
             int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
             timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
               elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
           }
 
-          ProcessOutcome(wp, funcToAnalyse, vcOutcome, errors, timeIndication, stats);
+          this.ProcessOutcome(ac, funcToAnalyse, vcOutcome, errors, timeIndication, this.Stats);
 
           if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
             Console.Out.Flush();
@@ -112,17 +125,18 @@ namespace whoop
         cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       }
 
-      whoop.IO.WriteTrailer(stats);
+      whoop.IO.WriteTrailer(this.Stats);
 
-      if ((stats.ErrorCount + stats.InconclusiveCount + stats.TimeoutCount + stats.OutOfMemoryCount) > 0)
+      if ((this.Stats.ErrorCount + this.Stats.InconclusiveCount + this.Stats.TimeoutCount + this.Stats.OutOfMemoryCount) > 0)
         return Outcome.LocksetAnalysisError;
       return Outcome.Done;
     }
 
-    private void ProcessOutcome(WhoopProgram wp, Implementation impl, VC.VCGen.Outcome outcome,
-      List<Counterexample> errors, string timeIndication, PipelineStatistics stats)
+    private void ProcessOutcome(AnalysisContext wp, Implementation impl, VC.VCGen.Outcome outcome,
+                                List<Counterexample> errors, string timeIndication, PipelineStatistics stats)
     {
-      switch (outcome) {
+      switch (outcome)
+      {
         case VC.VCGen.Outcome.ReachedBound:
           whoop.IO.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
@@ -131,11 +145,13 @@ namespace whoop
           break;
         
         case VC.VCGen.Outcome.Correct:
-          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed) {
+          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          {
             whoop.IO.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
           }
-          else {
+          else
+          {
             whoop.IO.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
           }
@@ -158,7 +174,8 @@ namespace whoop
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
-          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed) {
+          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          {
             whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;
           }
@@ -166,12 +183,15 @@ namespace whoop
           errors.Sort(new CounterexampleComparer());
           int errorCount = 0;
           foreach (Counterexample error in errors)
-            errorCount += errorReporter.ReportCounterexample(error);
+            errorCount += this.ErrorReporter.ReportCounterexample(error);
 
-          if (errorCount == 0) {
+          if (errorCount == 0)
+          {
             whoop.IO.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
-          } else {
+          }
+          else
+          {
             whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
             stats.ErrorCount += errorCount;
           }

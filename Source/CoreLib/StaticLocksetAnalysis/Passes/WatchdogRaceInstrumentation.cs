@@ -20,37 +20,37 @@ namespace whoop
 {
   public class WatchdogRaceInstrumentation : RaceInstrumentation
   {
-    public WatchdogRaceInstrumentation(WhoopProgram wp) : base(wp)
+    public WatchdogRaceInstrumentation(AnalysisContext ac) : base(ac)
     {
 
     }
 
     public void Run()
     {
-      AddTrackingGlobalVar();
-      AddAccessOffsetGlobalVars();
+      this.AddTrackingGlobalVar();
+      base.AddAccessOffsetGlobalVars();
 
-      AddLogAccessFuncs(AccessType.WRITE);
-      AddLogAccessFuncs(AccessType.READ);
+      base.AddLogAccessFuncs(AccessType.WRITE);
+      base.AddLogAccessFuncs(AccessType.READ);
 
-      AddCheckAccessFuncs(AccessType.WRITE);
-      AddCheckAccessFuncs(AccessType.READ);
+      base.AddCheckAccessFuncs(AccessType.WRITE);
+      base.AddCheckAccessFuncs(AccessType.READ);
 
-      InstrumentEntryPoints();
-      // InstrumentOtherFuncs();
+      this.InstrumentEntryPoints();
+      // this.InstrumentOtherFuncs();
     }
 
     private void AddTrackingGlobalVar()
     {
       TypedIdent ti = new TypedIdent(Token.NoToken, "TRACKING", Microsoft.Boogie.Type.Bool);
       Variable tracking = new GlobalVariable(Token.NoToken, ti);
-      wp.program.TopLevelDeclarations.Add(tracking);
+      this.AC.Program.TopLevelDeclarations.Add(tracking);
     }
 
     protected override List<IdentifierExpr> MakeLogModset(Lockset ls)
     {
       List<IdentifierExpr> modset = new List<IdentifierExpr>();
-      modset.Add(new IdentifierExpr(Token.NoToken, ls.id));
+      modset.Add(new IdentifierExpr(Token.NoToken, ls.Id));
 
       return modset;
     }
@@ -59,21 +59,21 @@ namespace whoop
     {
       Block block = new Block(Token.NoToken, "_LOG_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      block.Cmds.Add(MakeLogAssumeCmd(ls));
-      block.Cmds.Add(MakeLogLocksetAssignCmd(ls));
+      block.Cmds.Add(this.MakeLogAssumeCmd(ls));
+      block.Cmds.Add(this.MakeLogLocksetAssignCmd(ls));
 
       return block;
     }
 
     private AssumeCmd MakeLogAssumeCmd(Lockset ls)
     {
-      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(wp.memoryModelType);
-      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(wp.memoryModelType);
+      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(this.AC.MemoryModelType);
+      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(this.AC.MemoryModelType);
 
       List<Variable> dummies = new List<Variable>();
       dummies.Add(lockVar);
 
-      IdentifierExpr lsExpr = new IdentifierExpr(ls.id.tok, ls.id);
+      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
       IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
 
       AssumeCmd assume = new AssumeCmd(Token.NoToken, new ForallExpr(Token.NoToken, dummies,
@@ -81,19 +81,19 @@ namespace whoop
                              Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                                new List<Expr>(new Expr[] {
               lsExpr, lockExpr
-            })), RaceInstrumentationUtil.MakeMapSelect(wp.currLockset.id, lockVar)))));
+            })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)))));
 
       return assume;
     }
 
     private AssignCmd MakeLogLocksetAssignCmd(Lockset ls)
     {
-      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(wp.memoryModelType);
-      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(wp.memoryModelType);
-      Variable offset = wp.GetRaceCheckingVariables().Find(val =>
-        val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.targetName)));
+      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(this.AC.MemoryModelType);
+      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(this.AC.MemoryModelType);
+      Variable offset = this.AC.GetRaceCheckingVariables().Find(val =>
+        val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
 
-      IdentifierExpr lsExpr = new IdentifierExpr(ls.id.tok, ls.id);
+      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
       IdentifierExpr tempExpr = new IdentifierExpr(temp.tok, temp);
       IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
       IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
@@ -120,26 +120,26 @@ namespace whoop
     {
       Block block = new Block(Token.NoToken, "_CHECK_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      block.Cmds.Add(MakeCheckAssertCmd(ls));
+      block.Cmds.Add(this.MakeCheckAssertCmd(ls));
 
       return block;
     }
 
     private ExistsExpr MakeCheckExistsExpr(Lockset ls)
     {
-      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(wp.memoryModelType);
+      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(this.AC.MemoryModelType);
 
       List<Variable> dummies = new List<Variable>();
       dummies.Add(lockVar);
 
-      IdentifierExpr lsExpr = new IdentifierExpr(ls.id.tok, ls.id);
+      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
       IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
 
       ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
                             Expr.Iff(Expr.And(
                               new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                                 new List<Expr>(new Expr[] { lsExpr, lockExpr })),
-                              RaceInstrumentationUtil.MakeMapSelect(wp.currLockset.id, lockVar)),
+                              RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)),
                               Expr.True));
 
       return exists;
@@ -147,10 +147,10 @@ namespace whoop
 
     private AssertCmd MakeCheckAssertCmd(Lockset ls)
     {
-      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(wp.memoryModelType);
+      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(this.AC.MemoryModelType);
       Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
-      Variable offset = wp.GetRaceCheckingVariables().Find(val =>
-        val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.targetName)));
+      Variable offset = this.AC.GetRaceCheckingVariables().Find(val =>
+        val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
 
       IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
       IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
@@ -159,7 +159,7 @@ namespace whoop
       AssertCmd assert = new AssertCmd(Token.NoToken, Expr.Imp(
                            Expr.And(trackExpr,
                              Expr.Eq(offsetExpr, ptrExpr)),
-                           MakeCheckExistsExpr(ls)));
+                           this.MakeCheckExistsExpr(ls)));
 
       assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
 
@@ -168,7 +168,8 @@ namespace whoop
 
     protected override void InstrumentEntryPoints()
     {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      {
         InstrumentWriteAccesses(impl);
         InstrumentReadAccesses(impl);
       }
@@ -176,15 +177,16 @@ namespace whoop
 
     protected override void InstrumentOtherFuncs()
     {
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.isWhoopFunc(impl)) continue;
-        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnyFunc(impl)) continue;
+      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (this.AC.IsWhoopFunc(impl)) continue;
+        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
         if (!(impl.Name.Contains("$log") || impl.Name.Contains("$check"))) continue;
 
-        InstrumentOtherFuncsWriteAccesses(impl);
-        InstrumentOtherFuncsReadAccesses(impl);
+        this.InstrumentOtherFuncsWriteAccesses(impl);
+        this.InstrumentOtherFuncsReadAccesses(impl);
       }
     }
   }

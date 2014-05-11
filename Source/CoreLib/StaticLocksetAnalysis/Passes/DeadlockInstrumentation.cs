@@ -20,14 +20,14 @@ namespace whoop
 {
   public class DeadlockInstrumentation
   {
-    WhoopProgram wp;
-    List<string> alreadyInstrumented;
+    private AnalysisContext AC;
+    private List<string> AlreadyInstrumented;
 
-    public DeadlockInstrumentation(WhoopProgram wp)
+    public DeadlockInstrumentation(AnalysisContext ac)
     {
-      Contract.Requires(wp != null);
-      this.wp = wp;
-      this.alreadyInstrumented = new List<string>();
+      Contract.Requires(ac != null);
+      this.AC = ac;
+      this.AlreadyInstrumented = new List<string>();
     }
 
     public void Run()
@@ -44,8 +44,8 @@ namespace whoop
                          new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      wp.program.TopLevelDeclarations.Add(proc);
-      wp.resContext.AddProcedure(proc);
+      this.AC.Program.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
 
       List<Variable> localVars = new List<Variable>();
       Variable trackParam = RaceInstrumentationUtil.MakeTrackLocalVariable();
@@ -53,21 +53,21 @@ namespace whoop
       if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         localVars.Add(trackParam);
 
-      Block b = new Block(Token.NoToken, "_CHECK_$" + wp.currLockset.id.Name, new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      Block b = new Block(Token.NoToken, "_CHECK_$" + this.AC.CurrLockset.Id.Name, new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
       if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-        b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam)}));
+        b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(trackParam.tok, trackParam) }));
 
       List<Variable> dummies = new List<Variable>();
       Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-                             wp.memoryModelType));
+                             this.AC.MemoryModelType));
       dummies.Add(dummyLock);
 
       ForallExpr forall = new ForallExpr(Token.NoToken, dummies,
                             Expr.Iff(new NAryExpr(Token.NoToken,
                               new MapSelect(Token.NoToken, 1),
                               new List<Expr>(new Expr[] {
-            new IdentifierExpr(wp.currLockset.id.tok, wp.currLockset.id),
+            new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id),
             new IdentifierExpr(dummyLock.tok, dummyLock)
           })), Expr.False));
 
@@ -83,12 +83,13 @@ namespace whoop
       impl.Proc = proc;
       impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      wp.program.TopLevelDeclarations.Add(impl);
+      this.AC.Program.TopLevelDeclarations.Add(impl);
     }
 
     private void InstrumentEntryPoints()
     {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      {
         InstrumentEndOfEntryPoint(impl);
       }
     }
@@ -96,10 +97,11 @@ namespace whoop
     private void InstrumentEndOfEntryPoint(Implementation impl)
     {
       string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
-      Implementation original = wp.GetImplementation(label);
+      Implementation original = this.AC.GetImplementation(label);
       List<int> returnIdxs = new List<int>();
 
-      foreach (var b in original.Blocks) {
+      foreach (var b in original.Blocks)
+      {
         if (b.TransferCmd is ReturnCmd)
           returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
       }
@@ -107,14 +109,16 @@ namespace whoop
       CallCmd call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
                        new List<Expr> { }, new List<IdentifierExpr>());
 
-      foreach (var b in impl.Blocks) {
+      foreach (var b in impl.Blocks)
+      {
         string[] thisLabel = b.Label.Split(new char[] { '$' });
         Contract.Requires(thisLabel != null && thisLabel.Length == 2);
         if (!label.Equals(thisLabel[0])) break;
-        if (alreadyInstrumented.Exists(val => val.Equals(thisLabel[0]))) continue;
-        if (returnIdxs.Exists(val => val == Convert.ToInt32(thisLabel[1]))) {
+        if (this.AlreadyInstrumented.Exists(val => val.Equals(thisLabel[0]))) continue;
+        if (returnIdxs.Exists(val => val == Convert.ToInt32(thisLabel[1])))
+        {
           b.Cmds.Add(call);
-          alreadyInstrumented.Add(thisLabel[0]);
+          this.AlreadyInstrumented.Add(thisLabel[0]);
         }
       }
     }

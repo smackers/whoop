@@ -76,7 +76,6 @@
     <Compile Include="StaticLocksetAnalysis\Lockset.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\LocksetInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\RaceInstrumentation.cs" />
-    <Compile Include="WhoopProgram.cs" />
     <Compile Include="SourceLocationInfo.cs" />
     <Compile Include="AccessType.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
@@ -89,10 +88,11 @@
     <Compile Include="WhoopCommandLineOptions.cs" />
     <Compile Include="Util\IO.cs" />
     <Compile Include="Util\Util.cs" />
-    <Compile Include="Util\WhoopProgramParser.cs" />
     <Compile Include="Util\RaceInstrumentationUtil.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\BasicRaceInstrumentation.cs" />
-    <Compile Include="Util\FunctionPairingUtil.cs" />
+    <Compile Include="AnalysisContext.cs" />
+    <Compile Include="Util\AnalysisContextParser.cs" />
+    <Compile Include="Util\PairConverterUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

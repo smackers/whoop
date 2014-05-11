@@ -18,24 +18,31 @@ using Microsoft.Boogie;
 
 namespace whoop
 {
-  public class WhoopProgramParser
+  public class AnalysisContextParser
   {
-    string file;
-    string ext;
+    private string File;
+    private string Extension;
 
-    public WhoopProgramParser(string file, string ext)
+    public AnalysisContextParser(string file, string ext)
     {
-      this.file = file;
-      this.ext = ext;
+      this.File = file;
+      this.Extension = ext;
     }
 
-    public WhoopProgram ParseNew(string additional=null)
+    public AnalysisContext ParseNew(string additional = null)
     {
       if (additional != null)
-        file = file.Substring(0, file.IndexOf(Path.GetExtension(file))) + "$" + additional + "." + ext;
+      {
+        this.File = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
+          "$" + additional + "." + this.Extension;
+      }
       else
-        file = file.Substring(0, file.IndexOf(Path.GetExtension(file))) + "." + ext;
-      List<string> filesToParse = new List<string>() { file };
+      {
+        this.File = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
+          "." + this.Extension;
+      }
+
+      List<string> filesToParse = new List<string>() { this.File };
 
       Program program = ExecutionEngine.ParseBoogieProgram(filesToParse, false);
       if (program == null) return null;
@@ -45,19 +52,21 @@ namespace whoop
 
       ResolutionContext rc = new ResolutionContext(null);
       program.Resolve(rc);
-      if (rc.ErrorCount != 0) {
-        Console.WriteLine("{0} name resolution errors detected in {1}", rc.ErrorCount, file);
+      if (rc.ErrorCount != 0)
+      {
+        Console.WriteLine("{0} name resolution errors detected in {1}", rc.ErrorCount, this.File);
         return null;
       }
 
       int errorCount = program.Typecheck();
-      if (errorCount != 0) {
-        Console.WriteLine("{0} type checking errors detected in {1}", errorCount, file);
+      if (errorCount != 0)
+      {
+        Console.WriteLine("{0} type checking errors detected in {1}", errorCount, this.File);
         return null;
       }
 
-      WhoopProgram whoopProgram = new WhoopProgram(program, rc);
-      if (whoopProgram == null) Environment.Exit((int) Outcome.ParsingError);
+      AnalysisContext whoopProgram = new AnalysisContext(program, rc);
+      if (whoopProgram == null) Environment.Exit((int)Outcome.ParsingError);
 
       return whoopProgram;
     }

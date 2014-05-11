@@ -19,11 +19,11 @@ namespace whoop
 {
   public class WhoopErrorReporter
   {
-    List<Tuple<SourceLocationInfo, SourceLocationInfo>> reportedErrors;
+    private List<Tuple<SourceLocationInfo, SourceLocationInfo>> ReportedErrors;
 
     internal WhoopErrorReporter()
     {
-      this.reportedErrors = new List<Tuple<SourceLocationInfo, SourceLocationInfo>>();
+      this.ReportedErrors = new List<Tuple<SourceLocationInfo, SourceLocationInfo>>();
     }
 
     internal int ReportCounterexample(Counterexample error)
@@ -31,28 +31,41 @@ namespace whoop
       Contract.Requires(error != null);
       int errors = 0;
 
-      if (error is AssertCounterexample) {
+      if (error is AssertCounterexample)
+      {
         AssertCounterexample cex = error as AssertCounterexample;
-//        Console.WriteLine("Error: " + cex.FailingAssert);
-//        Console.WriteLine("Line: " + cex.FailingAssert.Line);
-//        Console.WriteLine();
-        if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking")) {
-          errors = ReportRace(cex);
-        } else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking")) {
-          errors = ReportUnreleasedLock(cex);
-        } else {
+        //        Console.WriteLine("Error: " + cex.FailingAssert);
+        //        Console.WriteLine("Line: " + cex.FailingAssert.Line);
+        //        Console.WriteLine();
+        if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking"))
+        {
+          Console.WriteLine("CounterExample: Potential data race");
+          errors = this.ReportRace(cex);
+        }
+        else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking"))
+        {
+          Console.WriteLine("CounterExample: Potential deadlock");
+          errors = this.ReportUnreleasedLock(cex);
+        }
+        else
+        {
           errors++;
-          if (Util.GetCommandLineOptions().DebugWhoop) {
-            PopulateModelWithStatesIfNecessary(cex);
+          if (Util.GetCommandLineOptions().DebugWhoop)
+          {
+            this.PopulateModelWithStatesIfNecessary(cex);
             Write(cex.Model);
           }
           Console.WriteLine("Error: AssertCounterexample");
         }
-      } else if (error is CallCounterexample) {
+      }
+      else if (error is CallCounterexample)
+      {
         errors++;
-        ReportRequiresFailure(error as CallCounterexample);
+        this.ReportRequiresFailure(error as CallCounterexample);
         Console.WriteLine("Error: CallCounterexample");
-      } else if (error is ReturnCounterexample) {
+      }
+      else if (error is ReturnCounterexample)
+      {
         errors++;
         Console.WriteLine("Error: ReturnCounterexample");
       }
@@ -60,38 +73,42 @@ namespace whoop
       return errors;
     }
 
-    private int ReportRace(AssertCounterexample cex) {
-      PopulateModelWithStatesIfNecessary(cex);
+    private int ReportRace(AssertCounterexample cex)
+    {
+      this.PopulateModelWithStatesIfNecessary(cex);
 
-      AssumeCmd conflictingAction = GetCorrespondingAssume(cex);
-      string access2 = GetAccessType(conflictingAction.Attributes);
+      AssumeCmd conflictingAction = this.GetCorrespondingAssume(cex);
+      string access2 = this.GetAccessType(conflictingAction.Attributes);
       string raceName, access1;
-      string raceyOffset = GetOffset(cex, conflictingAction.Attributes);
+      string raceyOffset = this.GetOffset(cex, conflictingAction.Attributes);
 
       SourceLocationInfo sourceInfoForSecondAccess = new SourceLocationInfo(conflictingAction.Attributes);
-      List<AssumeCmd> potentialConflictingActions = DetermineConflictingActions(cex, conflictingAction,
-                                                      raceyOffset, access2);
+      List<AssumeCmd> potentialConflictingActions = this.DetermineConflictingActions(cex, conflictingAction,
+        raceyOffset, access2);
 
-      foreach (var v in reportedErrors) {
+      foreach (var v in this.ReportedErrors)
+      {
         potentialConflictingActions.RemoveAll(
           val => (sourceInfoForSecondAccess.ToString().Equals(v.Item1.ToString()) &&
-          new SourceLocationInfo(val.Attributes).ToString().Equals(v.Item2.ToString())) ||
+            new SourceLocationInfo(val.Attributes).ToString().Equals(v.Item2.ToString())) ||
           (sourceInfoForSecondAccess.ToString().Equals(v.Item2.ToString()) &&
-          new SourceLocationInfo(val.Attributes).ToString().Equals(v.Item1.ToString())));
+            new SourceLocationInfo(val.Attributes).ToString().Equals(v.Item1.ToString())));
       }
 
-      foreach (var v in potentialConflictingActions) {
-        reportedErrors.Add(new Tuple<SourceLocationInfo, SourceLocationInfo>(
+      foreach (var v in potentialConflictingActions)
+      {
+        this.ReportedErrors.Add(new Tuple<SourceLocationInfo, SourceLocationInfo>(
           sourceInfoForSecondAccess, new SourceLocationInfo(v.Attributes)));
       }
 
-      List<SourceLocationInfo> sourceLocationsForFirstAccess = GetSourceLocationsForAssumes(potentialConflictingActions);
+      List<SourceLocationInfo> sourceLocationsForFirstAccess = this.GetSourceLocationsForAssumes(potentialConflictingActions);
 
-      for (int i = 0; i < sourceLocationsForFirstAccess.Count; i++) {
-        Tuple<string, string> eps = GetEntryPointNames(conflictingAction, potentialConflictingActions[i]);
-        DetermineNatureOfRace(potentialConflictingActions[i], out raceName, out access1, access2);
+      for (int i = 0; i < sourceLocationsForFirstAccess.Count; i++)
+      {
+        Tuple<string, string> eps = this.GetEntryPointNames(conflictingAction, potentialConflictingActions[i]);
+        this.DetermineNatureOfRace(potentialConflictingActions[i], out raceName, out access1, access2);
 
-        ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
+        WhoopErrorReporter.ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
           "potential " + raceName + " race:\n", ErrorMsgType.Error);
 
         Console.Error.Write(access1 + " by entry point " + eps.Item2 + ", ");
@@ -118,17 +135,20 @@ namespace whoop
       Contract.Requires(stateName != null);
 
       Block b = cex.Trace[cex.Trace.Count - 1];
-      if (Util.GetCommandLineOptions().DebugWhoop) {
-        Write(cex.Model);
+      if (Util.GetCommandLineOptions().DebugWhoop)
+      {
+        this.Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
-        foreach (var v in b.Cmds) {
+        foreach (var v in b.Cmds)
+        {
           Console.WriteLine(v);
         }
       }
 
       AssertCmd assert = b.Cmds[b.Cmds.Count - 1] as AssertCmd;
       Contract.Requires(assert != null);
-      if (Util.GetCommandLineOptions().DebugWhoop) {
+      if (Util.GetCommandLineOptions().DebugWhoop)
+      {
         Console.WriteLine("assert: " + assert);
       }
 
@@ -140,13 +160,15 @@ namespace whoop
       Contract.Requires(aoffFunc != null && aoffFunc.Apps.Count() == 1);
 
       Model.Element aoff = null;
-      foreach (var app in aoffFunc.Apps) {
+      foreach (var app in aoffFunc.Apps)
+      {
         aoff = app.Result;
         break;
       }
       Contract.Requires(aoff != null);
 
-      if (Util.GetCommandLineOptions().DebugWhoop) {
+      if (Util.GetCommandLineOptions().DebugWhoop)
+      {
         Console.WriteLine(aoffFunc.Name + " :: " + aoff);
       }
 
@@ -163,20 +185,22 @@ namespace whoop
     private List<AssumeCmd> DetermineConflictingActions(AssertCounterexample cex, AssumeCmd conflictingAction,
       string raceyOffset, string otherAccess)
     {
-      string sharedResourceName = GetSharedResourceName(conflictingAction.Attributes);
+      string sharedResourceName = this.GetSharedResourceName(conflictingAction.Attributes);
       string checkStateName = QKeyValue.FindStringAttribute(conflictingAction.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
 
-      Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
+      Model.CapturedState checkState = WhoopErrorReporter.GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
 
       Dictionary<string, bool> checkStateLocksDictionary = null;
-      checkStateLocksDictionary = GetCheckStateLocksDictionary(cex, checkState);
+      checkStateLocksDictionary = this.GetCheckStateLocksDictionary(cex, checkState);
 
       List<AssumeCmd> logAssumes = new List<AssumeCmd>();
 
-      foreach (var b in cex.Trace) {
-        foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
+      foreach (var b in cex.Trace)
+      {
+        foreach (var c in b.Cmds.OfType<AssumeCmd>())
+        {
           string stateName = null;
           if (QKeyValue.FindStringAttribute(c.Attributes, "resource") == sharedResourceName)
             stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
@@ -184,13 +208,14 @@ namespace whoop
           if (stateName == null) continue;
           if (stateName.Contains("check_state")) continue;
 
-          if (otherAccess.Equals("read") && GetAccessType(c.Attributes) == "read")
+          if (otherAccess.Equals("read") && this.GetAccessType(c.Attributes) == "read")
             continue;
 
-          Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
+          Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          if (Util.GetCommandLineOptions().DebugWhoop) {
+          if (Util.GetCommandLineOptions().DebugWhoop)
+          {
             Console.WriteLine("*** STATE {0}", logState.Name);
             foreach (var v in logState.Variables)
               Console.WriteLine("  {0} -> {1}", v, logState.TryGet(v));
@@ -199,7 +224,8 @@ namespace whoop
 
           Model.Element aoff = null;
 
-          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL) {
+          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
+          {
             string accessOffset = "ACCESS_OFFSET_" + sharedResourceName;
 
             Model.Element aoffMap = logState.TryGet(accessOffset);
@@ -215,13 +241,16 @@ namespace whoop
             Model.Func mapSelectFunc = cex.Model.GetFunc("Select_[$int]$int");
             if (mapSelectFunc == null && mapSelectFunc.Arity != 0) continue;
 
-            foreach (var app in mapSelectFunc.Apps) {
+            foreach (var app in mapSelectFunc.Apps)
+            {
               if (!app.Args[0].ToString().Equals(aoffMap.ToString())) continue;
               if (!app.Args[1].ToString().Equals(ptrVal.ToString())) continue;
               aoff = app.Result;
               break;
             }
-          } else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG) {
+          }
+          else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
+          {
             string ptrName = logState.Variables.LastOrDefault(val =>
               val.Contains(sharedResourceName) && val.Contains("$ptr"));
             if (ptrName == null) continue;
@@ -232,18 +261,21 @@ namespace whoop
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 
           Dictionary<string, bool> logStateLocksDictionary = null;
-          logStateLocksDictionary = GetLogStateLocksDictionary(cex, logState);
+          logStateLocksDictionary = this.GetLogStateLocksDictionary(cex, logState);
 
-          if (checkStateLocksDictionary.Count == 0 || logStateLocksDictionary.Count == 0) {
+          if (checkStateLocksDictionary.Count == 0 || logStateLocksDictionary.Count == 0)
+          {
             logAssumes.Add(c);
             continue;
           }
 
           bool thereIsAtLeastOneCommonLock = false;
-          foreach (var kvp in checkStateLocksDictionary) {
+          foreach (var kvp in checkStateLocksDictionary)
+          {
             bool logValue;
             logStateLocksDictionary.TryGetValue(kvp.Key, out logValue);
-            if (kvp.Value && logValue) {
+            if (kvp.Value && logValue)
+            {
               thereIsAtLeastOneCommonLock = true;
               break;
             }
@@ -279,17 +311,20 @@ namespace whoop
       List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
 
       bool canAddStates = false;
-      foreach (var s in cex.Model.States) {
+      foreach (var s in cex.Model.States)
+      {
         if (s.Name.Equals("check_deadlock_state")) canAddStates = true;
         if (!canAddStates) continue;
         if (!s.Name.Contains("update_cls_state_")) continue;
         locksetStates.Add(s);
       }
 
-      foreach (var s in locksetStates) {
+      foreach (var s in locksetStates)
+      {
         List<string> checkStateLocks = s.Variables.Where(val =>
           val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
-        for (int i = 0; i < checkStateLocks.Count; i += 2) {
+        for (int i = 0; i < checkStateLocks.Count; i += 2)
+        {
           Model.Element lockId = state.TryGet(checkStateLocks[i]) as Model.Element;
           Model.Boolean lockVal = state.TryGet(checkStateLocks[i + 1]) as Model.Boolean;
           if (lockVal == null) continue;
@@ -306,17 +341,20 @@ namespace whoop
       Dictionary<string, bool> logStateLocksDictionary = new Dictionary<string, bool>();
       List<Model.CapturedState> locksetStates = new List<Model.CapturedState>();
 
-      foreach (var s in cex.Model.States) {
+      foreach (var s in cex.Model.States)
+      {
         if (s.Name.Equals(state.Name)) break;
         if (s.Name.Equals("check_deadlock_state")) break;
         if (!s.Name.Contains("update_cls_state_")) continue;
         locksetStates.Add(s);
       }
 
-      foreach (var s in locksetStates) {
+      foreach (var s in locksetStates)
+      {
         List<string> checkStateLocks = s.Variables.Where(val =>
           val.Contains("_UPDATE_CURRENT_LOCKSET") && (val.Contains("$lock") || val.Contains("$isLocked"))).ToList();
-        for (int i = 0; i < checkStateLocks.Count; i += 2) {
+        for (int i = 0; i < checkStateLocks.Count; i += 2)
+        {
           logStateLocksDictionary[(state.TryGet(checkStateLocks[i]) as Model.Element).ToString()] =
             (state.TryGet(checkStateLocks[i + 1]) as Model.Boolean).Value;
         }
@@ -327,20 +365,23 @@ namespace whoop
 
     private int ReportUnreleasedLock(AssertCounterexample cex)
     {
-      PopulateModelWithStatesIfNecessary(cex);
+      this.PopulateModelWithStatesIfNecessary(cex);
 
-      AssumeCmd deadlockCheck = GetCorrespondingAssume(cex);
+      AssumeCmd deadlockCheck = this.GetCorrespondingAssume(cex);
       string entryPoint = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "entryPoint");
       Contract.Requires(entryPoint != null);
 
-      List<AssumeCmd> unreleasedLocks = DetermineUnreleasedLocks(cex, deadlockCheck, entryPoint);
-      List<SourceLocationInfo> sourceLocationsForUnreleasedLocks = GetSourceLocationsForAssumes(unreleasedLocks);
-      Contract.Requires(sourceLocationsForUnreleasedLocks.Count > 0);
+      List<AssumeCmd> unreleasedLocks = this.DetermineUnreleasedLocks(cex, deadlockCheck, entryPoint);
+      List<SourceLocationInfo> sourceLocationsForUnreleasedLocks = this.GetSourceLocationsForAssumes(unreleasedLocks);
 
-      ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
+      if (sourceLocationsForUnreleasedLocks.Count == 0)
+        return sourceLocationsForUnreleasedLocks.Count;
+
+      WhoopErrorReporter.ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
         "potential source of deadlock:\n", ErrorMsgType.Error);
 
-      foreach (var v in sourceLocationsForUnreleasedLocks) {
+      foreach (var v in sourceLocationsForUnreleasedLocks)
+      {
         Console.Error.Write("the following lock is not released when " + entryPoint + " returns, ");
         Console.Error.WriteLine(v.ToString());
         v.PrintStackTrace();
@@ -353,27 +394,29 @@ namespace whoop
     {
       string checkStateName = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
-      Model.CapturedState checkState = GetStateFromModel(checkStateName, cex.Model);
+      Model.CapturedState checkState = WhoopErrorReporter.GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
 
       List<Tuple<string, string>> locksLeftLocked = new List<Tuple<string, string>>();
       List<AssumeCmd> logAssumes = new List<AssumeCmd>();
 
-      foreach (var b in cex.Trace) {
-        foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
+      foreach (var b in cex.Trace)
+      {
+        foreach (var c in b.Cmds.OfType<AssumeCmd>())
+        {
           string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
           if (stateName == null) continue;
           if (!stateName.Contains("update_cls_state")) continue;
           if (!entryPoint.Equals(QKeyValue.FindStringAttribute(c.Attributes, "entryPoint"))) continue;
 
-          Model.CapturedState logState = GetStateFromModel(stateName, cex.Model);
+          Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
           string lockName = logState.Variables.ToList().Find(val => val.Contains("UPDATE_CURRENT_LOCKSET") &&
-                            val.Contains("lock"));
+            val.Contains("lock"));
           Contract.Requires(lockName != null);
           string isLocked = logState.Variables.ToList().Find(val => val.Contains("UPDATE_CURRENT_LOCKSET") &&
-                            val.Contains("isLocked"));
+            val.Contains("isLocked"));
           Contract.Requires(isLocked != null);
 
           Model.Element lockId = logState.TryGet(lockName) as Model.Element;
@@ -386,8 +429,10 @@ namespace whoop
         }
       }
 
-      foreach (var b in cex.Trace) {
-        foreach (var c in b.Cmds.OfType<AssumeCmd>()) {
+      foreach (var b in cex.Trace)
+      {
+        foreach (var c in b.Cmds.OfType<AssumeCmd>())
+        {
           string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
           if (stateName == null) continue;
           if (!locksLeftLocked.Any(val => val.Item2.Equals(stateName))) continue;
@@ -408,7 +453,8 @@ namespace whoop
     private List<SourceLocationInfo> GetSourceLocationsForAssumes(List<AssumeCmd> assumes)
     {
       List<SourceLocationInfo> sourceLocations = new List<SourceLocationInfo>();
-      foreach (var assume in assumes) {
+      foreach (var assume in assumes)
+      {
         sourceLocations.Add(new SourceLocationInfo(assume.Attributes));
       }
       return sourceLocations;
@@ -418,13 +464,16 @@ namespace whoop
     {
       Console.WriteLine("*** MODEL");
       foreach (var f in model.Functions.OrderBy(f => f.Name))
-        if (f.Arity == 0) {
+        if (f.Arity == 0)
+        {
           Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
         }
       foreach (var f in model.Functions)
-        if (f.Arity != 0) {
+        if (f.Arity != 0)
+        {
           Console.WriteLine("{0} -> {1}", f.Name, "{");
-          foreach (var app in f.Apps) {
+          foreach (var app in f.Apps)
+          {
             Console.Write("  ");
             foreach (var a in app.Args)
               Console.Write("{0} ", a);
@@ -434,7 +483,8 @@ namespace whoop
             Console.WriteLine("  else -> {0}", f.Else);
           Console.WriteLine("}");
         }
-      foreach (var s in model.States) {
+      foreach (var s in model.States)
+      {
         if (s == model.InitialState && s.VariableCount == 0)
           continue;
         Console.WriteLine("*** STATE {0}", s.Name);
@@ -445,10 +495,13 @@ namespace whoop
       Console.WriteLine("*** END_MODEL");
     }
 
-    private int ReportRequiresFailure(CallCounterexample cex) {
+    private int ReportRequiresFailure(CallCounterexample cex)
+    {
       Console.Error.WriteLine();
-      ErrorWriteLine(cex.FailingCall + ":", "a precondition for this call might not hold", ErrorMsgType.Error);
-      ErrorWriteLine(cex.FailingRequires.Line + ":", "this is the precondition that might not hold", ErrorMsgType.Note);
+      WhoopErrorReporter.ErrorWriteLine(cex.FailingCall + ":",
+        "a precondition for this call might not hold", ErrorMsgType.Error);
+      WhoopErrorReporter.ErrorWriteLine(cex.FailingRequires.Line + ":",
+        "this is the precondition that might not hold", ErrorMsgType.Note);
       return 1;
     }
 
@@ -464,8 +517,10 @@ namespace whoop
     private static Model.CapturedState GetStateFromModel(string stateName, Model m)
     {
       Model.CapturedState state = null;
-      foreach (var s in m.States) {
-        if (s.Name.Equals(stateName)) {
+      foreach (var s in m.States)
+      {
+        if (s.Name.Equals(stateName))
+        {
           state = s;
           break;
         }
@@ -484,11 +539,13 @@ namespace whoop
     {
       Contract.Requires(message != null);
 
-      if (!String.IsNullOrEmpty(locInfo)) {
+      if (!String.IsNullOrEmpty(locInfo))
+      {
         Console.Error.Write(locInfo + " ");
       }
 
-      switch (msgtype) {
+      switch (msgtype)
+      {
         case ErrorMsgType.Error:
           Console.Error.Write("error: ");
           break;

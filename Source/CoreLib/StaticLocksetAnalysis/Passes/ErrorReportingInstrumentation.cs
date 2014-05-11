@@ -20,12 +20,12 @@ namespace whoop
 {
   public class ErrorReportingInstrumentation
   {
-    WhoopProgram wp;
+    AnalysisContext AC;
 
-    public ErrorReportingInstrumentation(WhoopProgram wp)
+    public ErrorReportingInstrumentation(AnalysisContext ac)
     {
-      Contract.Requires(wp != null);
-      this.wp = wp;
+      Contract.Requires(ac != null);
+      this.AC = ac;
     }
 
     public void Run()
@@ -38,7 +38,8 @@ namespace whoop
 
     private void InstrumentEntryPoints()
     {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      {
         InstrumentSourceLocationInfo(impl);
         InstrumentRaceCheckingCaptureStates(impl);
 
@@ -49,11 +50,12 @@ namespace whoop
 
     private void InstrumentOtherFuncs()
     {
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        if (wp.isWhoopFunc(impl)) continue;
-        if (wp.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (wp.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!wp.isCalledByAnyFunc(impl)) continue;
+      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (this.AC.IsWhoopFunc(impl)) continue;
+        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
+        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
 
         InstrumentSourceLocationInfo(impl);
         InstrumentRaceCheckingCaptureStates(impl);
@@ -65,24 +67,35 @@ namespace whoop
 
     private void InstrumentSourceLocationInfo(Implementation impl)
     {
-      foreach (Block b in impl.Blocks) {
-        for (int i = 0; i < b.Cmds.Count; i++) {
+      foreach (Block b in impl.Blocks)
+      {
+        for (int i = 0; i < b.Cmds.Count; i++)
+        {
           if (!(b.Cmds[i] is CallCmd)) continue;
           CallCmd call = b.Cmds[i] as CallCmd;
 
-          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))
+          {
             Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-          } else if (call.callee.Contains("_LOG_WRITE_LS_")) {
+          }
+          else if (call.callee.Contains("_LOG_WRITE_LS_"))
+          {
             Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-          } else if (call.callee.Contains("_LOG_READ_LS_")) {
+          }
+          else if (call.callee.Contains("_LOG_READ_LS_"))
+          {
             Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
-          } else if (call.callee.Contains("_CHECK_WRITE_LS_")) {
+          }
+          else if (call.callee.Contains("_CHECK_WRITE_LS_"))
+          {
             Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
-          } else if (call.callee.Contains("_CHECK_READ_LS_")) {
+          }
+          else if (call.callee.Contains("_CHECK_READ_LS_"))
+          {
             Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
             call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
           }
@@ -95,11 +108,14 @@ namespace whoop
       int logCounter = 0;
       int checkCounter = 0;
 
-      foreach (Block b in impl.Blocks) {
+      foreach (Block b in impl.Blocks)
+      {
         List<Cmd> newCmds = new List<Cmd>();
 
-        foreach (var c in b.Cmds) {
-          if (!(c is CallCmd)) {
+        foreach (var c in b.Cmds)
+        {
+          if (!(c is CallCmd))
+          {
             newCmds.Add(c);
             continue;
           }
@@ -107,9 +123,10 @@ namespace whoop
           CallCmd call = c as CallCmd;
 
           if (!(call.callee.Contains("_LOG_WRITE_LS_") ||
-            call.callee.Contains("_LOG_READ_LS_") ||
-            call.callee.Contains("_CHECK_WRITE_LS_") ||
-            call.callee.Contains("_CHECK_READ_LS_"))) {
+              call.callee.Contains("_LOG_READ_LS_") ||
+              call.callee.Contains("_CHECK_WRITE_LS_") ||
+              call.callee.Contains("_CHECK_READ_LS_")))
+          {
             newCmds.Add(call);
             continue;
           }
@@ -118,11 +135,11 @@ namespace whoop
 
           assume.Attributes = new QKeyValue(Token.NoToken, "column",
             new List<object>() { new LiteralExpr(Token.NoToken,
-              BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
+                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
             }, null);
           assume.Attributes = new QKeyValue(Token.NoToken, "line",
             new List<object>() { new LiteralExpr(Token.NoToken,
-              BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
+                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
             }, assume.Attributes);
 
           if (call.callee.Contains("WRITE"))
@@ -136,11 +153,14 @@ namespace whoop
             new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
 
           if (call.callee.Contains("_LOG_WRITE_LS_") ||
-            call.callee.Contains("_LOG_READ_LS_")) {
+              call.callee.Contains("_LOG_READ_LS_"))
+          {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "log_state_" + logCounter }, assume.Attributes);
             logCounter++;
-          } else {
+          }
+          else
+          {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "check_state_" + checkCounter }, assume.Attributes);
             checkCounter++;
@@ -150,10 +170,13 @@ namespace whoop
             new List<object>() { "$" + call.callee.Split(new char[] { '$' })[1] }, assume.Attributes);
 
           if (call.callee.Contains("_LOG_WRITE_LS_") ||
-            call.callee.Contains("_LOG_READ_LS_")) {
+              call.callee.Contains("_LOG_READ_LS_"))
+          {
             newCmds.Add(call);
             newCmds.Add(assume);
-          } else {
+          }
+          else
+          {
             newCmds.Add(assume);
             newCmds.Add(call);
           }
@@ -168,11 +191,14 @@ namespace whoop
       int updateCounter = 0;
       int checkCounter = 0;
 
-      foreach (Block b in impl.Blocks) {
+      foreach (Block b in impl.Blocks)
+      {
         List<Cmd> newCmds = new List<Cmd>();
 
-        foreach (var c in b.Cmds) {
-          if (!(c is CallCmd)) {
+        foreach (var c in b.Cmds)
+        {
+          if (!(c is CallCmd))
+          {
             newCmds.Add(c);
             continue;
           }
@@ -180,35 +206,40 @@ namespace whoop
           CallCmd call = c as CallCmd;
 
           if (!(call.callee.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
-            call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))) {
+              call.callee.Contains("_UPDATE_CURRENT_LOCKSET")))
+          {
             newCmds.Add(call);
             continue;
           }
 
           AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
 
-          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))
+          {
             assume.Attributes = new QKeyValue(Token.NoToken, "column",
               new List<object>() { new LiteralExpr(Token.NoToken,
-                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
+                  BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "column", -1)))
               }, null);
             assume.Attributes = new QKeyValue(Token.NoToken, "line",
               new List<object>() { new LiteralExpr(Token.NoToken,
-                BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
+                  BigNum.FromInt(QKeyValue.FindIntAttribute(call.Attributes, "line", -1)))
               }, assume.Attributes);
           }
 
           assume.Attributes = new QKeyValue(Token.NoToken, "entryPoint",
             new List<object>() { b.Label.Split(new char[] { '$' })[0] }, assume.Attributes);
 
-          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET")) {
+          if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))
+          {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "update_cls_state_" + updateCounter }, assume.Attributes);
             updateCounter++;
 
             newCmds.Add(call);
             newCmds.Add(assume);
-          } else {
+          }
+          else
+          {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "check_deadlock_state" }, assume.Attributes);
             checkCounter++;
@@ -227,7 +258,8 @@ namespace whoop
       QKeyValue line, col;
       QKeyValue curr = attributes;
 
-      while (curr != null) {
+      while (curr != null)
+      {
         if (curr.Key.Equals("sourceloc")) break;
         curr = curr.Next;
       }
@@ -235,11 +267,11 @@ namespace whoop
 
       col = new QKeyValue(Token.NoToken, "column",
         new List<object>() { new LiteralExpr(Token.NoToken,
-          BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[2]))))
+            BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[2]))))
         }, null);
       line = new QKeyValue(Token.NoToken, "line",
         new List<object>() { new LiteralExpr(Token.NoToken,
-          BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[1]))))
+            BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[1]))))
         }, col);
 
       return line;
@@ -247,8 +279,10 @@ namespace whoop
 
     private void CleanUp()
     {
-      foreach (var impl in wp.program.TopLevelDeclarations.OfType<Implementation>()) {
-        foreach (Block b in impl.Blocks) {
+      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        foreach (Block b in impl.Blocks)
+        {
           b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
           (val as AssumeCmd).Attributes.Key.Equals("sourceloc"));
         }

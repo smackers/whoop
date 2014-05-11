@@ -30,62 +30,83 @@ namespace whoop
 
     protected override bool ParseOption(string name, CommandLineOptionEngine.CommandLineParseState ps)
     {
-      if (name == "debugWhoop") {
+      if (name == "debugWhoop")
+      {
         DebugWhoop = true;
         return true;
       }
 
-      if (name == "printPairs") {
+      if (name == "printPairs")
+      {
         PrintPairs = true;
         return true;
       }
 
-      if (name == "originalFile") {
-        if (ps.ConfirmArgumentCount(1)) {
+      if (name == "originalFile")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
           OriginalFile = ps.args[ps.i];
         }
         return true;
       }
 
-      if (name == "analyseOnly") {
-        if (ps.ConfirmArgumentCount(1)) {
+      if (name == "analyseOnly")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
           AnalyseOnly = ps.args[ps.i];
         }
         return true;
       }
 
-      if (name == "analyseOnly") {
-        if (ps.ConfirmArgumentCount(1)) {
+      if (name == "analyseOnly")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
           AnalyseOnly = ps.args[ps.i];
         }
         return true;
       }
 
-      if (name == "raceChecking") {
-        if (ps.ConfirmArgumentCount(1)) {
-          if(ps.args[ps.i] == "NORMAL") {
+      if (name == "raceChecking")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
+          if (ps.args[ps.i] == "NORMAL")
+          {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.NORMAL;
-          } else if(ps.args[ps.i] == "WATCHDOG") {
+          }
+          else if (ps.args[ps.i] == "WATCHDOG")
+          {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
           }
         }
         return true;
       }
 
-      if (name == "functionPairing") {
-        if (ps.ConfirmArgumentCount(1)) {
-          if(ps.args[ps.i] == "LINEAR") {
-            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
-          } else if(ps.args[ps.i] == "TRIANGULAR") {
-            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
-          } else if(ps.args[ps.i] == "QUADRATIC") {
-            FunctionPairingUtil.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
+      if (name == "functionPairing")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
+          if (ps.args[ps.i] == "LINEAR")
+          {
+            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
+          }
+          else if (ps.args[ps.i] == "TRIANGULAR")
+          {
+            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
+          }
+          else if (ps.args[ps.i] == "QUADRATIC")
+          {
+            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
           }
         }
         return true;
       }
 
-      if (name == "onlyRaceChecking") {
+      if (name == "onlyRaceChecking")
+      {
         OnlyRaceChecking = true;
         return true;
       }

@@ -20,17 +20,18 @@ namespace whoop
 {
   public class InitConverter
   {
-    WhoopProgram wp;
+    AnalysisContext AC;
 
-    public InitConverter(WhoopProgram wp)
+    public InitConverter(AnalysisContext ac)
     {
-      Contract.Requires(wp != null);
-      this.wp = wp;
+      Contract.Requires(ac != null);
+      this.AC = ac;
     }
 
     public void Run()
     {
-      foreach (var impl in wp.GetImplementationsToAnalyse()) {
+      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      {
         CreateInitFunction(impl);
       }
     }
@@ -41,12 +42,14 @@ namespace whoop
       string name = "init_" + impl.Name;
 
       List<Variable> inParams = new List<Variable>();
-      foreach (var v in wp.initFunc.Proc.InParams) {
+      foreach (var v in this.AC.InitFunc.Proc.InParams)
+      {
         inParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
       }
 
       List<Variable> outParams = new List<Variable>();
-      foreach (var v in wp.initFunc.Proc.OutParams) {
+      foreach (var v in this.AC.InitFunc.Proc.OutParams)
+      {
         outParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
       }
 
@@ -57,12 +60,14 @@ namespace whoop
       newProc.Attributes = new QKeyValue(Token.NoToken, "init", new List<object>(), null);
 
       List<Variable> localVars = new List<Variable>();
-      foreach (var v in wp.initFunc.LocVars) {
+      foreach (var v in this.AC.InitFunc.LocVars)
+      {
         localVars.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
       }
 
       List<Block> blocks = new List<Block>();
-      foreach (var v in wp.initFunc.Blocks) {
+      foreach (var v in this.AC.InitFunc.Blocks)
+      {
         blocks.Add(new Duplicator().VisitBlock(v.Clone() as Block));
       }
 
@@ -73,15 +78,17 @@ namespace whoop
       newImpl.Proc = newProc;
       newImpl.Attributes = new QKeyValue(Token.NoToken, "init", new List<object>(), null);
 
-      foreach (var v in wp.program.TopLevelDeclarations.OfType<GlobalVariable>()) {
-        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr")) {
+      foreach (var v in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
+      {
+        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr"))
+        {
           newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
         }
       }
 
-      wp.program.TopLevelDeclarations.Add(newProc);
-      wp.program.TopLevelDeclarations.Add(newImpl);
-      wp.resContext.AddProcedure(newProc);
+      this.AC.Program.TopLevelDeclarations.Add(newProc);
+      this.AC.Program.TopLevelDeclarations.Add(newImpl);
+      this.AC.ResContext.AddProcedure(newProc);
     }
   }
 }

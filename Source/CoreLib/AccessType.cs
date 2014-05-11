@@ -13,37 +13,43 @@ using System;
 
 namespace whoop
 {
-  public sealed class AccessType {
-
-    readonly String name;
-
+  public sealed class AccessType
+  {
+    private readonly String Name;
     public static readonly AccessType READ = new AccessType("READ");
     public static readonly AccessType WRITE = new AccessType("WRITE");
 
-    public static AccessType Create(string access) {
-      if(access.ToUpper() == "READ") {
+    public static AccessType Create(string access)
+    {
+      if (access.ToUpper() == "READ")
+      {
         return READ;
       }
-      if(access.ToUpper() == "WRITE") {
+      if (access.ToUpper() == "WRITE")
+      {
         return WRITE;
       }
       throw new NotSupportedException("Unknown access type: " + access);
     }
 
-    private AccessType(String name) {
-      this.name = name;
+    private AccessType(String name)
+    {
+      this.Name = name;
     }
 
-    public override String ToString() {
-      return name;
+    public override String ToString()
+    {
+      return this.Name;
     }
 
-    public bool IsRead() {
-      return name.Equals("READ");
+    public bool IsRead()
+    {
+      return this.Name.Equals("READ");
     }
 
-    public bool IsWrite() {
-      return name.Equals("WRITE");
+    public bool IsWrite()
+    {
+      return this.Name.Equals("WRITE");
     }
   }
 }

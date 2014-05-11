@@ -19,55 +19,55 @@ using Microsoft.Basetypes;
 
 namespace whoop
 {
-  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, WhoopProgram>;
+  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
   public class InstrumentationEngine
   {
-    FunctionPairType functionPair;
-    WhoopProgram wp;
+    private FunctionPairType FunctionPair;
+    private AnalysisContext AC;
 
     public InstrumentationEngine(FunctionPairType functionPair)
     {
       Contract.Requires(functionPair.Item3 != null);
-      this.functionPair = functionPair;
-      this.wp = functionPair.Item3;
+      this.FunctionPair = functionPair;
+      this.AC = functionPair.Item3;
     }
 
     public void Run()
     {
-      ModelCleaner.RemoveUnecesseryAssumes(wp);
+      ModelCleaner.RemoveUnecesseryAssumes(this.AC);
 
-      new PairConverter(wp, functionPair.Item1).Run();
-      new InitConverter(wp).Run();
+      new PairConverter(this.AC, this.FunctionPair.Item1).Run();
+      new InitConverter(this.AC).Run();
 
-      new LocksetInstrumentation(wp).Run();
+      new LocksetInstrumentation(this.AC).Run();
 
       if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-        new BasicRaceInstrumentation(wp).Run();
+        new BasicRaceInstrumentation(this.AC).Run();
       else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-        new WatchdogRaceInstrumentation(wp).Run();
+        new WatchdogRaceInstrumentation(this.AC).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-        new DeadlockInstrumentation(wp).Run();
+        new DeadlockInstrumentation(this.AC).Run();
 
-      new InitInstrumentation(wp, functionPair.Item1).Run();
+      new InitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
 
-      new SharedStateAbstractor(wp).Run();
+      new SharedStateAbstractor(this.AC).Run();
 
-      new ErrorReportingInstrumentation(wp).Run();
+      new ErrorReportingInstrumentation(this.AC).Run();
 
-      ModelCleaner.RemoveOldEntryPointCallsFromInitFuncs(wp);
-      ModelCleaner.RemoveEmptyBlocks(wp);
-      ModelCleaner.RemoveEmptyBlocksInEntryPoints(wp);
-      ModelCleaner.RemoveUnecesseryReturns(wp);
-      ModelCleaner.RemoveOldEntryPoints(wp);
-      ModelCleaner.RemoveUncalledFuncs(wp);
-      ModelCleaner.RemoveMemoryRegions(wp);
-      ModelCleaner.RemoveUnusedVars(wp);
+      ModelCleaner.RemoveOldEntryPointCallsFromInitFuncs(this.AC);
+      ModelCleaner.RemoveEmptyBlocks(this.AC);
+      ModelCleaner.RemoveEmptyBlocksInEntryPoints(this.AC);
+      ModelCleaner.RemoveUnecesseryReturns(this.AC);
+      ModelCleaner.RemoveOldEntryPoints(this.AC);
+      ModelCleaner.RemoveUncalledFuncs(this.AC);
+      ModelCleaner.RemoveMemoryRegions(this.AC);
+      ModelCleaner.RemoveUnusedVars(this.AC);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
-      whoop.IO.EmitProgram(wp.program, Util.GetCommandLineOptions().Files[
-        Util.GetCommandLineOptions().Files.Count - 1], functionPair.Item1, "wbpl");
+      whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[
+        Util.GetCommandLineOptions().Files.Count - 1], this.FunctionPair.Item1, "wbpl");
     }
   }
 }

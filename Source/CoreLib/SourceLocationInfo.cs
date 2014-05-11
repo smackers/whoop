@@ -20,74 +20,82 @@ namespace whoop
 {
   public class SourceLocationInfo
   {
-    private int line;
-    private int column;
-    private string file;
-    private string directory;
-    private string stackTrace;
+    private int Line;
+    private int Column;
+    private string File;
+    private string Directory;
+    private string StackTrace;
 
-    public SourceLocationInfo(QKeyValue attributes) {
-      this.line = QKeyValue.FindIntAttribute(attributes, "line", -1);
-      if(this.line == -1) throw new Exception();
+    public SourceLocationInfo(QKeyValue attributes)
+    {
+      this.Line = QKeyValue.FindIntAttribute(attributes, "line", -1);
+      if (this.Line == -1) throw new Exception();
 
-      this.column = QKeyValue.FindIntAttribute(attributes, "column", -1);
-      if(this.column == -1) throw new Exception();
+      this.Column = QKeyValue.FindIntAttribute(attributes, "column", -1);
+      if (this.Column == -1) throw new Exception();
 
-      this.file = Util.GetCommandLineOptions().OriginalFile;
-      this.directory = Path.GetDirectoryName(Util.GetCommandLineOptions().OriginalFile);
-      this.stackTrace = TrimLeadingSpaces(FetchCodeLine(0), 2);
+      this.File = Util.GetCommandLineOptions().OriginalFile;
+      this.Directory = Path.GetDirectoryName(Util.GetCommandLineOptions().OriginalFile);
+      this.StackTrace = SourceLocationInfo.TrimLeadingSpaces(this.FetchCodeLine(0), 2);
     }
 
     public int GetLine()
     {
-      return line;
+      return this.Line;
     }
 
     public int GetColumn()
     {
-      return column;
+      return this.Column;
     }
 
     public string GetFile()
     {
-      return file;
+      return this.File;
     }
 
     public string GetDirectory()
     {
-      return directory;
+      return this.Directory;
     }
 
     public override string ToString()
     {
-      return GetFile() + ":" + GetLine() + ":" + GetColumn();
+      return this.GetFile() + ":" + this.GetLine() + ":" + this.GetColumn();
     }
 
-    public void PrintStackTrace() {
-      IO.ErrorWriteLine(stackTrace);
+    public void PrintStackTrace()
+    {
+      IO.ErrorWriteLine(this.StackTrace);
       Console.Error.WriteLine();
     }
 
-    private string FetchCodeLine(int i) {
-      if(File.Exists(GetFile())) return FetchCodeLine(GetFile(), GetLine());
-      return FetchCodeLine(Path.Combine(GetDirectory(), Path.GetFileName(GetFile())), GetLine());
+    private string FetchCodeLine(int i)
+    {
+      if (System.IO.File.Exists(this.GetFile())) return SourceLocationInfo.FetchCodeLine(this.GetFile(), this.GetLine());
+      return SourceLocationInfo.FetchCodeLine(Path.Combine(this.GetDirectory(), Path.GetFileName(this.GetFile())), this.GetLine());
     }
 
-    private static string FetchCodeLine(string path, int lineNo) {
-      try {
+    private static string FetchCodeLine(string path, int lineNo)
+    {
+      try
+      {
         TextReader tr = new StreamReader(path);
         string line = null;
-        for (int currLineNo = 1; ((line = tr.ReadLine()) != null); currLineNo++) {
+        for (int currLineNo = 1; ((line = tr.ReadLine()) != null); currLineNo++)
+        {
           if (currLineNo == lineNo) return line;
         }
         throw new Exception();
       }
-      catch (Exception) {
+      catch (Exception)
+      {
         return "<unknown line of code>";
       }
     }
 
-    private static string TrimLeadingSpaces(string s1, int noOfSpaces) {
+    private static string TrimLeadingSpaces(string s1, int noOfSpaces)
+    {
       if (String.IsNullOrWhiteSpace(s1)) return s1;
       int index;
       for (index = 0; (index + 1) < s1.Length && Char.IsWhiteSpace(s1[index]); ++index) ;
