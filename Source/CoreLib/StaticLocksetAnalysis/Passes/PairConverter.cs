@@ -20,7 +20,7 @@ using Whoop.Regions;
 
 namespace Whoop.SLA
 {
-  public class PairConverter
+  internal class PairConverter : IPairConverter
   {
     private AnalysisContext AC;
     private string FunctionName;

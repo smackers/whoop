@@ -18,7 +18,7 @@ using Microsoft.Basetypes;
 
 namespace Whoop.SLA
 {
-  public class InitInstrumentation
+  public class InitInstrumentation : IInitInstrumentation
   {
     private AnalysisContext AC;
     private string FunctionName;

@@ -101,12 +101,15 @@
     <Compile Include="Enumerations\AnalysisRole.cs" />
     <Compile Include="Regions\LoopAnalysisRegion.cs" />
     <Compile Include="StaticLocksetAnalysis\Factory.cs" />
-    <Compile Include="StaticLocksetAnalysis\ILocksetInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\IRaceInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\IDeadlockInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
-    <Compile Include="StaticLocksetAnalysis\ISharedStateAbstractor.cs" />
-    <Compile Include="StaticLocksetAnalysis\IErrorReportingInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IDeadlockInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IErrorReportingInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IInitConverter.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IInitInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\ILocksetInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IPairConverter.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IRaceInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\ISharedStateAbstractor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />
@@ -114,5 +117,6 @@
     <Folder Include="Regions\" />
     <Folder Include="Utilities\" />
     <Folder Include="Enumerations\" />
+    <Folder Include="StaticLocksetAnalysis\Interfaces\" />
   </ItemGroup>
 </Project>

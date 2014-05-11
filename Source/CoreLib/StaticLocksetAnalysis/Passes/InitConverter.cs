@@ -18,9 +18,9 @@ using Microsoft.Basetypes;
 
 namespace Whoop.SLA
 {
-  public class InitConverter
+  internal class InitConverter : IInitConverter
   {
-    AnalysisContext AC;
+    private AnalysisContext AC;
 
     public InitConverter(AnalysisContext ac)
     {
@@ -32,7 +32,7 @@ namespace Whoop.SLA
     {
       foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        CreateInitFunction(region.Implementation());
+        this.CreateInitFunction(region.Implementation());
       }
     }
 

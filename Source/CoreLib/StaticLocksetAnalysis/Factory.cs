@@ -15,6 +15,16 @@ namespace Whoop.SLA
 {
   public static class Factory
   {
+    public static IPairConverter CreateNewPairConverter(AnalysisContext ac, string functionName)
+    {
+      return new PairConverter(ac, functionName);
+    }
+
+    public static IInitConverter CreateNewInitConverter(AnalysisContext ac)
+    {
+      return new InitConverter(ac);
+    }
+
     public static ILocksetInstrumentation CreateNewLocksetInstrumentation(AnalysisContext ac)
     {
       return new LocksetInstrumentation(ac);
@@ -23,23 +33,28 @@ namespace Whoop.SLA
     public static IRaceInstrumentation CreateNewRaceInstrumentation(AnalysisContext ac)
     {
       if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-        return (new WatchdogRaceInstrumentation(ac)) as IRaceInstrumentation;
-      return (new BasicRaceInstrumentation(ac)) as IRaceInstrumentation;
+        return new WatchdogRaceInstrumentation(ac);
+      return new BasicRaceInstrumentation(ac);
     }
 
     public static IDeadlockInstrumentation CreateNewDeadlockInstrumentation(AnalysisContext ac)
     {
-      return (new DeadlockInstrumentation(ac)) as IDeadlockInstrumentation;
+      return new DeadlockInstrumentation(ac);
+    }
+
+    public static IInitInstrumentation CreateNewInitInstrumentation(AnalysisContext ac, string functionName)
+    {
+      return new InitInstrumentation(ac, functionName);
     }
 
     public static ISharedStateAbstractor CreateNewSharedStateAbstractor(AnalysisContext ac)
     {
-      return (new SharedStateAbstractor(ac)) as ISharedStateAbstractor;
+      return new SharedStateAbstractor(ac);
     }
 
     public static IErrorReportingInstrumentation CreateNewErrorReportingInstrumentation(AnalysisContext ac)
     {
-      return (new ErrorReportingInstrumentation(ac)) as IErrorReportingInstrumentation;
+      return new ErrorReportingInstrumentation(ac);
     }
   }
 }

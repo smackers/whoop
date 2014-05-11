@@ -39,20 +39,17 @@ namespace Whoop
     {
       ModelCleaner.RemoveUnecesseryAssumes(this.AC);
 
-      new PairConverter(this.AC, this.FunctionPair.Item1).Run();
-      new InitConverter(this.AC).Run();
+      Factory.CreateNewPairConverter(this.AC, this.FunctionPair.Item1).Run();
+      Factory.CreateNewInitConverter(this.AC).Run();
 
       Factory.CreateNewLocksetInstrumentation(this.AC).Run();
-
       Factory.CreateNewRaceInstrumentation(this.AC).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
         Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
 
-      new InitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
-
+      Factory.CreateNewInitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
       Factory.CreateNewSharedStateAbstractor(this.AC).Run();
-
       Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
 
       ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
