@@ -10,15 +10,11 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class Util
+  public interface ILocksetInstrumentation
   {
-    public static WhoopCommandLineOptions GetCommandLineOptions()
-    {
-      return (WhoopCommandLineOptions)CommandLineOptions.Clo;
-    }
+    void Run();
   }
 }

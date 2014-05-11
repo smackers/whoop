@@ -15,10 +15,11 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Regions;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class LocksetInstrumentation
+  internal class LocksetInstrumentation : ILocksetInstrumentation
   {
     private AnalysisContext AC;
 
@@ -34,8 +35,7 @@ namespace whoop
       AddMemoryLocksets();
       AddUpdateLocksetFunc();
 
-      InstrumentEntryPoints();
-      //      InstrumentOtherFuncs();
+      InstrumentRegions();
     }
 
     private void AddCurrentLockset()
@@ -136,95 +136,69 @@ namespace whoop
       this.AC.ResContext.AddProcedure(f);
     }
 
-    private void InstrumentEntryPoints()
+    private void InstrumentRegions()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        InstrumentImplementation(impl);
-        InstrumentProcedure(impl);
+        this.InstrumentImplementation(region);
+        this.InstrumentProcedure(region);
+        this.AddCurrentLocksetInvariant(region);
       }
     }
 
-    private void InstrumentOtherFuncs()
+    private void InstrumentImplementation(LocksetAnalysisRegion region)
     {
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var c in region.Cmds().OfType<CallCmd>())
       {
-        if (this.AC.IsWhoopFunc(impl)) continue;
-        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
-
-        InstrumentImplementation(impl);
-        InstrumentProcedure(impl);
-      }
-    }
-
-    private void InstrumentImplementation(Implementation impl)
-    {
-      Contract.Requires(impl != null && impl.Blocks.Count > 0);
-
-      List<Variable> dummiesCLS = new List<Variable>();
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-                             this.AC.MemoryModelType));
-      dummiesCLS.Add(dummyLock);
-
-      AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
-                              new ForallExpr(Token.NoToken, dummiesCLS,
-                                Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                                  new List<Expr>(new Expr[] {
-              new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id),
-              new IdentifierExpr(dummyLock.tok, dummyLock)
-            })), Expr.False)));
-
-      string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
-      int originalLength = this.AC.GetImplementation(label).Blocks.Count;
-      string alreadyVisited = label;
-
-      impl.Blocks[0].Cmds.Insert(0, assumeCLS);
-
-      foreach (var b in impl.Blocks)
-      {
-        string currLabel = b.Label.Split(new char[] { '$' })[0];
-        if ((currLabel.Equals(label) && Convert.ToInt32(b.Label.Split(new char[] { '$' })[1]) == originalLength))
-          b.Cmds.Insert(0, assumeCLS);
-        if (currLabel.Equals(alreadyVisited)) continue;
-        alreadyVisited = currLabel;
-        b.Cmds.Insert(0, assumeCLS);
-      }
-
-      foreach (Block b in impl.Blocks)
-      {
-        foreach (var c in b.Cmds.OfType<CallCmd>())
+        if (c.callee.Equals("mutex_lock"))
         {
-          if (c.callee.Equals("mutex_lock"))
-          {
-            c.callee = "_UPDATE_CURRENT_LOCKSET";
-            c.Ins.Add(Expr.True);
-          }
-          else if (c.callee.Equals("mutex_unlock"))
-          {
-            c.callee = "_UPDATE_CURRENT_LOCKSET";
-            c.Ins.Add(Expr.False);
-          }
+          c.callee = "_UPDATE_CURRENT_LOCKSET";
+          c.Ins.Add(Expr.True);
+        }
+        else if (c.callee.Equals("mutex_unlock"))
+        {
+          c.callee = "_UPDATE_CURRENT_LOCKSET";
+          c.Ins.Add(Expr.False);
         }
       }
     }
 
-    private void InstrumentProcedure(Implementation impl)
+    private void InstrumentProcedure(LocksetAnalysisRegion region)
     {
-      Contract.Requires(impl.Proc != null);
-
-      if (impl.Proc.Modifies.Exists(val => val.Name.Equals(this.AC.CurrLockset.Id.Name)))
+      if (region.Procedure().Modifies.Exists(val => val.Name.Equals(this.AC.CurrLockset.Id.Name)))
         return;
 
-      impl.Proc.Modifies.Add(new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id));
+      region.Procedure().Modifies.Add(new IdentifierExpr(this.AC.CurrLockset.Id.tok,
+        this.AC.CurrLockset.Id));
 
-      List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl);
+      List<Variable> vars = this.AC.SharedStateAnalyser.
+        GetAccessedMemoryRegions(region.Implementation());
+
       foreach (var ls in this.AC.Locksets)
       {
         if (!vars.Any(val => val.Name.Equals(ls.TargetName))) continue;
-        impl.Proc.Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
+        region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
+    }
+
+    private void AddCurrentLocksetInvariant(LocksetAnalysisRegion region)
+    {
+      List<Variable> dummiesCLS = new List<Variable>();
+      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+        this.AC.MemoryModelType));
+      dummiesCLS.Add(dummyLock);
+
+      AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
+        new ForallExpr(Token.NoToken, dummiesCLS,
+          Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+            new List<Expr>(new Expr[] {
+              new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id),
+              new IdentifierExpr(dummyLock.tok, dummyLock)
+            })), Expr.False)));
+
+      region.Logger().AddInvariant(assumeCLS);
+      foreach (var checker in region.Checkers())
+        checker.AddInvariant(assumeCLS);
     }
   }
 }

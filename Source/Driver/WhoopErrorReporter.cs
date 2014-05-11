@@ -15,7 +15,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop
 {
   public class WhoopErrorReporter
   {
@@ -105,7 +105,7 @@ namespace whoop
 
       for (int i = 0; i < sourceLocationsForFirstAccess.Count; i++)
       {
-        Tuple<string, string> eps = this.GetEntryPointNames(conflictingAction, potentialConflictingActions[i]);
+        Tuple<string, string> eps = this.GetAsyncFuncsNames(conflictingAction, potentialConflictingActions[i]);
         this.DetermineNatureOfRace(potentialConflictingActions[i], out raceName, out access1, access2);
 
         WhoopErrorReporter.ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
@@ -294,7 +294,7 @@ namespace whoop
       raceName = access1 + "-" + access2;
     }
 
-    private Tuple<string, string> GetEntryPointNames(AssumeCmd a, AssumeCmd b)
+    private Tuple<string, string> GetAsyncFuncsNames(AssumeCmd a, AssumeCmd b)
     {
       Tuple<string, string> eps =
         new Tuple<string, string>(
@@ -368,10 +368,10 @@ namespace whoop
       this.PopulateModelWithStatesIfNecessary(cex);
 
       AssumeCmd deadlockCheck = this.GetCorrespondingAssume(cex);
-      string entryPoint = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "entryPoint");
-      Contract.Requires(entryPoint != null);
+      string asyncFunc = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "entryPoint");
+      Contract.Requires(asyncFunc != null);
 
-      List<AssumeCmd> unreleasedLocks = this.DetermineUnreleasedLocks(cex, deadlockCheck, entryPoint);
+      List<AssumeCmd> unreleasedLocks = this.DetermineUnreleasedLocks(cex, deadlockCheck, asyncFunc);
       List<SourceLocationInfo> sourceLocationsForUnreleasedLocks = this.GetSourceLocationsForAssumes(unreleasedLocks);
 
       if (sourceLocationsForUnreleasedLocks.Count == 0)
@@ -382,7 +382,7 @@ namespace whoop
 
       foreach (var v in sourceLocationsForUnreleasedLocks)
       {
-        Console.Error.Write("the following lock is not released when " + entryPoint + " returns, ");
+        Console.Error.Write("the following lock is not released when " + asyncFunc + " returns, ");
         Console.Error.WriteLine(v.ToString());
         v.PrintStackTrace();
       }
@@ -390,7 +390,7 @@ namespace whoop
       return sourceLocationsForUnreleasedLocks.Count;
     }
 
-    private List<AssumeCmd> DetermineUnreleasedLocks(AssertCounterexample cex, AssumeCmd deadlockCheck, string entryPoint)
+    private List<AssumeCmd> DetermineUnreleasedLocks(AssertCounterexample cex, AssumeCmd deadlockCheck, string asyncFunc)
     {
       string checkStateName = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
@@ -407,7 +407,7 @@ namespace whoop
           string stateName = QKeyValue.FindStringAttribute(c.Attributes, "captureState");
           if (stateName == null) continue;
           if (!stateName.Contains("update_cls_state")) continue;
-          if (!entryPoint.Equals(QKeyValue.FindStringAttribute(c.Attributes, "entryPoint"))) continue;
+          if (!asyncFunc.Equals(QKeyValue.FindStringAttribute(c.Attributes, "entryPoint"))) continue;
 
           Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;

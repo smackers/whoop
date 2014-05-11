@@ -15,26 +15,25 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Regions;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class DeadlockInstrumentation
+  internal class DeadlockInstrumentation : IDeadlockInstrumentation
   {
     private AnalysisContext AC;
-    private List<string> AlreadyInstrumented;
 
     public DeadlockInstrumentation(AnalysisContext ac)
     {
       Contract.Requires(ac != null);
       this.AC = ac;
-      this.AlreadyInstrumented = new List<string>();
     }
 
     public void Run()
     {
-      AddCheckAllLocksHaveBeenReleasedFunc();
+      this.AddCheckAllLocksHaveBeenReleasedFunc();
 
-      InstrumentEntryPoints();
+      this.InstrumentAsyncFuncs();
     }
 
     private void AddCheckAllLocksHaveBeenReleasedFunc()
@@ -86,41 +85,19 @@ namespace whoop
       this.AC.Program.TopLevelDeclarations.Add(impl);
     }
 
-    private void InstrumentEntryPoints()
+    private void InstrumentAsyncFuncs()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        InstrumentEndOfEntryPoint(impl);
+        this.InstrumentRegion(region);
       }
     }
 
-    private void InstrumentEndOfEntryPoint(Implementation impl)
+    private void InstrumentRegion(LocksetAnalysisRegion region)
     {
-      string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
-      Implementation original = this.AC.GetImplementation(label);
-      List<int> returnIdxs = new List<int>();
-
-      foreach (var b in original.Blocks)
-      {
-        if (b.TransferCmd is ReturnCmd)
-          returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
-      }
-
       CallCmd call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
-                       new List<Expr> { }, new List<IdentifierExpr>());
-
-      foreach (var b in impl.Blocks)
-      {
-        string[] thisLabel = b.Label.Split(new char[] { '$' });
-        Contract.Requires(thisLabel != null && thisLabel.Length == 2);
-        if (!label.Equals(thisLabel[0])) break;
-        if (this.AlreadyInstrumented.Exists(val => val.Equals(thisLabel[0]))) continue;
-        if (returnIdxs.Exists(val => val == Convert.ToInt32(thisLabel[1])))
-        {
-          b.Cmds.Add(call);
-          this.AlreadyInstrumented.Add(thisLabel[0]);
-        }
-      }
+        new List<Expr> { }, new List<IdentifierExpr>());
+      region.Logger().Blocks()[region.Logger().Blocks().Count - 1].Cmds.Add(call);
     }
   }
 }

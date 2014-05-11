@@ -16,16 +16,17 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class WatchdogRaceInstrumentation : RaceInstrumentation
+  internal class WatchdogRaceInstrumentation : RaceInstrumentation
   {
-    public WatchdogRaceInstrumentation(AnalysisContext ac) : base(ac)
+    public WatchdogRaceInstrumentation(AnalysisContext ac)
+      : base(ac)
     {
 
     }
 
-    public void Run()
+    public override void Run()
     {
       this.AddTrackingGlobalVar();
       base.AddAccessOffsetGlobalVars();
@@ -36,8 +37,7 @@ namespace whoop
       base.AddCheckAccessFuncs(AccessType.WRITE);
       base.AddCheckAccessFuncs(AccessType.READ);
 
-      this.InstrumentEntryPoints();
-      // this.InstrumentOtherFuncs();
+      this.InstrumentAsyncFuncs();
     }
 
     private void AddTrackingGlobalVar()
@@ -166,27 +166,11 @@ namespace whoop
       return assert;
     }
 
-    protected override void InstrumentEntryPoints()
+    protected override void InstrumentAsyncFuncs()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        InstrumentWriteAccesses(impl);
-        InstrumentReadAccesses(impl);
-      }
-    }
-
-    protected override void InstrumentOtherFuncs()
-    {
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
-      {
-        if (this.AC.IsWhoopFunc(impl)) continue;
-        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
-        if (!(impl.Name.Contains("$log") || impl.Name.Contains("$check"))) continue;
-
-        this.InstrumentOtherFuncsWriteAccesses(impl);
-        this.InstrumentOtherFuncsReadAccesses(impl);
+        InstrumentSharedResourceAccesses(region);
       }
     }
   }

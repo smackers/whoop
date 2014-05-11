@@ -13,18 +13,18 @@ using System;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop
 {
   public class ExprModifier : Duplicator
   {
     private AnalysisContext AC;
     private int Fid;
 
-    public ExprModifier(AnalysisContext wp, int fid)
+    public ExprModifier(AnalysisContext ac, int fid)
     {
-      Contract.Requires(wp != null);
+      Contract.Requires(ac != null);
       Contract.Requires(fid == 1 || fid == 2);
-      this.AC = wp;
+      this.AC = ac;
       this.Fid = fid;
     }
 
@@ -53,10 +53,7 @@ namespace whoop
     private TypedIdent ModifyTypedIdent(Variable v)
     {
       if (this.AC.MemoryRegions.Exists(val => val.Name.Equals(v.Name)))
-      {
         return new TypedIdent(v.tok, v.Name, v.TypedIdent.Type);
-      }
-
       return new TypedIdent(v.tok, v.Name + "$" + this.Fid, v.TypedIdent.Type);
     }
   }

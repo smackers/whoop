@@ -16,41 +16,34 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop
 {
-  public enum FunctionPairingMethod
-  {
-    LINEAR,
-    TRIANGULAR,
-    QUADRATIC
-  }
-
   public class PairConverterUtil
   {
-    private static Dictionary<string, Dictionary<string, string>> EntryPoints;
-    private static List<Tuple<string, List<string>>> EntryPointPairList;
+    private static Dictionary<string, Dictionary<string, string>> AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs;
+    private static List<Tuple<string, List<string>>> AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList;
     internal static string InitFuncName;
     public static FunctionPairingMethod FunctionPairingMethod = FunctionPairingMethod.LINEAR;
     public static Dictionary<string, List<Tuple<string, List<string>>>> FunctionPairs;
 
-    public static void ParseEntryPoints()
+    public static void ParseAsyncFuncs()
     {
-      PairConverterUtil.EntryPoints = IO.ParseDriverInfo();
+      PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs = IO.ParseDriverInfo();
       PairConverterUtil.DetectInitFunction();
     }
 
     public static void GetFunctionPairs()
     {
       FunctionPairs = new Dictionary<string, List<Tuple<string, List<string>>>>();
-      PairConverterUtil.EntryPointPairList = new List<Tuple<string, List<string>>>();
+      PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList = new List<Tuple<string, List<string>>>();
 
       if (PairConverterUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
       {
-        foreach (var kvp1 in PairConverterUtil.EntryPoints)
+        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.EntryPointPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            if (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
             List<string> funcs = new List<string>();
 
             if (PairConverterUtil.CanRunConcurrently(ep1.Value, ep1.Value))
@@ -58,7 +51,7 @@ namespace whoop
               funcs.Add(ep1.Value);
             }
 
-            foreach (var kvp2 in PairConverterUtil.EntryPoints)
+            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
@@ -70,25 +63,25 @@ namespace whoop
             }
 
             if (funcs.Count == 0) continue;
-            PairConverterUtil.EntryPointPairList.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
+            PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
           }
         }
       }
       else
       {
-        foreach (var kvp1 in PairConverterUtil.EntryPoints)
+        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.EntryPointPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
-            foreach (var kvp2 in PairConverterUtil.EntryPoints)
+            if (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
                 if (!PairConverterUtil.CanRunConcurrently(ep1.Value, ep2.Value)) continue;
                 if (!PairConverterUtil.IsNewPair(ep1.Value, ep2.Value)) continue;
 
-                PairConverterUtil.EntryPointPairList.Add(new Tuple<string,
+                PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Add(new Tuple<string,
                   List<string>>(ep1.Value, new List<string> { ep2.Value }));
               }
             }
@@ -96,7 +89,7 @@ namespace whoop
         }
       }
 
-      foreach (var v in PairConverterUtil.EntryPointPairList)
+      foreach (var v in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList)
       {
         if (FunctionPairs.ContainsKey(v.Item1))
           FunctionPairs[v.Item1].Add(v);
@@ -107,7 +100,7 @@ namespace whoop
 
     public static void PrintFunctionPairs()
     {
-      foreach (var v in PairConverterUtil.EntryPointPairList)
+      foreach (var v in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList)
       {
         Console.WriteLine("Entry Point: " + v.Item1);
         foreach (var z in v.Item2)
@@ -124,7 +117,7 @@ namespace whoop
 
       try
       {
-        foreach (var kvp in PairConverterUtil.EntryPoints)
+        foreach (var kvp in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
         {
           foreach (var ep in kvp.Value)
           {
@@ -155,9 +148,9 @@ namespace whoop
 
     private static bool IsNewPair(string ep1, string ep2)
     {
-      if ((PairConverterUtil.EntryPointPairList.Exists(val =>
+      if ((PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Exists(val =>
         (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
-          (PairConverterUtil.EntryPointPairList.Exists(val =>
+          (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Exists(val =>
           (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
       {
         return false;

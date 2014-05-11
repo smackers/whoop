@@ -12,7 +12,7 @@
 using System;
 using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop
 {
   public class WhoopCommandLineOptions : CommandLineOptions
   {

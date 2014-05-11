@@ -10,25 +10,11 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.Diagnostics.Contracts;
-using Microsoft.Boogie;
 
 namespace Whoop.SLA
 {
-  public class Lockset
+  public interface IRaceInstrumentation
   {
-    public Variable Id;
-    public string TargetName;
-
-    public Lockset(Variable id)
-    {
-      this.Id = id;
-      this.TargetName = GetTargetName();
-    }
-
-    private string GetTargetName()
-    {
-      return this.Id.Name.Substring(3);
-    }
+    void Run();
   }
 }

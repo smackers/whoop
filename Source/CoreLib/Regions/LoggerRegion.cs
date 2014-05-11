@@ -10,25 +10,22 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Microsoft.Boogie;
 
-namespace Whoop.SLA
+namespace Whoop.Regions
 {
-  public class Lockset
+  internal class LoggerRegion : AsyncFuncRegion
   {
-    public Variable Id;
-    public string TargetName;
-
-    public Lockset(Variable id)
+    internal LoggerRegion(AnalysisContext ac, Implementation impl, List<Implementation> implList)
+      : base(ac, impl, implList)
     {
-      this.Id = id;
-      this.TargetName = GetTargetName();
-    }
-
-    private string GetTargetName()
-    {
-      return this.Id.Name.Substring(3);
+      Contract.Requires(ac != null);
+      base.AnalysisRole = AnalysisRole.LOGGER;
+      base.PairInternalId = 1;
+      base.ProcessRegionBlocks(impl, implList);
     }
   }
 }

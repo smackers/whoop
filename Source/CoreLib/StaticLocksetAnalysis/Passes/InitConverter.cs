@@ -16,7 +16,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
   public class InitConverter
   {
@@ -30,9 +30,9 @@ namespace whoop
 
     public void Run()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        CreateInitFunction(impl);
+        CreateInitFunction(region.Implementation());
       }
     }
 

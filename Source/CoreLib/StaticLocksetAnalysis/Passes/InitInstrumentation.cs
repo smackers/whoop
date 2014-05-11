@@ -16,7 +16,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
   public class InitInstrumentation
   {

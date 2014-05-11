@@ -16,9 +16,9 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class SharedStateAbstractor
+  internal class SharedStateAbstractor : ISharedStateAbstractor
   {
     private AnalysisContext AC;
 
@@ -30,17 +30,17 @@ namespace whoop
 
     public void Run()
     {
-      this.AbstractEntryPoints();
+      this.AbstractAsyncFuncs();
       this.AbstractInitFuncs();
       this.AbstractOtherFuncs();
     }
 
-    private void AbstractEntryPoints()
+    private void AbstractAsyncFuncs()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        this.AbstractReadAccesses(impl);
-        this.AbstractWriteAccesses(impl);
+        this.AbstractReadAccesses(region.Implementation());
+        this.AbstractWriteAccesses(region.Implementation());
       }
     }
 

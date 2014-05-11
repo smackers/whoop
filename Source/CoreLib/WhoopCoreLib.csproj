@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ED690CF6-D197-4E45-BEF3-EA47A491C757}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>whoop</RootNamespace>
+    <RootNamespace>Whoop</RootNamespace>
     <AssemblyName>WhoopCoreLib</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -71,32 +71,48 @@
   <ItemGroup>
     <Compile Include="Outcome.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\PairConverter.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAnalyser.cs" />
-    <Compile Include="StaticLocksetAnalysis\ExprModifier.cs" />
     <Compile Include="StaticLocksetAnalysis\Lockset.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\LocksetInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\RaceInstrumentation.cs" />
     <Compile Include="SourceLocationInfo.cs" />
     <Compile Include="AccessType.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\DeadlockInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\InitConverter.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\InitInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\ModelCleaner.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\WatchdogRaceInstrumentation.cs" />
     <Compile Include="WhoopCommandLineOptions.cs" />
-    <Compile Include="Util\IO.cs" />
-    <Compile Include="Util\Util.cs" />
-    <Compile Include="Util\RaceInstrumentationUtil.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\BasicRaceInstrumentation.cs" />
     <Compile Include="AnalysisContext.cs" />
-    <Compile Include="Util\AnalysisContextParser.cs" />
-    <Compile Include="Util\PairConverterUtil.cs" />
+    <Compile Include="Regions\IRegion.cs" />
+    <Compile Include="Regions\AsyncFuncRegion.cs" />
+    <Compile Include="Utilities\IO.cs" />
+    <Compile Include="Utilities\Util.cs" />
+    <Compile Include="Utilities\RaceInstrumentationUtil.cs" />
+    <Compile Include="Utilities\AnalysisContextParser.cs" />
+    <Compile Include="Utilities\PairConverterUtil.cs" />
+    <Compile Include="Utilities\ExprModifier.cs" />
+    <Compile Include="StaticLocksetAnalysis\ModelCleaner.cs" />
+    <Compile Include="StaticLocksetAnalysis\SharedStateAnalyser.cs" />
+    <Compile Include="Enumerations\FunctionPairingMethod.cs" />
+    <Compile Include="Regions\LoggerRegion.cs" />
+    <Compile Include="Regions\CheckerRegion.cs" />
+    <Compile Include="Regions\LocksetAnalysisRegion.cs" />
+    <Compile Include="Enumerations\AnalysisRole.cs" />
+    <Compile Include="Regions\LoopAnalysisRegion.cs" />
+    <Compile Include="StaticLocksetAnalysis\Factory.cs" />
+    <Compile Include="StaticLocksetAnalysis\ILocksetInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\IRaceInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\IDeadlockInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
+    <Compile Include="StaticLocksetAnalysis\ISharedStateAbstractor.cs" />
+    <Compile Include="StaticLocksetAnalysis\IErrorReportingInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />
     <Folder Include="StaticLocksetAnalysis\Passes\" />
-    <Folder Include="Util\" />
+    <Folder Include="Regions\" />
+    <Folder Include="Utilities\" />
+    <Folder Include="Enumerations\" />
   </ItemGroup>
 </Project>

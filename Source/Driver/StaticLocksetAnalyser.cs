@@ -16,7 +16,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -56,7 +56,7 @@ namespace whoop
         }
         catch (ProverException e)
         {
-          whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
+          Whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
           Environment.Exit((int)Outcome.FatalError);
         }
 
@@ -91,14 +91,14 @@ namespace whoop
           }
           catch (VC.VCGenException e)
           {
-            whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
+            Whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
               e.Message, funcToAnalyse.Name), true, true);
             errors = null;
             vcOutcome = VC.VCGen.Outcome.Inconclusive;
           }
           catch (UnexpectedProverOutputException e)
           {
-            whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
+            Whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
               funcToAnalyse.Name, e.Message);
             errors = null;
             vcOutcome = VC.VCGen.Outcome.Inconclusive;
@@ -125,7 +125,7 @@ namespace whoop
         cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
       }
 
-      whoop.IO.WriteTrailer(this.Stats);
+      Whoop.IO.WriteTrailer(this.Stats);
 
       if ((this.Stats.ErrorCount + this.Stats.InconclusiveCount + this.Stats.TimeoutCount + this.Stats.OutOfMemoryCount) > 0)
         return Outcome.LocksetAnalysisError;
@@ -138,7 +138,7 @@ namespace whoop
       switch (outcome)
       {
         case VC.VCGen.Outcome.ReachedBound:
-          whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+          Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
             Util.GetCommandLineOptions().RecursionBound));
           stats.VerifiedCount++;
@@ -147,36 +147,36 @@ namespace whoop
         case VC.VCGen.Outcome.Correct:
           if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
-            whoop.IO.Inform(String.Format("{0}credible", timeIndication));
+            Whoop.IO.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
           }
           else
           {
-            whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+            Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
           }
           break;
         
         case VC.VCGen.Outcome.TimedOut:
           stats.TimeoutCount++;
-          whoop.IO.Inform(String.Format("{0}timed out", timeIndication));
+          Whoop.IO.Inform(String.Format("{0}timed out", timeIndication));
           break;
         
         case VC.VCGen.Outcome.OutOfMemory:
           stats.OutOfMemoryCount++;
-          whoop.IO.Inform(String.Format("{0}out of memory", timeIndication));
+          Whoop.IO.Inform(String.Format("{0}out of memory", timeIndication));
           break;
         
         case VC.VCGen.Outcome.Inconclusive:
           stats.InconclusiveCount++;
-          whoop.IO.Inform(String.Format("{0}inconclusive", timeIndication));
+          Whoop.IO.Inform(String.Format("{0}inconclusive", timeIndication));
           break;
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
           if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
-            whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
+            Whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;
           }
 
@@ -187,12 +187,12 @@ namespace whoop
 
           if (errorCount == 0)
           {
-            whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+            Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
           }
           else
           {
-            whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
+            Whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
             stats.ErrorCount += errorCount;
           }
           break;

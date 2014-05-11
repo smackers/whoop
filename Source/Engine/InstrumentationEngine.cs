@@ -17,7 +17,9 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+using Whoop.SLA;
+
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -40,33 +42,30 @@ namespace whoop
       new PairConverter(this.AC, this.FunctionPair.Item1).Run();
       new InitConverter(this.AC).Run();
 
-      new LocksetInstrumentation(this.AC).Run();
+      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
 
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-        new BasicRaceInstrumentation(this.AC).Run();
-      else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-        new WatchdogRaceInstrumentation(this.AC).Run();
+      Factory.CreateNewRaceInstrumentation(this.AC).Run();
 
       if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-        new DeadlockInstrumentation(this.AC).Run();
+        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
 
       new InitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
 
-      new SharedStateAbstractor(this.AC).Run();
+      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
 
-      new ErrorReportingInstrumentation(this.AC).Run();
+      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
 
-      ModelCleaner.RemoveOldEntryPointCallsFromInitFuncs(this.AC);
+      ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
       ModelCleaner.RemoveEmptyBlocks(this.AC);
-      ModelCleaner.RemoveEmptyBlocksInEntryPoints(this.AC);
+      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
       ModelCleaner.RemoveUnecesseryReturns(this.AC);
-      ModelCleaner.RemoveOldEntryPoints(this.AC);
+      ModelCleaner.RemoveOldAsyncFuncs(this.AC);
       ModelCleaner.RemoveUncalledFuncs(this.AC);
       ModelCleaner.RemoveMemoryRegions(this.AC);
       ModelCleaner.RemoveUnusedVars(this.AC);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
-      whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[
+      Whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[
         Util.GetCommandLineOptions().Files.Count - 1], this.FunctionPair.Item1, "wbpl");
     }
   }

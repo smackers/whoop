@@ -16,11 +16,11 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
   public class ModelCleaner
   {
-    public static void RemoveOldEntryPointCallsFromInitFuncs(AnalysisContext ac)
+    public static void RemoveOldAsyncFuncCallsFromInitFuncs(AnalysisContext ac)
     {
       foreach (var impl in ac.GetInitFunctions())
       {
@@ -49,7 +49,7 @@ namespace whoop
     {
       foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
       {
-        if (ac.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name)))
+        if (ac.LocksetAnalysisRegions.Exists(val => val.Implementation().Name.Equals(impl.Name)))
           continue;
 
         foreach (var b1 in impl.Blocks)
@@ -77,11 +77,11 @@ namespace whoop
       }
     }
 
-    public static void RemoveEmptyBlocksInEntryPoints(AnalysisContext ac)
+    public static void RemoveEmptyBlocksInAsyncFuncPairs(AnalysisContext ac)
     {
-      foreach (var impl in ac.GetImplementationsToAnalyse())
+      foreach (var region in ac.LocksetAnalysisRegions)
       {
-        string label = impl.Blocks[0].Label.Split(new char[] { '$' })[0];
+        string label = region.Logger().Name();
         Implementation original = ac.GetImplementation(label);
         List<int> returnIdxs = new List<int>();
 
@@ -91,17 +91,17 @@ namespace whoop
             returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
         }
 
-        foreach (var b1 in impl.Blocks)
+        foreach (var b1 in region.Blocks())
         {
           if (b1.Cmds.Count != 0) continue;
           if (b1.TransferCmd is ReturnCmd) continue;
 
-          int idx = Convert.ToInt32(b1.Label.Split(new char[] { '$' })[1]);
+          int idx = Convert.ToInt32(b1.Label.Split(new char[] { '$' })[3]);
           if (returnIdxs.Exists(val => val == idx)) continue;
 
           GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
 
-          foreach (var b2 in impl.Blocks)
+          foreach (var b2 in region.Blocks())
           {
             if (b2.TransferCmd is ReturnCmd) continue;
             GotoCmd g = b2.TransferCmd as GotoCmd;
@@ -115,8 +115,8 @@ namespace whoop
           }
         }
 
-        impl.Blocks.RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd && returnIdxs.
-          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[1])));
+        region.Blocks().RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd && returnIdxs.
+          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[3])));
       }
     }
 
@@ -132,7 +132,7 @@ namespace whoop
       }
     }
 
-    public static void RemoveOldEntryPoints(AnalysisContext ac)
+    public static void RemoveOldAsyncFuncs(AnalysisContext ac)
     {
       foreach (var kvp in PairConverterUtil.FunctionPairs)
       {

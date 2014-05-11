@@ -10,25 +10,22 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Microsoft.Boogie;
 
-namespace Whoop.SLA
+namespace Whoop.Regions
 {
-  public class Lockset
+  internal class CheckerRegion : AsyncFuncRegion
   {
-    public Variable Id;
-    public string TargetName;
-
-    public Lockset(Variable id)
+    internal CheckerRegion(AnalysisContext ac, Implementation impl, int id)
+      : base(ac, impl, null)
     {
-      this.Id = id;
-      this.TargetName = GetTargetName();
-    }
-
-    private string GetTargetName()
-    {
-      return this.Id.Name.Substring(3);
+      Contract.Requires(ac != null);
+      base.AnalysisRole = AnalysisRole.CHECKER;
+      base.PairInternalId = id + 2;
+      base.ProcessRegionBlocks(impl, null);
     }
   }
 }

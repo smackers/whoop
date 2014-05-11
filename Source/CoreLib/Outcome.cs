@@ -11,7 +11,7 @@
 
 using System;
 
-namespace whoop
+namespace Whoop
 {
   public enum Outcome
   {

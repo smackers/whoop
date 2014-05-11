@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{11F99710-0502-4CA4-B0AA-1CF4635A27B2}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>whoop</RootNamespace>
+    <RootNamespace>Whoop</RootNamespace>
     <AssemblyName>WhoopDriver</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">

@@ -10,25 +10,31 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Microsoft.Boogie;
 
-namespace Whoop.SLA
+namespace Whoop.Regions
 {
-  public class Lockset
+  public interface IRegion
   {
-    public Variable Id;
-    public string TargetName;
+    object Identifier();
 
-    public Lockset(Variable id)
-    {
-      this.Id = id;
-      this.TargetName = GetTargetName();
-    }
+    Block Header();
 
-    private string GetTargetName()
-    {
-      return this.Id.Name.Substring(3);
-    }
+    IEnumerable<Cmd> Cmds();
+
+    IEnumerable<object> CmdsChildRegions();
+
+    IEnumerable<IRegion> SubRegions();
+
+    IEnumerable<Block> PreHeaders();
+
+    Expr Guard();
+
+    void AddInvariant(PredicateCmd pc);
+
+    List<PredicateCmd> RemoveInvariants();
   }
 }

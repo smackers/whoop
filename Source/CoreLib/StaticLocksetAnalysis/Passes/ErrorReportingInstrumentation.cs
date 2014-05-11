@@ -15,12 +15,13 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Regions;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class ErrorReportingInstrumentation
+  internal class ErrorReportingInstrumentation : IErrorReportingInstrumentation
   {
-    AnalysisContext AC;
+    private AnalysisContext AC;
 
     public ErrorReportingInstrumentation(AnalysisContext ac)
     {
@@ -30,85 +31,66 @@ namespace whoop
 
     public void Run()
     {
-      InstrumentEntryPoints();
-//      InstrumentOtherFuncs();
-
-      CleanUp();
+      this.InstrumentAsyncFuncs();
+      this.CleanUp();
     }
 
-    private void InstrumentEntryPoints()
+    private void InstrumentAsyncFuncs()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        InstrumentSourceLocationInfo(impl);
-        InstrumentRaceCheckingCaptureStates(impl);
+        this.InstrumentSourceLocationInfo(region);
+        this.InstrumentRaceCheckingCaptureStates(region);
 
         if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-          InstrumentDeadlockCheckingCaptureStates(impl);
+          this.InstrumentDeadlockCheckingCaptureStates(region);
       }
     }
 
-    private void InstrumentOtherFuncs()
+    private void InstrumentSourceLocationInfo(LocksetAnalysisRegion region)
     {
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var b in region.Blocks())
       {
-        if (this.AC.IsWhoopFunc(impl)) continue;
-        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
-
-        InstrumentSourceLocationInfo(impl);
-        InstrumentRaceCheckingCaptureStates(impl);
-
-        if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-          InstrumentDeadlockCheckingCaptureStates(impl);
-      }
-    }
-
-    private void InstrumentSourceLocationInfo(Implementation impl)
-    {
-      foreach (Block b in impl.Blocks)
-      {
-        for (int i = 0; i < b.Cmds.Count; i++)
+        for (int idx = 0; idx < b.Cmds.Count; idx++)
         {
-          if (!(b.Cmds[i] is CallCmd)) continue;
-          CallCmd call = b.Cmds[i] as CallCmd;
+          if (!(b.Cmds[idx] is CallCmd)) continue;
+          CallCmd call = b.Cmds[idx] as CallCmd;
 
           if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))
           {
-            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+            Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
+            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 1] as AssumeCmd).Attributes);
           }
           else if (call.callee.Contains("_LOG_WRITE_LS_"))
           {
-            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+            Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
+            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 1] as AssumeCmd).Attributes);
           }
           else if (call.callee.Contains("_LOG_READ_LS_"))
           {
-            Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
-            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
+            Contract.Requires(idx - 2 != 0 && b.Cmds[idx - 2] is AssumeCmd);
+            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 2] as AssumeCmd).Attributes);
           }
           else if (call.callee.Contains("_CHECK_WRITE_LS_"))
           {
-            Contract.Requires(i - 1 != 0 && b.Cmds[i - 1] is AssumeCmd);
-            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 1] as AssumeCmd).Attributes);
+            Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
+            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 1] as AssumeCmd).Attributes);
           }
           else if (call.callee.Contains("_CHECK_READ_LS_"))
           {
-            Contract.Requires(i - 2 != 0 && b.Cmds[i - 2] is AssumeCmd);
-            call.Attributes = GetSourceLocationAttributes((b.Cmds[i - 2] as AssumeCmd).Attributes);
+            Contract.Requires(idx - 2 != 0 && b.Cmds[idx - 2] is AssumeCmd);
+            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 2] as AssumeCmd).Attributes);
           }
         }
       }
     }
 
-    private void InstrumentRaceCheckingCaptureStates(Implementation impl)
+    private void InstrumentRaceCheckingCaptureStates(LocksetAnalysisRegion region)
     {
       int logCounter = 0;
       int checkCounter = 0;
 
-      foreach (Block b in impl.Blocks)
+      foreach (var b in region.Blocks())
       {
         List<Cmd> newCmds = new List<Cmd>();
 
@@ -186,12 +168,12 @@ namespace whoop
       }
     }
 
-    private void InstrumentDeadlockCheckingCaptureStates(Implementation impl)
+    private void InstrumentDeadlockCheckingCaptureStates(LocksetAnalysisRegion region)
     {
       int updateCounter = 0;
       int checkCounter = 0;
 
-      foreach (Block b in impl.Blocks)
+      foreach (var b in region.Blocks())
       {
         List<Cmd> newCmds = new List<Cmd>();
 

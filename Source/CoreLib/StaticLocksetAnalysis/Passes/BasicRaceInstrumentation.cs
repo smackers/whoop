@@ -16,16 +16,17 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop.SLA
 {
-  public class BasicRaceInstrumentation : RaceInstrumentation
+  internal class BasicRaceInstrumentation : RaceInstrumentation
   {
-    public BasicRaceInstrumentation(AnalysisContext ac) : base(ac)
+    public BasicRaceInstrumentation(AnalysisContext ac)
+      : base(ac)
     {
 
     }
 
-    public void Run()
+    public override void Run()
     {
       AddAccessOffsetGlobalVars();
 
@@ -35,8 +36,7 @@ namespace whoop
       AddCheckAccessFuncs(AccessType.WRITE);
       AddCheckAccessFuncs(AccessType.READ);
 
-      InstrumentEntryPoints();
-      // InstrumentOtherFuncs();
+      InstrumentAsyncFuncs();
     }
 
     protected override List<IdentifierExpr> MakeLogModset(Lockset ls)
@@ -196,30 +196,12 @@ namespace whoop
       return assert;
     }
 
-    protected override void InstrumentEntryPoints()
+    protected override void InstrumentAsyncFuncs()
     {
-      foreach (var impl in this.AC.GetImplementationsToAnalyse())
+      foreach (var region in this.AC.LocksetAnalysisRegions)
       {
-        InstrumentWriteAccesses(impl);
-        InstrumentReadAccesses(impl);
-        InstrumentProcedure(impl);
-      }
-    }
-
-    protected override void InstrumentOtherFuncs()
-    {
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
-      {
-        if (this.AC.IsWhoopFunc(impl)) continue;
-        if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
-        if (!(impl.Name.Contains("$log") || impl.Name.Contains("$check"))) continue;
-
-        bool[] guard = { false, false };
-        guard[0] = InstrumentOtherFuncsWriteAccesses(impl);
-        guard[1] = InstrumentOtherFuncsReadAccesses(impl);
-        if (guard.Contains(true)) InstrumentProcedure(impl);
+        InstrumentSharedResourceAccesses(region);
+        InstrumentProcedure(region.Implementation());
       }
     }
   }

@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 
-namespace whoop
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -37,7 +37,7 @@ namespace whoop
         }
         if (Util.GetCommandLineOptions().Files.Count == 0)
         {
-          whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
+          Whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
         }
 
@@ -63,12 +63,12 @@ namespace whoop
           }
           if (extension != ".bpl")
           {
-            whoop.IO.ErrorWriteLine("Whoop: error: {0} is not a .bpl file", file);
+            Whoop.IO.ErrorWriteLine("Whoop: error: {0} is not a .bpl file", file);
             Environment.Exit((int)Outcome.FatalError);
           }
         }
 
-        PairConverterUtil.ParseEntryPoints();
+        PairConverterUtil.ParseAsyncFuncs();
         PairConverterUtil.GetFunctionPairs();
 
         if (Util.GetCommandLineOptions().PrintPairs)

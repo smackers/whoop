@@ -16,7 +16,10 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+using Whoop.Regions;
+using Whoop.SLA;
+
+namespace Whoop
 {
   public class AnalysisContext : CheckingContext
   {
@@ -24,8 +27,10 @@ namespace whoop
     public ResolutionContext ResContext;
     public Lockset CurrLockset;
     public List<Lockset> Locksets;
+
     internal SharedStateAnalyser SharedStateAnalyser;
     internal Implementation InitFunc;
+    internal List<LocksetAnalysisRegion> LocksetAnalysisRegions;
     internal List<Variable> MemoryRegions;
     internal Microsoft.Boogie.Type MemoryModelType;
 
@@ -44,6 +49,7 @@ namespace whoop
         this.MemoryModelType = Microsoft.Boogie.Type.Int;
       }
 
+      this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
       this.SharedStateAnalyser = new SharedStateAnalyser(this);
       this.MemoryRegions = this.SharedStateAnalyser.GetMemoryRegions();
     }

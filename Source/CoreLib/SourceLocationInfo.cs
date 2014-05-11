@@ -16,7 +16,7 @@ using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace whoop
+namespace Whoop
 {
   public class SourceLocationInfo
   {
