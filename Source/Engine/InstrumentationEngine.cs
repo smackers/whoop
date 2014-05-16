@@ -54,7 +54,7 @@ namespace Whoop
 
       ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
       ModelCleaner.RemoveEmptyBlocks(this.AC);
-      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
+//      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
       ModelCleaner.RemoveUnecesseryReturns(this.AC);
       ModelCleaner.RemoveOldAsyncFuncs(this.AC);
       ModelCleaner.RemoveUncalledFuncs(this.AC);
