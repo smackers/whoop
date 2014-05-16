@@ -204,16 +204,12 @@ namespace Whoop.Regions
       else if (originalCmd is AssumeCmd)
       {
         AssumeCmd assume = originalCmd as AssumeCmd;
-        QKeyValue curr = assume.Attributes;
-
-        while (curr != null)
+        if (assume.Expr != Expr.True)
         {
-          if (curr.Key.Equals("sourceloc")) break;
-          curr = assume.Attributes.Next;
+          cmds.Add(new AssumeCmd(assume.tok,
+            new ExprModifier(this.AC, this.PairInternalId).VisitExpr(assume.Expr.Clone() as Expr),
+            assume.Attributes));
         }
-
-        if (curr != null && curr.Key.Equals("sourceloc"))
-          cmds.Add(originalCmd.Clone() as AssumeCmd);
       }
     }
 
