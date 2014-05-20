@@ -13,11 +13,12 @@ static void entrypoint(struct test_device *dev)
 {
 	struct shared *tp = testdev_priv(dev);
 	
-	mutex_lock(&tp->mutex);
-	int x = (int)tp->resource;
-	if (x == 5)
-		tp->resource = 3;
-	mutex_unlock(&tp->mutex);
+	for (int i = 0; i < 10; i++)
+	{
+		mutex_lock(&tp->mutex);
+		tp->resource = 5;
+		mutex_unlock(&tp->mutex);
+	}
 }
 
 static int init(struct pci_dev *pdev, const struct pci_device_id *ent)

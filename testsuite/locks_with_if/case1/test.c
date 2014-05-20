@@ -9,7 +9,7 @@ struct shared {
 	struct mutex mutex;
 };
 
-static void entrypoint1(struct test_device *dev)
+static void entrypoint(struct test_device *dev)
 {
 	struct shared *tp = testdev_priv(dev);
 	
@@ -27,12 +27,12 @@ static int init(struct pci_dev *pdev, const struct pci_device_id *ent)
 	tp = testdev_priv(dev);
 	mutex_init(&tp->mutex);
 	
-	entrypoint1(dev);
+	entrypoint(dev);
 	
 	return 0;
 }
 
 static struct test_driver test = {
 	.probe = init,
-	.ep1 = entrypoint1
+	.ep1 = entrypoint
 };

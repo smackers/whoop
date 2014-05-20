@@ -129,12 +129,11 @@ namespace Whoop.SLA
 
         assume = new AssumeCmd(Token.NoToken,
           new ForallExpr(Token.NoToken, dummies,
-            Expr.Iff(
-              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] {
-                  new IdentifierExpr(ls.Id.tok, ls.Id),
-                  new IdentifierExpr(dummyLock.tok, dummyLock)
-                })), Expr.True)));
+            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+              new List<Expr>(new Expr[] {
+                new IdentifierExpr(ls.Id.tok, ls.Id),
+                new IdentifierExpr(dummyLock.tok, dummyLock)
+              }))));
       }
 
       return assume;
