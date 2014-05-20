@@ -190,11 +190,11 @@ namespace Whoop.SLA
 
       AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
         new ForallExpr(Token.NoToken, dummiesCLS,
-          Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+          Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
             new List<Expr>(new Expr[] {
               new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id),
               new IdentifierExpr(dummyLock.tok, dummyLock)
-            })), Expr.False)));
+            })))));
 
       region.Logger().AddInvariant(assumeCLS);
       foreach (var checker in region.Checkers())

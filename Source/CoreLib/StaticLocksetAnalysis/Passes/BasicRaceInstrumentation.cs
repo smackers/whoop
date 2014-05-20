@@ -162,13 +162,12 @@ namespace Whoop.SLA
       IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
 
       ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
-                            Expr.Iff(Expr.And(new NAryExpr(Token.NoToken,
-                              new MapSelect(Token.NoToken, 1),
-                              new List<Expr>(new Expr[] {
+        Expr.And(new NAryExpr(Token.NoToken,
+          new MapSelect(Token.NoToken, 1),
+          new List<Expr>(new Expr[] {
             new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
               new List<Expr>(new Expr[] { lsExpr, ptrExpr })), lockExpr
-          })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)),
-                              Expr.True));
+          })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)));
 
       return exists;
     }

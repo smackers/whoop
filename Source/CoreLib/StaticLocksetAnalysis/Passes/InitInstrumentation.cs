@@ -113,7 +113,7 @@ namespace Whoop.SLA
 
         assume = new AssumeCmd(Token.NoToken,
           new ForallExpr(Token.NoToken, dummies,
-            Expr.Iff(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
               new List<Expr>(new Expr[] {
                 new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
                   new List<Expr>(new Expr[] {
@@ -121,7 +121,7 @@ namespace Whoop.SLA
                     new IdentifierExpr(dummyPtr.tok, dummyPtr)
                   })),
                 new IdentifierExpr(dummyLock.tok, dummyLock)
-              })), Expr.True)));
+              }))));
       }
       else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
       {
