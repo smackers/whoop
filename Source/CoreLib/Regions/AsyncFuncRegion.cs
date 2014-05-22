@@ -167,6 +167,15 @@ namespace Whoop.Regions
         if (call.callee.Contains("$memcpy") || call.callee.Contains("memcpy_fromio"))
           return;
 
+        if (Util.GetCommandLineOptions().LocksetModel == LocksetModellingMethod.NORMAL)
+        {
+          if (call.callee.Equals("mutex_lock") || call.callee.Equals("mutex_unlock"))
+          {
+            cmds.Add(call);
+            return;
+          }
+        }
+
         List<Expr> newIns = new List<Expr>();
         List<IdentifierExpr> newOuts = new List<IdentifierExpr>();
 

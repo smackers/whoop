@@ -110,6 +110,12 @@
     <Compile Include="StaticLocksetAnalysis\Interfaces\IPairConverter.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IRaceInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\ISharedStateAbstractor.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\ProgramSimplifier.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IProgramSimplifier.cs" />
+    <Compile Include="StaticLocksetAnalysis\Lock.cs" />
+    <Compile Include="Enumerations\LocksetModellingMethod.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\LocksetAbstractor.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\ILocksetAbstractor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

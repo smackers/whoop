@@ -133,6 +133,7 @@ class DefaultCmdLineOptions(object):
   def __init__(self):
     self.SL = SourceLanguage.Unknown
     self.sourceFiles = [ ]
+    # self.chauffeurOptions = [ "-ast-dump" ]
     self.chauffeurOptions = [ ]
     self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
     self.smackOptions = [ ]
@@ -143,6 +144,7 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
+    self.locksetModel = "normal"
     self.functionPairing = "linear"
     self.raceChecking = "normal"
     self.memoryModel = "default"
@@ -199,6 +201,8 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
+    --lockset-model=X       Choose which method of lockset modelling to use.  Options are: 'normal', 'basic'.
+                            Default is 'normal'.
     --function-pairing=X    Choose which method of function checking to use.  Options are: 'linear', 'triangular'
                             and 'quadratic'. Default is 'linear'.
     --race-checking=X       Choose which method of race checking to use.  Options are: 'normal' and 'watchdog'.
@@ -334,11 +338,16 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopDriverOptions += [ a ]
+    if o == "--lockset-model":
+      if a.lower() in ("normal","basic"):
+        CommandLineOptions.locksetModel = a.lower()
+      else:
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --lockset-model must be one of 'normal' or 'basic'")
     if o == "--function-pairing":
       if a.lower() in ("linear","triangular","quadratic"):
         CommandLineOptions.functionPairing = a.lower()
       else:
-        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --function-pairing must be one of 'linear', 'triangular' or 'quadratic'")      
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --function-pairing must be one of 'linear', 'triangular' or 'quadratic'")    
     if o == "--race-checking":
       if a.lower() in ("normal","watchdog"):
         CommandLineOptions.raceChecking = a.lower()
@@ -488,7 +497,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=',
-              'race-checking=', 'function-pairing=',
+              'race-checking=', 'lockset-model=', 'function-pairing=',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -566,6 +575,9 @@ def startToolChain(argv):
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
+  
+  if CommandLineOptions.locksetModel == "basic":
+    CommandLineOptions.whoopEngineOptions += [ "/locksetModel:BASIC" ]
   
   if CommandLineOptions.functionPairing == "linear":
     CommandLineOptions.whoopEngineOptions += [ "/functionPairing:LINEAR" ]

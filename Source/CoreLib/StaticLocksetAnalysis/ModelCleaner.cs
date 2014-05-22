@@ -26,21 +26,9 @@ namespace Whoop.SLA
       {
         foreach (var b in impl.Blocks)
         {
-          if (b.Label.Equals("$checker")) break;
+          if (b.Label.Equals("$pair")) break;
           b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && PairConverterUtil.FunctionPairs.Keys.Any(val =>
             val.Equals((val1 as CallCmd).callee)));
-        }
-      }
-    }
-
-    public static void RemoveUnecesseryAssumes(AnalysisContext ac)
-    {
-      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
-      {
-        foreach (Block b in impl.Blocks)
-        {
-          b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes == null &&
-          (val as AssumeCmd).Expr.Equals(Expr.True));
         }
       }
     }

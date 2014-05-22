@@ -41,19 +41,10 @@ namespace Whoop.SLA
 
     private void InstrumentImplementation(Implementation impl)
     {
-      Implementation pairImpl = this.AC.GetImplementation(impl.Name.Substring(5));
-      List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
-
       impl.Blocks[impl.Blocks.Count - 1].TransferCmd =
-        new GotoCmd(Token.NoToken, new List<string>() { "$checker" });
+        new GotoCmd(Token.NoToken, new List<string>() { "$pair" });
 
-      Block b = new Block(Token.NoToken, "$checker", new List<Cmd>(), new ReturnCmd(Token.NoToken));
-
-      foreach (var ls in this.AC.Locksets)
-      {
-        if (!vars.Any(val => val.Name.Equals(ls.TargetName))) continue;
-        b.Cmds.Insert(b.Cmds.Count, MakeLocksetAssumeCmd(ls));
-      }
+      Block b = new Block(Token.NoToken, "$pair", new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
       List<Expr> ins = new List<Expr>();
 
@@ -94,49 +85,6 @@ namespace Whoop.SLA
         ins, new List<IdentifierExpr>()));
 
       impl.Blocks.Add(b);
-    }
-
-    private AssumeCmd MakeLocksetAssumeCmd(Lockset ls)
-    {
-      AssumeCmd assume = null;
-
-      List<Variable> dummies = new List<Variable>();
-      Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-                            this.AC.MemoryModelType));
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-                             this.AC.MemoryModelType));
-
-      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-      {
-        dummies.Add(dummyPtr);
-        dummies.Add(dummyLock);
-
-        assume = new AssumeCmd(Token.NoToken,
-          new ForallExpr(Token.NoToken, dummies,
-            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-              new List<Expr>(new Expr[] {
-                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                  new List<Expr>(new Expr[] {
-                    new IdentifierExpr(ls.Id.tok, ls.Id),
-                    new IdentifierExpr(dummyPtr.tok, dummyPtr)
-                  })),
-                new IdentifierExpr(dummyLock.tok, dummyLock)
-              }))));
-      }
-      else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-      {
-        dummies.Add(dummyLock);
-
-        assume = new AssumeCmd(Token.NoToken,
-          new ForallExpr(Token.NoToken, dummies,
-            new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-              new List<Expr>(new Expr[] {
-                new IdentifierExpr(ls.Id.tok, ls.Id),
-                new IdentifierExpr(dummyLock.tok, dummyLock)
-              }))));
-      }
-
-      return assume;
     }
 
     private void InstrumentProcedure(Implementation impl)

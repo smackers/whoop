@@ -20,7 +20,7 @@ llvmBinDir = rootDir + "/llvm_and_clang/build/bin"
 llvmLibDir = rootDir + "/llvm_and_clang/build/lib"
 
 # path to the directory containing the chauffeur clang tool
-chauffeurDir = rootDir + "/whoop/FrontEndPlugin/build"
+chauffeurDir = rootDir + "/chauffeur/build"
 
 # path to the SMACK source directory
 smackSrcDir = rootDir + "/smack/src"

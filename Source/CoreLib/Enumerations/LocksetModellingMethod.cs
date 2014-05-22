@@ -10,20 +10,13 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.Diagnostics.Contracts;
-using Microsoft.Boogie;
 
-namespace Whoop.SLA
+namespace Whoop
 {
-  public class Lockset
+  public enum FunctionPairingMethod
   {
-    public Variable Id;
-    public string TargetName;
-
-    public Lockset(Variable id)
-    {
-      this.Id = id;
-      this.TargetName = id.Name.Substring(3);
-    }
+    LINEAR,
+    TRIANGULAR,
+    QUADRATIC
   }
 }

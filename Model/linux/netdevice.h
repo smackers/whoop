@@ -186,7 +186,7 @@ struct napi_struct {
 void netif_napi_add(struct net_device *dev, struct napi_struct *napi, int (*poll)(struct napi_struct *, int), int weight);
 void netif_napi_del(struct napi_struct *napi);
 
-void *netdev_priv(const struct net_device *dev)
+static inline void *netdev_priv(const struct net_device *dev)
 {
 	return (char *)dev + ALIGN(sizeof(struct net_device), NETDEV_ALIGN);
 }

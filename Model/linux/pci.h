@@ -108,16 +108,10 @@ static inline const char *pci_name(const struct pci_dev *pdev)
 #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
 #define pci_resource_end(dev, bar)	((dev)->resource[(bar)].end)
 #define pci_resource_flags(dev, bar)	((dev)->resource[(bar)].flags)
-#define pci_resource_len(dev,bar) \
-	((pci_resource_start((dev), (bar)) == 0 &&	\
-	  pci_resource_end((dev), (bar)) ==		\
-	  pci_resource_start((dev), (bar))) ? 0 :	\
-							\
-	 (pci_resource_end((dev), (bar)) -		\
-	  pci_resource_start((dev), (bar)) + 1))
+#define pci_resource_len(dev,bar) ((pci_resource_start((dev), (bar)) == 0 &&	pci_resource_end((dev), (bar)) ==	pci_resource_start((dev), (bar))) ? 0 :	(pci_resource_end((dev), (bar)) -	pci_resource_start((dev), (bar)) + 1))
 
-static inline void *pci_get_drvdata(struct pci_dev *pdev);
-static inline void pci_set_drvdata(struct pci_dev *pdev, void *data);
+void *pci_get_drvdata(struct pci_dev *pdev);
+void pci_set_drvdata(struct pci_dev *pdev, void *data);
 
 int pci_enable_device(struct pci_dev *dev);
 void pci_disable_device(struct pci_dev *dev);
@@ -138,7 +132,8 @@ int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
 
 void pci_disable_link_state(struct pci_dev *pdev, int state);
 
-#define	to_pci_dev(n) container_of(n, struct pci_dev, dev)
+// #define	to_pci_dev(n) container_of(n, struct pci_dev, dev)
+void *to_pci_dev(struct device *device);
 
 #define DEFINE_PCI_DEVICE_TABLE(_table) const struct pci_device_id _table[]
 

@@ -9,8 +9,14 @@
 #include <linux/pm_runtime.h>
 #include <linux/list.h>
 
+struct device_private {
+	void *driver_data;
+	struct device *device;
+};
+
 struct device {
 	struct device *parent;
+	struct device_private *p;
 	void (*release)(struct device * dev);
 };
 

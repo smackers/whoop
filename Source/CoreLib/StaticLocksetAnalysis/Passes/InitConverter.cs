@@ -31,9 +31,7 @@ namespace Whoop.SLA
     public void Run()
     {
       foreach (var region in this.AC.LocksetAnalysisRegions)
-      {
         this.CreateInitFunction(region.Implementation());
-      }
     }
 
     private void CreateInitFunction(Implementation impl)
@@ -43,15 +41,11 @@ namespace Whoop.SLA
 
       List<Variable> inParams = new List<Variable>();
       foreach (var v in this.AC.InitFunc.Proc.InParams)
-      {
         inParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
-      }
 
       List<Variable> outParams = new List<Variable>();
       foreach (var v in this.AC.InitFunc.Proc.OutParams)
-      {
         outParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
-      }
 
       Procedure newProc = new Procedure(Token.NoToken, name,
                             new List<TypeVariable>(), inParams, outParams,
@@ -61,15 +55,11 @@ namespace Whoop.SLA
 
       List<Variable> localVars = new List<Variable>();
       foreach (var v in this.AC.InitFunc.LocVars)
-      {
         localVars.Add(new Duplicator().VisitVariable(v.Clone() as Variable));
-      }
 
       List<Block> blocks = new List<Block>();
-      foreach (var v in this.AC.InitFunc.Blocks)
-      {
-        blocks.Add(new Duplicator().VisitBlock(v.Clone() as Block));
-      }
+      foreach (var b in this.AC.InitFunc.Blocks)
+        blocks.Add(new Duplicator().VisitBlock(b.Clone() as Block));
 
       Implementation newImpl = new Implementation(Token.NoToken, name,
                                  new List<TypeVariable>(), inParams, outParams,
@@ -80,10 +70,9 @@ namespace Whoop.SLA
 
       foreach (var v in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
       {
-        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr"))
-        {
+        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr") ||
+          v.Name.Contains("Lock$"))
           newProc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
-        }
       }
 
       this.AC.Program.TopLevelDeclarations.Add(newProc);

@@ -23,6 +23,8 @@ namespace Whoop
     public bool OnlyRaceChecking = false;
     public string MemoryModel = "default";
 
+    public LocksetModellingMethod LocksetModel = LocksetModellingMethod.NORMAL;
+
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -80,6 +82,22 @@ namespace Whoop
           else if (ps.args[ps.i] == "WATCHDOG")
           {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
+          }
+        }
+        return true;
+      }
+
+      if (name == "locksetModel")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
+          if (ps.args[ps.i] == "NORMAL")
+          {
+            LocksetModel = LocksetModellingMethod.NORMAL;
+          }
+          else if (ps.args[ps.i] == "BASIC")
+          {
+            LocksetModel = LocksetModellingMethod.BASIC;
           }
         }
         return true;

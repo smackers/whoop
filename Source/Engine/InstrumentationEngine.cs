@@ -37,29 +37,30 @@ namespace Whoop
 
     public void Run()
     {
-      ModelCleaner.RemoveUnecesseryAssumes(this.AC);
+      Factory.CreateNewProgramSimplifier(this.AC).Run();
+      Factory.CreateNewLocksetAbstractor(this.AC).Run();
 
-      Factory.CreateNewPairConverter(this.AC, this.FunctionPair.Item1).Run();
-      Factory.CreateNewInitConverter(this.AC).Run();
-
-      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
-      Factory.CreateNewRaceInstrumentation(this.AC).Run();
-
-      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
-
-      Factory.CreateNewInitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
-      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
-      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
-
-      ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
-      ModelCleaner.RemoveEmptyBlocks(this.AC);
-//      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
-      ModelCleaner.RemoveUnecesseryReturns(this.AC);
-      ModelCleaner.RemoveOldAsyncFuncs(this.AC);
-      ModelCleaner.RemoveUncalledFuncs(this.AC);
-      ModelCleaner.RemoveMemoryRegions(this.AC);
-      ModelCleaner.RemoveUnusedVars(this.AC);
+//      Factory.CreateNewPairConverter(this.AC, this.FunctionPair.Item1).Run();
+//      Factory.CreateNewInitConverter(this.AC).Run();
+//
+//      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
+//      Factory.CreateNewRaceInstrumentation(this.AC).Run();
+//
+//      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+//        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
+//
+//      Factory.CreateNewInitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
+//      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
+//      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
+//
+//      ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
+//      ModelCleaner.RemoveEmptyBlocks(this.AC);
+////      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
+//      ModelCleaner.RemoveUnecesseryReturns(this.AC);
+//      ModelCleaner.RemoveOldAsyncFuncs(this.AC);
+//      ModelCleaner.RemoveUncalledFuncs(this.AC);
+//      ModelCleaner.RemoveMemoryRegions(this.AC);
+//      ModelCleaner.RemoveUnusedVars(this.AC);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       Whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[

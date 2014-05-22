@@ -13,10 +13,9 @@ using System;
 
 namespace Whoop
 {
-  public enum FunctionPairingMethod
+  public enum LocksetModellingMethod
   {
-    LINEAR,
-    TRIANGULAR,
-    QUADRATIC
+    NORMAL,
+    BASIC
   }
 }

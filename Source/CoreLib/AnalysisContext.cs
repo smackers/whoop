@@ -25,12 +25,15 @@ namespace Whoop
   {
     public Program Program;
     public ResolutionContext ResContext;
-    public Lockset CurrLockset;
-    public List<Lockset> Locksets;
 
-    internal SharedStateAnalyser SharedStateAnalyser;
+    internal Lockset CurrLockset;
+    internal List<Lockset> Locksets;
+    internal List<Lock> Locks;
+
     internal Implementation InitFunc;
     internal List<LocksetAnalysisRegion> LocksetAnalysisRegions;
+
+    internal SharedStateAnalyser SharedStateAnalyser;
     internal List<Variable> MemoryRegions;
     internal Microsoft.Boogie.Type MemoryModelType;
 
@@ -43,6 +46,7 @@ namespace Whoop
       this.Program = program;
       this.ResContext = rc;
       this.Locksets = new List<Lockset>();
+      this.Locks = new List<Lock>();
 
       if (Util.GetCommandLineOptions().MemoryModel.Equals("default"))
       {

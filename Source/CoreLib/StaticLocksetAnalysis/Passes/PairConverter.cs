@@ -30,7 +30,6 @@ namespace Whoop.SLA
       Contract.Requires(ac != null && functionName != null);
       this.AC = ac;
       this.FunctionName = functionName;
-      this.AC.DetectInitFunction();
     }
 
     public void Run()

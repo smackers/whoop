@@ -15,6 +15,16 @@ namespace Whoop.SLA
 {
   public static class Factory
   {
+    public static IProgramSimplifier CreateNewProgramSimplifier(AnalysisContext ac)
+    {
+      return new ProgramSimplifier(ac);
+    }
+
+    public static ILocksetAbstractor CreateNewLocksetAbstractor(AnalysisContext ac)
+    {
+      return new LocksetAbstractor(ac);
+    }
+
     public static IPairConverter CreateNewPairConverter(AnalysisContext ac, string functionName)
     {
       return new PairConverter(ac, functionName);

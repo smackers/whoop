@@ -143,6 +143,7 @@ namespace Whoop.SLA
         this.InstrumentImplementation(region);
         this.InstrumentProcedure(region);
         this.AddCurrentLocksetInvariant(region);
+        this.AddMemoryRegionLocksetInvariant(region);
       }
     }
 
@@ -181,6 +182,57 @@ namespace Whoop.SLA
       }
     }
 
+    private void AddMemoryRegionLocksetInvariant(LocksetAnalysisRegion region)
+    {
+      Implementation pairImpl = this.AC.GetImplementation(region.Logger().Name());
+      List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
+
+      foreach (var ls in this.AC.Locksets)
+      {
+        if (!vars.Any(val => val.Name.Equals(ls.TargetName))) continue;
+
+        List<Variable> dummies = new List<Variable>();
+        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+          this.AC.MemoryModelType));
+        Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
+          this.AC.MemoryModelType));
+
+        AssumeCmd assume = null;
+
+        if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
+        {
+          dummies.Add(dummyPtr);
+          dummies.Add(dummyLock);
+
+          assume = new AssumeCmd(Token.NoToken,
+            new ForallExpr(Token.NoToken, dummies,
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                    new List<Expr>(new Expr[] {
+                      new IdentifierExpr(ls.Id.tok, ls.Id),
+                      new IdentifierExpr(dummyPtr.tok, dummyPtr)
+                    })),
+                  new IdentifierExpr(dummyLock.tok, dummyLock)
+                }))));
+        }
+        else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
+        {
+          dummies.Add(dummyLock);
+
+          assume = new AssumeCmd(Token.NoToken,
+            new ForallExpr(Token.NoToken, dummies,
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new IdentifierExpr(ls.Id.tok, ls.Id),
+                  new IdentifierExpr(dummyLock.tok, dummyLock)
+                }))));
+        }
+
+        region.Logger().AddInvariant(assume);
+      }
+    }
+
     private void AddCurrentLocksetInvariant(LocksetAnalysisRegion region)
     {
       List<Variable> dummiesCLS = new List<Variable>();
@@ -188,7 +240,7 @@ namespace Whoop.SLA
         this.AC.MemoryModelType));
       dummiesCLS.Add(dummyLock);
 
-      AssumeCmd assumeCLS = new AssumeCmd(Token.NoToken,
+      AssumeCmd assume = new AssumeCmd(Token.NoToken,
         new ForallExpr(Token.NoToken, dummiesCLS,
           Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
             new List<Expr>(new Expr[] {
@@ -196,9 +248,9 @@ namespace Whoop.SLA
               new IdentifierExpr(dummyLock.tok, dummyLock)
             })))));
 
-      region.Logger().AddInvariant(assumeCLS);
+      region.Logger().AddInvariant(assume);
       foreach (var checker in region.Checkers())
-        checker.AddInvariant(assumeCLS);
+        checker.AddInvariant(assume);
     }
   }
 }
