@@ -12,7 +12,7 @@ struct shared {
 static void entrypoint1(struct test_device *dev)
 {
 	struct shared *tp = testdev_priv(dev);
-	
+
 	mutex_lock(&tp->mutex);
 	tp->resource = 1;
 }
@@ -20,7 +20,7 @@ static void entrypoint1(struct test_device *dev)
 static void entrypoint2(struct test_device *dev)
 {
 	struct shared *tp = testdev_priv(dev);
-	
+
 	mutex_lock(&tp->mutex);
 	tp->resource = 2;
 }
@@ -29,12 +29,9 @@ static int init(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct shared *tp;
 	struct test_device *dev = alloc_testdev(sizeof(*tp));
-	
+
 	tp = testdev_priv(dev);
 	mutex_init(&tp->mutex);
-	
-	entrypoint1(dev);
-	entrypoint2(dev);
 	
 	return 0;
 }
