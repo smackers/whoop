@@ -27,7 +27,7 @@ class ReportAndExit(Exception):
   def __init__(self, code, msg=None):
     self.code = code
     self.msg = msg
-  
+
   def getExitCode(self):
     return self.code
 
@@ -133,7 +133,6 @@ class DefaultCmdLineOptions(object):
   def __init__(self):
     self.SL = SourceLanguage.Unknown
     self.sourceFiles = [ ]
-    # self.chauffeurOptions = [ "-ast-dump" ]
     self.chauffeurOptions = [ ]
     self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
     self.smackOptions = [ ]
@@ -180,14 +179,14 @@ def showHelpAndExit():
     'solver': CommandLineOptions.solver,
     'logic': CommandLineOptions.logic
   }
-  
+
   print("""OVERVIEW: Whoop - a lockset analysis tool for Linux device drivers
-  
+
   This is an experimental tool from the Multicore Programming Group
   at Imperial College London.
-  
+
   USAGE: whoop.py [options] <inputs>
-  
+
   GENERAL OPTIONS:
     -h, --help              Display this message.
     -I <value>              Add directory to include search path.
@@ -197,7 +196,7 @@ def showHelpAndExit():
     --verbose               Show commands to run and use verbose output.
     --time                  Show timing information.
     -V, --version           Show version information.
-    
+
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
@@ -207,7 +206,7 @@ def showHelpAndExit():
                             and 'quadratic'. Default is 'linear'.
     --race-checking=X       Choose which method of race checking to use.  Options are: 'normal' and 'watchdog'.
                             Default is 'normal'.
-  
+
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
     --solver=X              Choose which SMT Theorem Prover to use in the backend.
@@ -347,7 +346,7 @@ def processGeneralOptions(opts, args):
       if a.lower() in ("linear","triangular","quadratic"):
         CommandLineOptions.functionPairing = a.lower()
       else:
-        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --function-pairing must be one of 'linear', 'triangular' or 'quadratic'")    
+        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --function-pairing must be one of 'linear', 'triangular' or 'quadratic'")
     if o == "--race-checking":
       if a.lower() in ("normal","watchdog"):
         CommandLineOptions.raceChecking = a.lower()
@@ -380,7 +379,7 @@ class ToolWatcher(object):
       if psutilPresent:
         for child in children:
           child.terminate()
-  
+
   def __init__(self,popenObject,timeout):
     self.timeout = timeout
     self.popenObject = popenObject
@@ -430,7 +429,7 @@ def run(command, timeout=0):
     cleanupKiller()
 
   return stdout, proc.returncode
-  
+
 """ Run a tool. If the timeout is set to 0 then there will be no
 timeout.
 """
@@ -462,13 +461,13 @@ def addInline(match, info):
   foundit = False
   procName = match.group(1)
   procDef = ''
-  
+
   with open (info, "r") as info:
     for line in info.readlines():
       if "::" in line and line.split('::')[1].replace('\n', '') == procName:
         foundit = True
         break
-  
+
   if foundit:
     procDef += 'procedure ' + procName + '('
   else:
@@ -490,7 +489,7 @@ def startToolChain(argv):
   if progname.endswith('.py'): progname = progname[:-3]
 
   try:
-    opts, args = getopt.gnu_getopt(argv,'hVD:I:', 
+    opts, args = getopt.gnu_getopt(argv,'hVD:I:',
              ['help', 'version', 'debug', 'verbose', 'silent',
               'only-race-checking', 'only-deadlock-checking',
               'time', 'time-as-csv=', 'keep-temps', 'print-pairs',
@@ -506,12 +505,12 @@ def startToolChain(argv):
 
   showHelpIfRequested(opts)
   showVersionIfRequested(opts)
-  
+
   getSourceFiles(args)
   processGeneralOptions(opts, args)
-  
+
   filename, ext = splitFilenameExt(args[0])
-  
+
   # Intermediate filenames
   reFilename = filename + '.re.c'
   bcFilename = filename + '.bc'
@@ -539,19 +538,19 @@ def startToolChain(argv):
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
     if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFilesWithPattern, 'filename$*.wbpl')
-  
+
   CommandLineOptions.chauffeurOptions.append(filename + ext)
   CommandLineOptions.chauffeurOptions.append("--")
   CommandLineOptions.chauffeurOptions.append("-w")
   CommandLineOptions.clangOptions.append("-o")
   CommandLineOptions.clangOptions.append(bcFilename)
   CommandLineOptions.clangOptions.append(reFilename)
-    
+
   if ext in [ ".c" ]:
     CommandLineOptions.smackOptions += [ bcFilename, "-o", bplFilename ]
     CommandLineOptions.smackOptions += [ "--source-loc-syms" ]
     # CommandLineOptions.smackOptions += [ "--mem-mod", CommandLineOptions.memoryModel ]
-  
+
   if CommandLineOptions.solver == "cvc4":
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:SOLVER=cvc4" ]
     CommandLineOptions.whoopDriverOptions += [ "/proverOpt:SOLVER=cvc4" ]
@@ -562,23 +561,23 @@ def startToolChain(argv):
   else:
     CommandLineOptions.whoopEngineOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
     CommandLineOptions.whoopDriverOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
-  
+
   if CommandLineOptions.generateSmt2:
     CommandLineOptions.whoopDriverOptions += [ "/proverLog:" + smt2Filename ]
-  
+
   if CommandLineOptions.printPairs:
     CommandLineOptions.whoopEngineOptions += [ "/printPairs" ]
   if CommandLineOptions.debugging:
     CommandLineOptions.whoopEngineOptions += [ "/debugWhoop" ]
     CommandLineOptions.whoopDriverOptions += [ "/debugWhoop" ]
-    
+
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
-  
+
   if CommandLineOptions.locksetModel == "basic":
     CommandLineOptions.whoopEngineOptions += [ "/locksetModel:BASIC" ]
-  
+
   if CommandLineOptions.functionPairing == "linear":
     CommandLineOptions.whoopEngineOptions += [ "/functionPairing:LINEAR" ]
     CommandLineOptions.whoopDriverOptions += [ "/functionPairing:LINEAR" ]
@@ -588,23 +587,23 @@ def startToolChain(argv):
   else:
     CommandLineOptions.whoopEngineOptions += [ "/functionPairing:QUADRATIC" ]
     CommandLineOptions.whoopDriverOptions += [ "/functionPairing:QUADRATIC" ]
-  
+
   if CommandLineOptions.raceChecking == "watchdog":
     CommandLineOptions.whoopEngineOptions += [ "/raceChecking:WATCHDOG" ]
     CommandLineOptions.whoopDriverOptions += [ "/raceChecking:WATCHDOG" ]
   else:
     CommandLineOptions.whoopEngineOptions += [ "/raceChecking:NORMAL" ]
     CommandLineOptions.whoopDriverOptions += [ "/raceChecking:NORMAL" ]
-  
+
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
-  
+
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
-  
+
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ bplFilename ]
-  
+
   """ RUN CHAUFFEUR """
   if not CommandLineOptions.skip["chauffeur"]:
     runTool("chauffeur",
@@ -615,7 +614,7 @@ def startToolChain(argv):
              ErrorCodes.CLANG_ERROR,
              CommandLineOptions.componentTimeout)
   if CommandLineOptions.stopAtRe: return 0
-  
+
   """ RUN CLANG """
   if not CommandLineOptions.skip["clang"]:
     runTool("clang",
@@ -626,7 +625,7 @@ def startToolChain(argv):
              ErrorCodes.CLANG_ERROR,
              CommandLineOptions.componentTimeout)
   if CommandLineOptions.stopAtBc: return 0
-  
+
   """ RUN SMACK """
   if not CommandLineOptions.skip["smack"]:
     runTool("smack",
@@ -636,7 +635,7 @@ def startToolChain(argv):
              CommandLineOptions.componentTimeout)
     processBPL(bplFilename, infoFilename)
   if CommandLineOptions.stopAtBpl: return 0
-  
+
   """ RUN WHOOP ENGINE """
   if not CommandLineOptions.skip["engine"]:
     runTool("whoopengine",
@@ -646,7 +645,7 @@ def startToolChain(argv):
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
     if CommandLineOptions.stopAtWbpl: return 0
-  
+
   """ RUN WHOOP DRIVER """
   runTool("whoopdriver",
           (["mono"] if os.name == "posix" else []) +
@@ -658,7 +657,7 @@ def startToolChain(argv):
   """ SUCCESS - REPORT STATUS """
   if CommandLineOptions.silent:
     return 0
-  
+
   print("Verified: " + ", ".join(CommandLineOptions.sourceFiles))
   print("(but absolutely no warranty provided)")
 
@@ -733,7 +732,7 @@ def main(argv):
 if __name__ == '__main__':
   # These are the exception error codes that won't be printed if they are thrown
   ignoredErrors = [ ErrorCodes.SUCCESS, ErrorCodes.DRIVER_ERROR ]
-  
+
   try:
     main(sys.argv[1:])
   except ReportAndExit as e:
