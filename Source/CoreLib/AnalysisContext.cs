@@ -48,10 +48,7 @@ namespace Whoop
       this.Locksets = new List<Lockset>();
       this.Locks = new List<Lock>();
 
-      if (Util.GetCommandLineOptions().MemoryModel.Equals("default"))
-      {
-        this.MemoryModelType = Microsoft.Boogie.Type.Int;
-      }
+      this.MemoryModelType = Microsoft.Boogie.Type.Int;
 
       this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
       this.SharedStateAnalyser = new SharedStateAnalyser(this);
@@ -118,19 +115,36 @@ namespace Whoop
       Contract.Requires(impl != null);
       foreach (var ep in this.Program.TopLevelDeclarations.OfType<Implementation>())
       {
-        foreach (var b in ep.Blocks)
+        foreach (var block in ep.Blocks)
         {
-          foreach (var c in b.Cmds.OfType<CallCmd>())
+          foreach (var cmd in block.Cmds)
           {
-            if (c.callee.Equals(impl.Name)) return true;
-            foreach (var expr in c.Ins)
+            if (cmd is CallCmd)
             {
-              if (!(expr is IdentifierExpr)) continue;
-              if ((expr as IdentifierExpr).Name.Equals(impl.Name)) return true;
+              if ((cmd as CallCmd).callee.Equals(impl.Name))
+                return true;
+              foreach (var expr in (cmd as CallCmd).Ins)
+              {
+                if (!(expr is IdentifierExpr))
+                  continue;
+                if ((expr as IdentifierExpr).Name.Equals(impl.Name))
+                  return true;
+              }
+            }
+            else if (cmd is AssignCmd)
+            {
+              foreach (var rhs in (cmd as AssignCmd).Rhss)
+              {
+                if (!(rhs is IdentifierExpr))
+                  continue;
+                if ((rhs as IdentifierExpr).Name.Equals(impl.Name))
+                  return true;
+              }
             }
           }
         }
       }
+
       return false;
     }
 

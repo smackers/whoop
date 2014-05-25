@@ -111,8 +111,8 @@ namespace Whoop.SLA
       return vars;
     }
 
-    // do deep $pa(p, i, s) == p + i * s);
-    public Expr ComputePointer(Implementation impl, IdentifierExpr id)
+    // do $pa(p, i, s) == p + i * s);
+    public Expr FindRootPointer(Implementation impl, IdentifierExpr id)
     {
       NAryExpr root = this.GetPointerArithmeticExpr(impl, id) as NAryExpr;
       Expr result = root;

@@ -34,8 +34,9 @@ namespace Whoop.SLA
     {
       foreach (var impl in this.AC.GetInitFunctions())
       {
-        InstrumentImplementation(impl);
-        InstrumentProcedure(impl);
+        this.InstrumentImplementation(impl);
+        this.InstrumentProcedure(impl);
+        this.RemoveOriginalAsyncFuncCalls(impl);
       }
     }
 
@@ -110,6 +111,15 @@ namespace Whoop.SLA
 
           impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
         }
+      }
+    }
+
+    public void RemoveOriginalAsyncFuncCalls(Implementation impl)
+    {
+      foreach (var block in impl.Blocks)
+      {
+        block.Cmds.RemoveAll(val1 => (val1 is CallCmd) && PairConverterUtil.FunctionPairs.Keys.Any(val =>
+          val.Equals((val1 as CallCmd).callee)));
       }
     }
   }

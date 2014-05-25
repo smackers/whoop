@@ -31,10 +31,42 @@ namespace Whoop.SLA
 
     public void Run()
     {
+      this.RemoveUncalledFuncs();
+
       foreach (var impl in AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
         this.RemoveUnecesseryAssumes(impl);
         this.SimplifyImplementation(impl);
+      }
+    }
+
+    private void RemoveUncalledFuncs()
+    {
+      HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
+
+      while (true)
+      {
+        int fixpoint = uncalledFuncs.Count;
+        foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+        {
+          if (impl.Name.Equals(this.AC.InitFunc.Name))
+            continue;
+          if (this.AC.IsCalledByAnyFunc(impl))
+            continue;
+
+          uncalledFuncs.Add(impl);
+        }
+        if (uncalledFuncs.Count == fixpoint) break;
+      }
+
+      foreach (var impl in uncalledFuncs)
+      {
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
       }
     }
 

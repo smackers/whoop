@@ -38,7 +38,9 @@ namespace Whoop
     public void Run()
     {
       Factory.CreateNewProgramSimplifier(this.AC).Run();
-      Factory.CreateNewLocksetAbstractor(this.AC).Run();
+
+      if (Util.GetCommandLineOptions().DoPointerAnalysis)
+        Factory.CreateNewLocksetAbstractor(this.AC).Run();
 
       Factory.CreateNewPairConverter(this.AC, this.FunctionPair.Item1).Run();
       Factory.CreateNewInitConverter(this.AC).Run();
@@ -53,12 +55,9 @@ namespace Whoop
       Factory.CreateNewSharedStateAbstractor(this.AC).Run();
       Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
 
-      ModelCleaner.RemoveOldAsyncFuncCallsFromInitFuncs(this.AC);
       ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
       ModelCleaner.RemoveUnecesseryReturns(this.AC);
-      ModelCleaner.RemoveOldAsyncFuncs(this.AC);
-      ModelCleaner.RemoveUncalledFuncs(this.AC);
       ModelCleaner.RemoveMemoryRegions(this.AC);
       ModelCleaner.RemoveUnusedVars(this.AC);
 

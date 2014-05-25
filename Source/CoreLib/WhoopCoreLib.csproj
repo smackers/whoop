@@ -94,7 +94,6 @@
     <Compile Include="Utilities\ExprModifier.cs" />
     <Compile Include="StaticLocksetAnalysis\ModelCleaner.cs" />
     <Compile Include="StaticLocksetAnalysis\SharedStateAnalyser.cs" />
-    <Compile Include="Enumerations\FunctionPairingMethod.cs" />
     <Compile Include="Regions\LoggerRegion.cs" />
     <Compile Include="Regions\CheckerRegion.cs" />
     <Compile Include="Regions\LocksetAnalysisRegion.cs" />
@@ -113,9 +112,9 @@
     <Compile Include="StaticLocksetAnalysis\Passes\ProgramSimplifier.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IProgramSimplifier.cs" />
     <Compile Include="StaticLocksetAnalysis\Lock.cs" />
-    <Compile Include="Enumerations\LocksetModellingMethod.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\LocksetAbstractor.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\ILocksetAbstractor.cs" />
+    <Compile Include="Enumerations\FunctionPairingMethod.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

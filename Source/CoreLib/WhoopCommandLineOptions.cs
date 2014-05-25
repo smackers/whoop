@@ -21,9 +21,7 @@ namespace Whoop
     public string OriginalFile = "";
     public string AnalyseOnly = "";
     public bool OnlyRaceChecking = false;
-    public string MemoryModel = "default";
-
-    public LocksetModellingMethod LocksetModel = LocksetModellingMethod.NORMAL;
+    public bool DoPointerAnalysis = true;
 
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
@@ -34,13 +32,13 @@ namespace Whoop
     {
       if (name == "debugWhoop")
       {
-        DebugWhoop = true;
+        this.DebugWhoop = true;
         return true;
       }
 
       if (name == "printPairs")
       {
-        PrintPairs = true;
+        this.PrintPairs = true;
         return true;
       }
 
@@ -48,7 +46,7 @@ namespace Whoop
       {
         if (ps.ConfirmArgumentCount(1))
         {
-          OriginalFile = ps.args[ps.i];
+          this.OriginalFile = ps.args[ps.i];
         }
         return true;
       }
@@ -57,16 +55,7 @@ namespace Whoop
       {
         if (ps.ConfirmArgumentCount(1))
         {
-          AnalyseOnly = ps.args[ps.i];
-        }
-        return true;
-      }
-
-      if (name == "analyseOnly")
-      {
-        if (ps.ConfirmArgumentCount(1))
-        {
-          AnalyseOnly = ps.args[ps.i];
+          this.AnalyseOnly = ps.args[ps.i];
         }
         return true;
       }
@@ -82,22 +71,6 @@ namespace Whoop
           else if (ps.args[ps.i] == "WATCHDOG")
           {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
-          }
-        }
-        return true;
-      }
-
-      if (name == "locksetModel")
-      {
-        if (ps.ConfirmArgumentCount(1))
-        {
-          if (ps.args[ps.i] == "NORMAL")
-          {
-            LocksetModel = LocksetModellingMethod.NORMAL;
-          }
-          else if (ps.args[ps.i] == "BASIC")
-          {
-            LocksetModel = LocksetModellingMethod.BASIC;
           }
         }
         return true;
@@ -125,7 +98,13 @@ namespace Whoop
 
       if (name == "onlyRaceChecking")
       {
-        OnlyRaceChecking = true;
+        this.OnlyRaceChecking = true;
+        return true;
+      }
+
+      if (name == "noPointerAnalysis")
+      {
+        this.DoPointerAnalysis = false;
         return true;
       }
 

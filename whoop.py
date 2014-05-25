@@ -143,10 +143,9 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
-    self.locksetModel = "normal"
+    self.noPointerAnalysis = False
     self.functionPairing = "linear"
     self.raceChecking = "normal"
-    self.memoryModel = "default"
     self.verbose = False
     self.silent = False
     self.printPairs = False
@@ -200,11 +199,10 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
-    --lockset-model=X       Choose which method of lockset modelling to use.  Options are: 'normal', 'basic'.
-                            Default is 'normal'.
-    --function-pairing=X    Choose which method of function checking to use.  Options are: 'linear', 'triangular'
+    --no-pointer-analysis   Do not abstract locksets through pointer analysis at the Boogie level.
+    --function-pairing=X    Choose which method of function checking to use. Options are: 'linear', 'triangular'
                             and 'quadratic'. Default is 'linear'.
-    --race-checking=X       Choose which method of race checking to use.  Options are: 'normal' and 'watchdog'.
+    --race-checking=X       Choose which method of race checking to use. Options are: 'normal' and 'watchdog'.
                             Default is 'normal'.
 
   SOLVER OPTIONS:
@@ -296,6 +294,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
+    if o == "--no-pointer-analysis":
+      CommandLineOptions.noPointerAnalysis = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--time":
@@ -337,11 +337,6 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopDriverOptions += [ a ]
-    if o == "--lockset-model":
-      if a.lower() in ("normal","basic"):
-        CommandLineOptions.locksetModel = a.lower()
-      else:
-        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --lockset-model must be one of 'normal' or 'basic'")
     if o == "--function-pairing":
       if a.lower() in ("linear","triangular","quadratic"):
         CommandLineOptions.functionPairing = a.lower()
@@ -495,8 +490,8 @@ def startToolChain(argv):
               'time', 'time-as-csv=', 'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'analyse-only=',
-              'race-checking=', 'lockset-model=', 'function-pairing=',
+              'analyse-only=', 'no-pointer-analysis',
+              'race-checking=', 'function-pairing=',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -549,8 +544,7 @@ def startToolChain(argv):
   if ext in [ ".c" ]:
     CommandLineOptions.smackOptions += [ bcFilename, "-o", bplFilename ]
     CommandLineOptions.smackOptions += [ "--source-loc-syms" ]
-    # CommandLineOptions.smackOptions += [ "--mem-mod", CommandLineOptions.memoryModel ]
-
+  
   if CommandLineOptions.solver == "cvc4":
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:SOLVER=cvc4" ]
     CommandLineOptions.whoopDriverOptions += [ "/proverOpt:SOLVER=cvc4" ]
@@ -575,8 +569,8 @@ def startToolChain(argv):
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
 
-  if CommandLineOptions.locksetModel == "basic":
-    CommandLineOptions.whoopEngineOptions += [ "/locksetModel:BASIC" ]
+  if CommandLineOptions.noPointerAnalysis:
+    CommandLineOptions.whoopEngineOptions += [ "/noPointerAnalysis" ]
 
   if CommandLineOptions.functionPairing == "linear":
     CommandLineOptions.whoopEngineOptions += [ "/functionPairing:LINEAR" ]

@@ -37,9 +37,9 @@ namespace Whoop.SLA
       this.ConvertAsyncFuncs();
 
       foreach (var region in this.AC.LocksetAnalysisRegions)
-      {
         this.SplitCallsInRegion(region);
-      }
+
+      this.RemoveOriginalAsyncFuncs();
     }
 
     private void ConvertAsyncFuncs()
@@ -115,6 +115,25 @@ namespace Whoop.SLA
           this.AC.MemoryModelType), true);
 
       this.AC.Program.TopLevelDeclarations.Add(newCons);
+    }
+
+    private void RemoveOriginalAsyncFuncs()
+    {
+      foreach (var kvp in PairConverterUtil.FunctionPairs)
+      {
+        foreach (var ep in kvp.Value)
+        {
+          if (!this.AC.Program.TopLevelDeclarations.OfType<Implementation>().
+            ToList().Any(val => val.Name.Equals(ep.Item1)))
+            continue;
+          if (ep.Item1 == this.AC.InitFunc.Name)
+            continue;
+
+          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetConstant(ep.Item1));
+          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(ep.Item1).Proc);
+          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(ep.Item1));
+        }
+      }
     }
   }
 }

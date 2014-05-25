@@ -184,7 +184,7 @@ namespace Whoop.SLA
 
     private void AddMemoryRegionLocksetInvariant(LocksetAnalysisRegion region)
     {
-      Implementation pairImpl = this.AC.GetImplementation(region.Logger().Name());
+      Implementation pairImpl = this.AC.GetImplementation(region.Name());
       List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
 
       foreach (var ls in this.AC.Locksets)

@@ -31,7 +31,11 @@ namespace Whoop.SLA
     public void Run()
     {
       foreach (var region in this.AC.LocksetAnalysisRegions)
+      {
         this.CreateInitFunction(region.Implementation());
+      }
+
+      this.RemoveOriginalInitFunc();
     }
 
     private void CreateInitFunction(Implementation impl)
@@ -78,6 +82,13 @@ namespace Whoop.SLA
       this.AC.Program.TopLevelDeclarations.Add(newProc);
       this.AC.Program.TopLevelDeclarations.Add(newImpl);
       this.AC.ResContext.AddProcedure(newProc);
+    }
+
+    private void RemoveOriginalInitFunc()
+    {
+      this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetConstant(this.AC.InitFunc.Name));
+      this.AC.Program.TopLevelDeclarations.Remove(this.AC.InitFunc.Proc);
+      this.AC.Program.TopLevelDeclarations.Remove(this.AC.InitFunc);
     }
   }
 }

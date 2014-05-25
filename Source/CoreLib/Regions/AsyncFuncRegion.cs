@@ -167,7 +167,7 @@ namespace Whoop.Regions
         if (call.callee.Contains("$memcpy") || call.callee.Contains("memcpy_fromio"))
           return;
 
-        if (Util.GetCommandLineOptions().LocksetModel == LocksetModellingMethod.NORMAL)
+        if (Util.GetCommandLineOptions().DoPointerAnalysis)
         {
           if (call.callee.Equals("mutex_lock") || call.callee.Equals("mutex_unlock"))
           {

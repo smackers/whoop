@@ -20,19 +20,6 @@ namespace Whoop.SLA
 {
   public class ModelCleaner
   {
-    public static void RemoveOldAsyncFuncCallsFromInitFuncs(AnalysisContext ac)
-    {
-      foreach (var impl in ac.GetInitFunctions())
-      {
-        foreach (var b in impl.Blocks)
-        {
-          if (b.Label.Equals("$pair")) break;
-          b.Cmds.RemoveAll(val1 => (val1 is CallCmd) && PairConverterUtil.FunctionPairs.Keys.Any(val =>
-            val.Equals((val1 as CallCmd).callee)));
-        }
-      }
-    }
-
     public static void RemoveEmptyBlocks(AnalysisContext ac)
     {
       foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
@@ -117,46 +104,6 @@ namespace Whoop.SLA
           b.Cmds.RemoveAll(val => (val is AssignCmd) && (val as AssignCmd).Lhss.Count == 1 &&
           (val as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Contains("$r"));
         }
-      }
-    }
-
-    public static void RemoveOldAsyncFuncs(AnalysisContext ac)
-    {
-      foreach (var kvp in PairConverterUtil.FunctionPairs)
-      {
-        foreach (var ep in kvp.Value)
-        {
-          if (!ac.Program.TopLevelDeclarations.OfType<Implementation>().ToList().Any(val => val.Name.Equals(ep.Item1))) continue;
-          ac.Program.TopLevelDeclarations.Remove(ac.GetImplementation(ep.Item1).Proc);
-          ac.Program.TopLevelDeclarations.Remove(ac.GetImplementation(ep.Item1));
-          ac.Program.TopLevelDeclarations.Remove(ac.GetConstant(ep.Item1));
-        }
-      }
-    }
-
-    public static void RemoveUncalledFuncs(AnalysisContext ac)
-    {
-      HashSet<Implementation> uncalled = new HashSet<Implementation>();
-
-      while (true)
-      {
-        int fixpoint = uncalled.Count;
-        foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
-        {
-          if (ac.IsWhoopFunc(impl)) continue;
-          if (ac.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-          if (ac.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
-          if (ac.IsCalledByAnyFunc(impl)) continue;
-          uncalled.Add(impl);
-        }
-        if (uncalled.Count == fixpoint) break;
-      }
-
-      foreach (var impl in uncalled)
-      {
-        ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
-        ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
-        ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Constant) && (val as Constant).Name.Equals(impl.Name));
       }
     }
 
