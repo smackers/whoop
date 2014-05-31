@@ -31,11 +31,11 @@ namespace Whoop.SLA
 
     public void Run()
     {
-      AddCurrentLockset();
-      AddMemoryLocksets();
-      AddUpdateLocksetFunc();
+      this.AddCurrentLockset();
+      this.AddMemoryLocksets();
+      this.AddUpdateLocksetFunc();
 
-      InstrumentRegions();
+      this.InstrumentRegions();
     }
 
     private void AddCurrentLockset()
@@ -51,12 +51,12 @@ namespace Whoop.SLA
 
     private void AddMemoryLocksets()
     {
-      for (int i = 0; i < this.AC.MemoryRegions.Count; i++)
+      for (int i = 0; i < this.AC.SharedStateAnalyser.MemoryRegions.Count; i++)
       {
         if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
         {
           this.AC.Locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
-            new TypedIdent(Token.NoToken, "LS_" + this.AC.MemoryRegions[i].Name,
+            new TypedIdent(Token.NoToken, "LS_" + this.AC.SharedStateAnalyser.MemoryRegions[i].Name,
               new MapType(Token.NoToken, new List<TypeVariable>(),
                 new List<Microsoft.Boogie.Type> { this.AC.MemoryModelType },
                 this.AC.CurrLockset.Id.TypedIdent.Type)))));
@@ -64,7 +64,7 @@ namespace Whoop.SLA
         else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
         {
           this.AC.Locksets.Add(new Lockset(new GlobalVariable(Token.NoToken,
-            new TypedIdent(Token.NoToken, "LS_" + this.AC.MemoryRegions[i].Name,
+            new TypedIdent(Token.NoToken, "LS_" + this.AC.SharedStateAnalyser.MemoryRegions[i].Name,
               this.AC.CurrLockset.Id.TypedIdent.Type))));
         }
         Contract.Requires(this.AC.Locksets.Count == i + 1 && this.AC.Locksets[i] != null);
@@ -142,8 +142,7 @@ namespace Whoop.SLA
       {
         this.InstrumentImplementation(region);
         this.InstrumentProcedure(region);
-        this.AddCurrentLocksetInvariant(region);
-        this.AddMemoryRegionLocksetInvariant(region);
+        this.AddCurrentLocksetInitAssignCmd(region);
       }
     }
 
@@ -175,6 +174,44 @@ namespace Whoop.SLA
       List<Variable> vars = this.AC.SharedStateAnalyser.
         GetAccessedMemoryRegions(region.Implementation());
 
+      Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+        this.AC.MemoryModelType));
+
+      foreach (var ls in this.AC.Locksets)
+      {
+        foreach (var l in this.AC.Locks)
+        {
+          Requires require = null;
+
+          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
+          {
+            require = new Requires(false,
+              new ForallExpr(Token.NoToken, new List<Variable> { dummyPtr },
+                new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                  new List<Expr>(new Expr[] {
+                    new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                      new List<Expr>(new Expr[] {
+                        new IdentifierExpr(ls.Id.tok, ls.Id),
+                        new IdentifierExpr(dummyPtr.tok, dummyPtr)
+                      })),
+                    new IdentifierExpr(l.Id.tok, l.Id)
+                  })))
+            );
+          }
+          else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
+          {
+            require = new Requires(false,
+              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                new List<Expr>(new Expr[] {
+                  new IdentifierExpr(ls.Id.tok, ls.Id),
+                  new IdentifierExpr(l.Id.tok, l.Id)
+                })));
+          }
+
+          region.Procedure().Requires.Add(require);
+        }
+      }
+
       foreach (var ls in this.AC.Locksets)
       {
         if (!vars.Any(val => val.Name.Equals(ls.TargetName))) continue;
@@ -182,75 +219,25 @@ namespace Whoop.SLA
       }
     }
 
-    private void AddMemoryRegionLocksetInvariant(LocksetAnalysisRegion region)
+    private void AddCurrentLocksetInitAssignCmd(LocksetAnalysisRegion region)
     {
-      Implementation pairImpl = this.AC.GetImplementation(region.Name());
-      List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(pairImpl);
-
-      foreach (var ls in this.AC.Locksets)
+      foreach (var l in this.AC.Locks)
       {
-        if (!vars.Any(val => val.Name.Equals(ls.TargetName))) continue;
-
-        List<Variable> dummies = new List<Variable>();
-        Variable dummyPtr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-          this.AC.MemoryModelType));
-        Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-          this.AC.MemoryModelType));
-
-        AssumeCmd assume = null;
-
-        if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-        {
-          dummies.Add(dummyPtr);
-          dummies.Add(dummyLock);
-
-          assume = new AssumeCmd(Token.NoToken,
-            new ForallExpr(Token.NoToken, dummies,
-              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] {
-                  new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                    new List<Expr>(new Expr[] {
-                      new IdentifierExpr(ls.Id.tok, ls.Id),
-                      new IdentifierExpr(dummyPtr.tok, dummyPtr)
-                    })),
-                  new IdentifierExpr(dummyLock.tok, dummyLock)
-                }))));
-        }
-        else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-        {
-          dummies.Add(dummyLock);
-
-          assume = new AssumeCmd(Token.NoToken,
-            new ForallExpr(Token.NoToken, dummies,
-              new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                new List<Expr>(new Expr[] {
-                  new IdentifierExpr(ls.Id.tok, ls.Id),
-                  new IdentifierExpr(dummyLock.tok, dummyLock)
-                }))));
-        }
-
-        region.Logger().AddInvariant(assume);
-      }
-    }
-
-    private void AddCurrentLocksetInvariant(LocksetAnalysisRegion region)
-    {
-      List<Variable> dummiesCLS = new List<Variable>();
-      Variable dummyLock = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "lock",
-        this.AC.MemoryModelType));
-      dummiesCLS.Add(dummyLock);
-
-      AssumeCmd assume = new AssumeCmd(Token.NoToken,
-        new ForallExpr(Token.NoToken, dummiesCLS,
-          Expr.Not(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+        MapAssignLhs lhs =
+          new MapAssignLhs(this.AC.CurrLockset.Id.tok,
+            new SimpleAssignLhs(this.AC.CurrLockset.Id.tok,
+              new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id)),
             new List<Expr>(new Expr[] {
-              new IdentifierExpr(this.AC.CurrLockset.Id.tok, this.AC.CurrLockset.Id),
-              new IdentifierExpr(dummyLock.tok, dummyLock)
-            })))));
+              new IdentifierExpr(l.Id.tok, l.Id)
+            }));
 
-      region.Logger().AddInvariant(assume);
-      foreach (var checker in region.Checkers())
-        checker.AddInvariant(assume);
+        AssignCmd assign = new AssignCmd(Token.NoToken,
+                             new List<AssignLhs> { lhs }, new List<Expr> { Expr.False });
+
+        region.Logger().Header().Cmds.Add(assign);
+        foreach (var checker in region.Checkers())
+          checker.Header().Cmds.Add(assign);
+      }
     }
   }
 }

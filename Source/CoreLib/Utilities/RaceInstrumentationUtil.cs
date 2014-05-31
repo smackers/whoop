@@ -70,14 +70,6 @@ namespace Whoop
         memoryModelType));
     }
 
-    internal static LocalVariable MakeTempLocalVariable(Microsoft.Boogie.Type memoryModelType)
-    {
-      return new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "temp",
-        new MapType(Token.NoToken, new List<TypeVariable>(),
-          new List<Microsoft.Boogie.Type> { memoryModelType },
-          Microsoft.Boogie.Type.Bool)));
-    }
-
     internal static LocalVariable MakeTrackLocalVariable()
     {
       if (RaceCheckingMethod == RaceCheckingMethod.NORMAL)

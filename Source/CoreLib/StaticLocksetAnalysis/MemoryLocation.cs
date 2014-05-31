@@ -10,11 +10,22 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Diagnostics.Contracts;
+using Microsoft.Boogie;
 
 namespace Whoop.SLA
 {
-  public interface IPairConverter
+  public class MemoryLocation
   {
-    void Run();
+    public IdentifierExpr Id;
+    public Expr Ptr;
+    public Expr PA;
+
+    public MemoryLocation(IdentifierExpr id, Expr ptr, Expr pa)
+    {
+      this.Id = id;
+      this.Ptr = ptr;
+      this.PA = pa;
+    }
   }
 }

@@ -44,8 +44,18 @@ namespace Whoop.SLA
     {
       TypedIdent ti = new TypedIdent(Token.NoToken, "TRACKING", Microsoft.Boogie.Type.Bool);
       Variable tracking = new GlobalVariable(Token.NoToken, ti);
-      this.AC.Program.TopLevelDeclarations.Add(tracking);
+      base.AC.Program.TopLevelDeclarations.Add(tracking);
     }
+
+    protected override void InstrumentAsyncFuncs()
+    {
+      foreach (var region in base.AC.LocksetAnalysisRegions)
+      {
+        InstrumentSharedResourceAccesses(region);
+      }
+    }
+
+    #region helper functions
 
     protected override List<IdentifierExpr> MakeLogModset(Lockset ls)
     {
@@ -59,52 +69,39 @@ namespace Whoop.SLA
     {
       Block block = new Block(Token.NoToken, "_LOG_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      block.Cmds.Add(this.MakeLogAssumeCmd(ls));
-      block.Cmds.Add(this.MakeLogLocksetAssignCmd(ls));
+      foreach (var l in base.AC.Locks)
+        block.Cmds.Add(MakeLogLocksetAssignCmd(l, ls));
+
+      if (base.AC.Locks.Count == 0)
+        block.Cmds.Add(new AssumeCmd(Token.NoToken, Expr.True));
 
       return block;
     }
 
-    private AssumeCmd MakeLogAssumeCmd(Lockset ls)
+    private AssignCmd MakeLogLocksetAssignCmd(Lock l, Lockset ls)
     {
-      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(this.AC.MemoryModelType);
-      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(this.AC.MemoryModelType);
-
-      List<Variable> dummies = new List<Variable>();
-      dummies.Add(lockVar);
-
-      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-      IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
-
-      AssumeCmd assume = new AssumeCmd(Token.NoToken, new ForallExpr(Token.NoToken, dummies,
-                           Expr.Iff(RaceInstrumentationUtil.MakeMapSelect(temp, lockVar),
-                             Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-                               new List<Expr>(new Expr[] {
-              lsExpr, lockExpr
-            })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)))));
-
-      return assume;
-    }
-
-    private AssignCmd MakeLogLocksetAssignCmd(Lockset ls)
-    {
-      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(this.AC.MemoryModelType);
-      Variable temp = RaceInstrumentationUtil.MakeTempLocalVariable(this.AC.MemoryModelType);
-      Variable offset = this.AC.GetRaceCheckingVariables().Find(val =>
+      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
+      Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
         val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
 
       IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-      IdentifierExpr tempExpr = new IdentifierExpr(temp.tok, temp);
       IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
       IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
 
+      Expr intersection = Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                            new List<Expr>(new Expr[] {
+          lsExpr, new IdentifierExpr(l.Id.tok, l.Id)
+        })), RaceInstrumentationUtil.MakeMapSelect(base.AC.CurrLockset.Id, l.Id));
+
       AssignCmd assign = new AssignCmd(Token.NoToken,
                            new List<AssignLhs>() {
-          new SimpleAssignLhs(Token.NoToken, lsExpr)
+          new MapAssignLhs(Token.NoToken,
+            new SimpleAssignLhs(Token.NoToken, lsExpr),
+            new List<Expr>(new Expr[] { new IdentifierExpr(l.Id.tok, l.Id) }))
         }, new List<Expr> { new NAryExpr(Token.NoToken,
           new IfThenElse(Token.NoToken),
           new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
-            tempExpr, lsExpr
+            intersection, RaceInstrumentationUtil.MakeMapSelect(base.AC.CurrLockset.Id, l.Id)
           }))
       });
 
@@ -125,51 +122,56 @@ namespace Whoop.SLA
       return block;
     }
 
-    private ExistsExpr MakeCheckExistsExpr(Lockset ls)
-    {
-      Variable lockVar = RaceInstrumentationUtil.MakeLockLocalVariable(this.AC.MemoryModelType);
-
-      List<Variable> dummies = new List<Variable>();
-      dummies.Add(lockVar);
-
-      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-      IdentifierExpr lockExpr = new IdentifierExpr(lockVar.tok, lockVar);
-
-      ExistsExpr exists = new ExistsExpr(Token.NoToken, dummies,
-        Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-          new List<Expr>(new Expr[] { lsExpr, lockExpr })),
-          RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, lockVar)));
-
-      return exists;
-    }
-
     private AssertCmd MakeCheckAssertCmd(Lockset ls)
     {
-      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(this.AC.MemoryModelType);
+      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
       Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
-      Variable offset = this.AC.GetRaceCheckingVariables().Find(val =>
+      Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
         val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
 
       IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
       IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
       IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
 
-      AssertCmd assert = new AssertCmd(Token.NoToken, Expr.Imp(
-                           Expr.And(trackExpr,
-                             Expr.Eq(offsetExpr, ptrExpr)),
-                           this.MakeCheckExistsExpr(ls)));
+      AssertCmd assert = new AssertCmd(Token.NoToken,
+        Expr.Imp(Expr.And(trackExpr,
+          Expr.Eq(offsetExpr, ptrExpr)),
+          MakeCheckLocksetIntersectionExpr(ls)));
 
       assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
 
       return assert;
     }
 
-    protected override void InstrumentAsyncFuncs()
+    private Expr MakeCheckLocksetIntersectionExpr(Lockset ls)
     {
-      foreach (var region in this.AC.LocksetAnalysisRegions)
+      if (base.AC.Locks.Count == 0)
+        return Expr.False;
+
+      Expr checkExpr = null;
+
+      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
+
+      foreach (var l in base.AC.Locks)
       {
-        InstrumentSharedResourceAccesses(region);
+        Expr expr = Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+                      new List<Expr>(new Expr[] { lsExpr,
+            new IdentifierExpr(l.Id.tok, l.Id)
+          })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, l.Id));
+
+        if (checkExpr == null)
+        {
+          checkExpr = expr;
+        }
+        else
+        {
+          checkExpr = Expr.Or(checkExpr, expr);
+        }
       }
+
+      return checkExpr;
     }
+
+    #endregion
   }
 }

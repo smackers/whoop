@@ -20,19 +20,9 @@ namespace Whoop.SLA
       return new ProgramSimplifier(ac);
     }
 
-    public static ILocksetAbstractor CreateNewLocksetAbstractor(AnalysisContext ac)
+    public static IPairInstrumentation CreateNewPairInstrumentation(AnalysisContext ac, string functionName)
     {
-      return new LocksetAbstractor(ac);
-    }
-
-    public static IPairConverter CreateNewPairConverter(AnalysisContext ac, string functionName)
-    {
-      return new PairConverter(ac, functionName);
-    }
-
-    public static IInitConverter CreateNewInitConverter(AnalysisContext ac)
-    {
-      return new InitConverter(ac);
+      return new PairInstrumentation(ac, functionName);
     }
 
     public static ILocksetInstrumentation CreateNewLocksetInstrumentation(AnalysisContext ac)
@@ -50,11 +40,6 @@ namespace Whoop.SLA
     public static IDeadlockInstrumentation CreateNewDeadlockInstrumentation(AnalysisContext ac)
     {
       return new DeadlockInstrumentation(ac);
-    }
-
-    public static IInitInstrumentation CreateNewInitInstrumentation(AnalysisContext ac, string functionName)
-    {
-      return new InitInstrumentation(ac, functionName);
     }
 
     public static ISharedStateAbstractor CreateNewSharedStateAbstractor(AnalysisContext ac)

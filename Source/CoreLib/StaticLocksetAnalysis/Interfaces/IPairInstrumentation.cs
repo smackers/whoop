@@ -13,7 +13,7 @@ using System;
 
 namespace Whoop.SLA
 {
-  public interface IInitInstrumentation
+  public interface IPairInstrumentation
   {
     void Run();
   }

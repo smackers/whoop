@@ -39,7 +39,7 @@ namespace Whoop
         //        Console.WriteLine();
         if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking"))
         {
-          Console.WriteLine("CounterExample: Potential data race");
+//          Console.WriteLine("CounterExample: Potential data race");
           errors = this.ReportRace(cex);
         }
         else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking"))
@@ -78,6 +78,7 @@ namespace Whoop
       this.PopulateModelWithStatesIfNecessary(cex);
 
       AssumeCmd conflictingAction = this.GetCorrespondingAssume(cex);
+
       string access2 = this.GetAccessType(conflictingAction.Attributes);
       string raceName, access1;
       string raceyOffset = this.GetOffset(cex, conflictingAction.Attributes);
@@ -313,7 +314,7 @@ namespace Whoop
       bool canAddStates = false;
       foreach (var s in cex.Model.States)
       {
-        if (s.Name.Equals("check_deadlock_state")) canAddStates = true;
+        if (s.Name.Equals("checker_header_state")) canAddStates = true;
         if (!canAddStates) continue;
         if (!s.Name.Contains("update_cls_state_")) continue;
         locksetStates.Add(s);
@@ -463,26 +464,26 @@ namespace Whoop
     public void Write(Model model)
     {
       Console.WriteLine("*** MODEL");
-      foreach (var f in model.Functions.OrderBy(f => f.Name))
-        if (f.Arity == 0)
-        {
-          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
-        }
-      foreach (var f in model.Functions)
-        if (f.Arity != 0)
-        {
-          Console.WriteLine("{0} -> {1}", f.Name, "{");
-          foreach (var app in f.Apps)
-          {
-            Console.Write("  ");
-            foreach (var a in app.Args)
-              Console.Write("{0} ", a);
-            Console.WriteLine("-> {0}", app.Result);
-          }
-          if (f.Else != null)
-            Console.WriteLine("  else -> {0}", f.Else);
-          Console.WriteLine("}");
-        }
+//      foreach (var f in model.Functions.OrderBy(f => f.Name))
+//        if (f.Arity == 0)
+//        {
+//          Console.WriteLine("{0} -> {1}", f.Name, f.GetConstant());
+//        }
+//      foreach (var f in model.Functions)
+//        if (f.Arity != 0)
+//        {
+//          Console.WriteLine("{0} -> {1}", f.Name, "{");
+//          foreach (var app in f.Apps)
+//          {
+//            Console.Write("  ");
+//            foreach (var a in app.Args)
+//              Console.Write("{0} ", a);
+//            Console.WriteLine("-> {0}", app.Result);
+//          }
+//          if (f.Else != null)
+//            Console.WriteLine("  else -> {0}", f.Else);
+//          Console.WriteLine("}");
+//        }
       foreach (var s in model.States)
       {
         if (s == model.InitialState && s.VariableCount == 0)

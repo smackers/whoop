@@ -38,28 +38,20 @@ namespace Whoop
     public void Run()
     {
       Factory.CreateNewProgramSimplifier(this.AC).Run();
-
-      if (Util.GetCommandLineOptions().DoPointerAnalysis)
-        Factory.CreateNewLocksetAbstractor(this.AC).Run();
-
-      Factory.CreateNewPairConverter(this.AC, this.FunctionPair.Item1).Run();
-      Factory.CreateNewInitConverter(this.AC).Run();
+      Factory.CreateNewPairInstrumentation(this.AC, this.FunctionPair.Item1).Run();
 
       Factory.CreateNewLocksetInstrumentation(this.AC).Run();
       Factory.CreateNewRaceInstrumentation(this.AC).Run();
 
-      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
+//      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+//        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
 
-      Factory.CreateNewInitInstrumentation(this.AC, this.FunctionPair.Item1).Run();
       Factory.CreateNewSharedStateAbstractor(this.AC).Run();
       Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
 
-      ModelCleaner.RemoveEmptyBlocks(this.AC);
-//      ModelCleaner.RemoveEmptyBlocksInAsyncFuncPairs(this.AC);
-      ModelCleaner.RemoveUnecesseryReturns(this.AC);
-      ModelCleaner.RemoveMemoryRegions(this.AC);
-      ModelCleaner.RemoveUnusedVars(this.AC);
+//      ModelCleaner.RemoveEmptyBlocks(this.AC);
+//      ModelCleaner.RemoveMemoryRegions(this.AC);
+//      ModelCleaner.RemoveUnusedVars(this.AC);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       Whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[

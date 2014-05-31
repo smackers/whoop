@@ -95,18 +95,6 @@ namespace Whoop.SLA
       }
     }
 
-    public static void RemoveUnecesseryReturns(AnalysisContext ac)
-    {
-      foreach (var impl in ac.GetImplementationsToAnalyse())
-      {
-        foreach (var b in impl.Blocks)
-        {
-          b.Cmds.RemoveAll(val => (val is AssignCmd) && (val as AssignCmd).Lhss.Count == 1 &&
-          (val as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Contains("$r"));
-        }
-      }
-    }
-
     public static void RemoveMemoryRegions(AnalysisContext wp)
     {
 //      foreach (var v in wp.memoryRegions) {

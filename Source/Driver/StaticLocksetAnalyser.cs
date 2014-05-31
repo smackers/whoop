@@ -61,12 +61,12 @@ namespace Whoop
         }
 
         var decls = ac.Program.TopLevelDeclarations.ToArray();
-        foreach (var initFunc in ac.GetInitFunctions())
+        foreach (var func in ac.GetImplementationsToAnalyse())
         {
-          if (!initFunc.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
+          if (!func.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
 
           Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
-            Find(val => val.Name.Equals(initFunc.Name));
+            Find(val => val.Name.Equals(func.Name));
           Contract.Assert(funcToAnalyse != null);
 
           int prevAssertionCount = vcgen.CumulativeAssertionCount;

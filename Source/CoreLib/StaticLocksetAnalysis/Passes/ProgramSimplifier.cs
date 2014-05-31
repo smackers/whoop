@@ -29,6 +29,9 @@ namespace Whoop.SLA
       this.AC.DetectInitFunction();
     }
 
+    /// <summary>
+    /// Run a program simplification pass.
+    /// </summary>
     public void Run()
     {
       this.RemoveUncalledFuncs();
@@ -38,8 +41,20 @@ namespace Whoop.SLA
         this.RemoveUnecesseryAssumes(impl);
         this.SimplifyImplementation(impl);
       }
+
+      this.IdentifyAndCreateUniqueLocks();
+
+      foreach (var impl in AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (impl.Name.Equals(this.AC.InitFunc.Name))
+          continue;
+        this.AnalyseAndInstrumentLocks(impl);
+      }
     }
 
+    /// <summary>
+    /// Removes all functions that are not called in the program.
+    /// </summary>
     private void RemoveUncalledFuncs()
     {
       HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
@@ -70,6 +85,10 @@ namespace Whoop.SLA
       }
     }
 
+    /// <summary>
+    /// Removes the unecessery assume commands from the implementation.
+    /// </summary>
+    /// <param name="impl">Implementation</param>
     private void RemoveUnecesseryAssumes(Implementation impl)
     {
       foreach (Block b in impl.Blocks)
@@ -79,6 +98,11 @@ namespace Whoop.SLA
       }
     }
 
+    /// <summary>
+    /// Simplifies the implementation by removing/replacing expressions
+    /// of the type $p2 := $p1.
+    /// </summary>
+    /// <param name="impl">Implementation</param>
     private void SimplifyImplementation(Implementation impl)
     {
       List<AssignCmd> toRemove = new List<AssignCmd>();
@@ -117,6 +141,68 @@ namespace Whoop.SLA
         }
 
         toRemove.Clear();
+      }
+    }
+
+    /// <summary>
+    /// Performs pointer analysis to identify and create unique locks.
+    /// </summary>
+    private void IdentifyAndCreateUniqueLocks()
+    {
+      foreach (var block in this.AC.InitFunc.Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
+        {
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+          if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
+            continue;
+
+          Expr lockExpr = PointerAliasAnalysis.ComputeRootPointer(this.AC.InitFunc,
+            ((block.Cmds[idx] as CallCmd).Ins[0] as IdentifierExpr));
+
+          Lock newLock = new Lock(new Constant(Token.NoToken,
+            new TypedIdent(Token.NoToken, "lock$" + this.AC.Locks.Count,
+              Microsoft.Boogie.Type.Int), true), lockExpr);
+
+          newLock.Id.AddAttribute("lock", new object[] { });
+          this.AC.Program.TopLevelDeclarations.Add(newLock.Id);
+          this.AC.Locks.Add(newLock);
+        }
+      }
+    }
+
+    /// <summary>
+    /// Performs pointer analysis to identify and instrument unique locks in
+    /// the init function.
+    /// </summary>
+    /// <param name="impl">Impl.</param>
+    private void AnalyseAndInstrumentLocks(Implementation impl)
+    {
+      foreach (var block in impl.Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
+        {
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+
+          CallCmd call = block.Cmds[idx] as CallCmd;
+
+          if (!call.callee.Contains("mutex_lock") &&
+            !call.callee.Contains("mutex_unlock"))
+            continue;
+
+          Expr lockExpr = PointerAliasAnalysis.ComputeRootPointer(impl, (call.Ins[0] as IdentifierExpr));
+
+          foreach (Lock l in this.AC.Locks)
+          {
+            if (l.IsEqual(this.AC, impl, lockExpr))
+            {
+              call.Ins[0] = new IdentifierExpr(l.Id.tok, l.Id);
+              break;
+            }
+          }
+        }
       }
     }
 

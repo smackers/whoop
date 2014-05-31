@@ -90,6 +90,19 @@ namespace Whoop.SLA
       int logCounter = 0;
       int checkCounter = 0;
 
+      AssumeCmd assumeLogHead = new AssumeCmd(Token.NoToken, Expr.True);
+      assumeLogHead.Attributes = new QKeyValue(Token.NoToken, "captureState",
+        new List<object>() { "logger_header_state" }, assumeLogHead.Attributes);
+      region.Logger().Header().Cmds.Add(assumeLogHead);
+
+      foreach (var checker in region.Checkers())
+      {
+        AssumeCmd assumeCheckHead = new AssumeCmd(Token.NoToken, Expr.True);
+        assumeCheckHead.Attributes = new QKeyValue(Token.NoToken, "captureState",
+          new List<object>() { "checker_header_state" }, assumeCheckHead.Attributes);
+        checker.Header().Cmds.Add(assumeCheckHead);
+      }
+
       foreach (var b in region.Blocks())
       {
         List<Cmd> newCmds = new List<Cmd>();
@@ -138,14 +151,12 @@ namespace Whoop.SLA
               call.callee.Contains("_LOG_READ_LS_"))
           {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-              new List<object>() { "log_state_" + logCounter }, assume.Attributes);
-            logCounter++;
+              new List<object>() { "log_state_" + logCounter++ }, assume.Attributes);
           }
           else
           {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-              new List<object>() { "check_state_" + checkCounter }, assume.Attributes);
-            checkCounter++;
+              new List<object>() { "check_state_" + checkCounter++ }, assume.Attributes);
           }
 
           assume.Attributes = new QKeyValue(Token.NoToken, "resource",
@@ -171,7 +182,6 @@ namespace Whoop.SLA
     private void InstrumentDeadlockCheckingCaptureStates(LocksetAnalysisRegion region)
     {
       int updateCounter = 0;
-      int checkCounter = 0;
 
       foreach (var b in region.Blocks())
       {
@@ -214,8 +224,7 @@ namespace Whoop.SLA
           if (call.callee.Contains("_UPDATE_CURRENT_LOCKSET"))
           {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
-              new List<object>() { "update_cls_state_" + updateCounter }, assume.Attributes);
-            updateCounter++;
+              new List<object>() { "update_cls_state_" + updateCounter++ }, assume.Attributes);
 
             newCmds.Add(call);
             newCmds.Add(assume);
@@ -224,7 +233,6 @@ namespace Whoop.SLA
           {
             assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
               new List<object>() { "check_deadlock_state" }, assume.Attributes);
-            checkCounter++;
 
             newCmds.Add(assume);
             newCmds.Add(call);

@@ -31,7 +31,6 @@ namespace Whoop.SLA
     public void Run()
     {
       this.AbstractAsyncFuncs();
-      this.AbstractInitFuncs();
       this.AbstractOtherFuncs();
     }
 
@@ -41,15 +40,7 @@ namespace Whoop.SLA
       {
         this.AbstractReadAccesses(region.Implementation());
         this.AbstractWriteAccesses(region.Implementation());
-      }
-    }
-
-    private void AbstractInitFuncs()
-    {
-      foreach (var impl in this.AC.GetInitFunctions())
-      {
-        this.AbstractReadAccesses(impl);
-        this.AbstractWriteAccesses(impl);
+        this.RemoveModset(region.Implementation());
       }
     }
 
@@ -59,7 +50,6 @@ namespace Whoop.SLA
       {
         if (this.AC.IsWhoopFunc(impl)) continue;
         if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (this.AC.GetInitFunctions().Exists(val => val.Name.Equals(impl.Name))) continue;
         if (!this.AC.IsCalledByAnyFunc(impl)) continue;
 
         this.AbstractReadAccesses(impl);
@@ -117,7 +107,9 @@ namespace Whoop.SLA
 
     private void RemoveModset(Implementation impl)
     {
-      impl.Proc.Modifies.RemoveAll(val => !(val.Name.Equals("$Alloc") || val.Name.Equals("$CurrAddr")));
+      impl.Proc.Modifies.RemoveAll(val => !(val.Name.Equals("$Alloc") ||
+        val.Name.Equals("$CurrAddr") || val.Name.Equals("CLS") ||
+        val.Name.Contains("LS_$") || val.Name.Contains("ACCESS_OFFSET_$")));
     }
   }
 }

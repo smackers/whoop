@@ -16,12 +16,13 @@ namespace Whoop
 {
   public class WhoopCommandLineOptions : CommandLineOptions
   {
-    public bool DebugWhoop = false;
-    public bool PrintPairs = false;
     public string OriginalFile = "";
     public string AnalyseOnly = "";
+
+    public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
     public bool DoPointerAnalysis = true;
+    public bool DebugWhoop = false;
 
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
@@ -30,18 +31,6 @@ namespace Whoop
 
     protected override bool ParseOption(string name, CommandLineOptionEngine.CommandLineParseState ps)
     {
-      if (name == "debugWhoop")
-      {
-        this.DebugWhoop = true;
-        return true;
-      }
-
-      if (name == "printPairs")
-      {
-        this.PrintPairs = true;
-        return true;
-      }
-
       if (name == "originalFile")
       {
         if (ps.ConfirmArgumentCount(1))
@@ -105,6 +94,18 @@ namespace Whoop
       if (name == "noPointerAnalysis")
       {
         this.DoPointerAnalysis = false;
+        return true;
+      }
+
+      if (name == "printPairs")
+      {
+        this.PrintPairs = true;
+        return true;
+      }
+
+      if (name == "debugWhoop")
+      {
+        this.DebugWhoop = true;
         return true;
       }
 

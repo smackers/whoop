@@ -50,8 +50,8 @@ namespace Whoop.Regions
       foreach (var r in CheckerRegions)
         this.RegionBlocks.AddRange(r.Blocks());
 
-      this.ProcessInternalImplementation(impl, implList);
-      this.ProcessInternalProcedure(impl, implList);
+      this.ProcessWrapperImplementation(impl, implList);
+      this.ProcessWrapperProcedure(impl, implList);
 
       this.RegionHeader = this.RegionBlocks[0];
     }
@@ -149,23 +149,21 @@ namespace Whoop.Regions
       return this.InternalImplementation.Proc;
     }
 
-    private void ProcessInternalImplementation(Implementation impl, List<Implementation> implList)
+    #region region construction methods
+
+    private void ProcessWrapperImplementation(Implementation impl, List<Implementation> implList)
     {
       this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
         new List<TypeVariable>(), this.CreateNewInParams(impl, implList),
-        new List<Variable>(), this.CreateNewLocalVars(impl, implList),
-        this.RegionBlocks);
+        new List<Variable>(), new List<Variable>(), this.RegionBlocks);
+
+      this.CreateNewLocalVars(impl, implList);
 
       this.InternalImplementation.Attributes = new QKeyValue(Token.NoToken,
         "entryPair", new List<object>(), null);
-
-      this.InternalImplementation.Attributes = new QKeyValue(Token.NoToken,
-        "inline", new List<object> {
-        new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
-      }, this.InternalImplementation.Attributes);
     }
 
-    private void ProcessInternalProcedure(Implementation impl, List<Implementation> implList)
+    private void ProcessWrapperProcedure(Implementation impl, List<Implementation> implList)
     {
       this.InternalImplementation.Proc = new Procedure(Token.NoToken, this.RegionName,
         new List<TypeVariable>(), this.CreateNewInParams(impl, implList), 
@@ -175,17 +173,15 @@ namespace Whoop.Regions
       this.InternalImplementation.Proc.Attributes = new QKeyValue(Token.NoToken,
         "entryPair", new List<object>(), null);
 
-      this.InternalImplementation.Proc.Attributes = new QKeyValue(Token.NoToken,
-        "inline", new List<object> {
-        new LiteralExpr(Token.NoToken, BigNum.FromInt(1))
-      }, this.InternalImplementation.Proc.Attributes);
-
       foreach (var v in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
       {
-        if (v.Name.Equals("$Alloc") || v.Name.Equals("$CurrAddr"))
-          this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
       }
     }
+
+    #endregion
+
+    #region helper methods
 
     private List<Variable> CreateNewInParams(Implementation impl, List<Implementation> implList)
     {
@@ -201,18 +197,24 @@ namespace Whoop.Regions
       return newInParams;
     }
 
-    private List<Variable> CreateNewLocalVars(Implementation impl, List<Implementation> implList)
+    private void CreateNewLocalVars(Implementation impl, List<Implementation> implList)
     {
-      List<Variable> newLocalVars = new List<Variable>();
-
       foreach (var v in impl.LocVars)
-        newLocalVars.Add(new ExprModifier(this.AC, 1).VisitVariable(v.Clone() as Variable) as Variable);
+      {
+        this.InternalImplementation.LocVars.Add(new ExprModifier(this.AC, 1).
+          VisitLocalVariable(v.Clone() as LocalVariable) as Variable);
+      }
 
       for (int i = 0; i < implList.Count; i++)
+      {
         foreach (var v in implList[i].LocVars)
-          newLocalVars.Add(new ExprModifier(this.AC, i + 2).VisitVariable(v.Clone() as Variable) as Variable);
-
-      return newLocalVars;
+        {
+          this.InternalImplementation.LocVars.Add(new ExprModifier(this.AC, i + 2).
+            VisitLocalVariable(v.Clone() as LocalVariable) as Variable);
+        }
+      }
     }
+
+    #endregion
   }
 }

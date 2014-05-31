@@ -36,9 +36,10 @@ namespace Whoop.SLA
 
     protected void AddAccessOffsetGlobalVars()
     {
-      for (int i = 0; i < this.AC.MemoryRegions.Count; i++)
+      for (int i = 0; i < this.AC.SharedStateAnalyser.MemoryRegions.Count; i++)
       {
-        Variable aoff = RaceInstrumentationUtil.MakeOffsetVariable(this.AC.MemoryRegions[i].Name,
+        Variable aoff = RaceInstrumentationUtil.MakeOffsetVariable(
+          this.AC.SharedStateAnalyser.MemoryRegions[i].Name,
           this.AC.MemoryModelType);
         aoff.AddAttribute("access_checking", new object[] { });
         this.AC.Program.TopLevelDeclarations.Add(aoff);
@@ -56,14 +57,12 @@ namespace Whoop.SLA
           new List<TypeVariable>(), inParams, new List<Variable>(),
           new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
         proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-        proc.Modifies = MakeLogModset(ls);
+        proc.Modifies = this.MakeLogModset(ls);
 
         this.AC.Program.TopLevelDeclarations.Add(proc);
         this.AC.ResContext.AddProcedure(proc);
 
         List<Variable> localVars = new List<Variable>();
-        localVars.Add(RaceInstrumentationUtil.MakeTempLocalVariable(this.AC.MemoryModelType));
-
         Implementation impl = new Implementation(Token.NoToken, "_LOG_" + access.ToString() + "_LS_" + ls.TargetName,
           new List<TypeVariable>(), inParams, new List<Variable>(), localVars, new List<Block>());
 
@@ -74,10 +73,6 @@ namespace Whoop.SLA
         this.AC.Program.TopLevelDeclarations.Add(impl);
       }
     }
-
-    protected abstract List<IdentifierExpr> MakeLogModset(Lockset ls);
-
-    protected abstract Block MakeLogBlock(AccessType access, Lockset ls);
 
     protected void AddCheckAccessFuncs(AccessType access)
     {
@@ -104,10 +99,6 @@ namespace Whoop.SLA
         this.AC.Program.TopLevelDeclarations.Add(impl);
       }
     }
-
-    protected abstract List<Variable> MakeCheckLocalVars();
-
-    protected abstract Block MakeCheckBlock(AccessType access, Lockset ls);
 
     protected abstract void InstrumentAsyncFuncs();
 
@@ -191,7 +182,7 @@ namespace Whoop.SLA
       Contract.Requires(impl.Proc != null);
 
       List<Variable> vars = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl);
-      foreach (var v in this.AC.MemoryRegions)
+      foreach (var v in this.AC.SharedStateAnalyser.MemoryRegions)
       {
         if (!vars.Any(val => val.Name.Equals(v.Name))) continue;
 
@@ -201,5 +192,17 @@ namespace Whoop.SLA
         impl.Proc.Modifies.Add(new IdentifierExpr(offset.tok, offset));
       }
     }
+
+    #region helper functions
+
+    protected abstract List<IdentifierExpr> MakeLogModset(Lockset ls);
+
+    protected abstract Block MakeLogBlock(AccessType access, Lockset ls);
+
+    protected abstract List<Variable> MakeCheckLocalVars();
+
+    protected abstract Block MakeCheckBlock(AccessType access, Lockset ls);
+
+    #endregion
   }
 }

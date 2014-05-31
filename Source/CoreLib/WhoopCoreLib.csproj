@@ -70,7 +70,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Outcome.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\PairConverter.cs" />
     <Compile Include="StaticLocksetAnalysis\Lockset.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\LocksetInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\RaceInstrumentation.cs" />
@@ -78,8 +77,6 @@
     <Compile Include="AccessType.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\DeadlockInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\InitConverter.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\InitInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\WatchdogRaceInstrumentation.cs" />
     <Compile Include="WhoopCommandLineOptions.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\BasicRaceInstrumentation.cs" />
@@ -103,18 +100,17 @@
     <Compile Include="StaticLocksetAnalysis\Passes\SharedStateAbstractor.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IDeadlockInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IErrorReportingInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Interfaces\IInitConverter.cs" />
-    <Compile Include="StaticLocksetAnalysis\Interfaces\IInitInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\ILocksetInstrumentation.cs" />
-    <Compile Include="StaticLocksetAnalysis\Interfaces\IPairConverter.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IRaceInstrumentation.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\ISharedStateAbstractor.cs" />
     <Compile Include="StaticLocksetAnalysis\Passes\ProgramSimplifier.cs" />
     <Compile Include="StaticLocksetAnalysis\Interfaces\IProgramSimplifier.cs" />
     <Compile Include="StaticLocksetAnalysis\Lock.cs" />
-    <Compile Include="StaticLocksetAnalysis\Passes\LocksetAbstractor.cs" />
-    <Compile Include="StaticLocksetAnalysis\Interfaces\ILocksetAbstractor.cs" />
     <Compile Include="Enumerations\FunctionPairingMethod.cs" />
+    <Compile Include="StaticLocksetAnalysis\MemoryLocation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Passes\PairInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\Interfaces\IPairInstrumentation.cs" />
+    <Compile Include="StaticLocksetAnalysis\PointerAliasAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="StaticLocksetAnalysis\" />

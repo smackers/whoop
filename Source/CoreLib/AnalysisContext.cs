@@ -26,15 +26,16 @@ namespace Whoop
     public Program Program;
     public ResolutionContext ResContext;
 
-    internal Lockset CurrLockset;
-    internal List<Lockset> Locksets;
-    internal List<Lock> Locks;
+    internal SharedStateAnalyser SharedStateAnalyser;
 
     internal Implementation InitFunc;
     internal List<LocksetAnalysisRegion> LocksetAnalysisRegions;
 
-    internal SharedStateAnalyser SharedStateAnalyser;
-    internal List<Variable> MemoryRegions;
+    internal Lockset CurrLockset;
+    internal List<Lockset> Locksets;
+    internal List<Lock> Locks;
+    internal Dictionary<string, List<MemoryLocation>> MemoryLocations;
+
     internal Microsoft.Boogie.Type MemoryModelType;
 
     public AnalysisContext(Program program, ResolutionContext rc)
@@ -45,14 +46,16 @@ namespace Whoop
 
       this.Program = program;
       this.ResContext = rc;
+
+      this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
+
       this.Locksets = new List<Lockset>();
       this.Locks = new List<Lock>();
+      this.MemoryLocations = new Dictionary<string, List<MemoryLocation>>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
 
-      this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
       this.SharedStateAnalyser = new SharedStateAnalyser(this);
-      this.MemoryRegions = this.SharedStateAnalyser.GetMemoryRegions();
     }
 
     public void EliminateDeadVariables()
@@ -69,12 +72,6 @@ namespace Whoop
     {
       return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entryPair"));
-    }
-
-    public List<Implementation> GetInitFunctions()
-    {
-      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
-        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "init"));
     }
 
     public List<Variable> GetRaceCheckingVariables()

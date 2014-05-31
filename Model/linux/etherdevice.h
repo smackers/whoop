@@ -5,7 +5,6 @@
 #include <linux/if_link.h>
 #include <linux/netdevice.h>
 #include <linux/crc32.h>
-#include <linux/bitrev.h>
 
 struct net_device *alloc_etherdev(int sizeof_priv)
 {
@@ -27,7 +26,10 @@ static inline bool is_valid_ether_addr(const u8 *addr)
 	return val;
 }
 
-#define ether_crc(length, data) bitrev32(crc32_le(~0, data, length))
+static inline int ether_crc(length, data)
+{
+	return 0;
+}
 
 int eth_validate_addr(struct net_device *dev);
 

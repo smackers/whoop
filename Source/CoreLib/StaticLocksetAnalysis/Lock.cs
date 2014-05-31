@@ -20,10 +20,10 @@ namespace Whoop.SLA
     private IdentifierExpr Ptr;
     private int Ixs;
 
-    public Variable Id;
+    public Constant Id;
     public string Name;
 
-    public Lock(Variable id, Expr lockExpr)
+    public Lock(Constant id, Expr lockExpr)
     {
       this.Id = id;
       this.Name = id.Name;

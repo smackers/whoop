@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
+using Whoop.SLA;
 
 namespace Whoop.Regions
 {
@@ -155,10 +156,10 @@ namespace Whoop.Regions
       }
 
       foreach (var cmd in originalBlock.Cmds)
-        this.ProcessNextCmd(this.RegionBlocks.Last().Cmds, cmd);
+        this.ProcessNextCmd(this.RegionBlocks.Last().Cmds, cmd, impl);
     }
 
-    private void ProcessNextCmd(List<Cmd> cmds, Cmd originalCmd)
+    private void ProcessNextCmd(List<Cmd> cmds, Cmd originalCmd, Implementation impl)
     {
       if (originalCmd is CallCmd)
       {
@@ -167,13 +168,10 @@ namespace Whoop.Regions
         if (call.callee.Contains("$memcpy") || call.callee.Contains("memcpy_fromio"))
           return;
 
-        if (Util.GetCommandLineOptions().DoPointerAnalysis)
+        if (call.callee.Equals("mutex_lock") || call.callee.Equals("mutex_unlock"))
         {
-          if (call.callee.Equals("mutex_lock") || call.callee.Equals("mutex_unlock"))
-          {
-            cmds.Add(call);
-            return;
-          }
+          cmds.Add(call);
+          return;
         }
 
         List<Expr> newIns = new List<Expr>();
@@ -191,13 +189,27 @@ namespace Whoop.Regions
       {
         AssignCmd assign = originalCmd as AssignCmd;
 
+        if ((assign.Lhss.Count == 1) && (assign.Lhss[0].DeepAssignedIdentifier.Name.Contains("$r")))
+          return;
+
         List<AssignLhs> newLhss = new List<AssignLhs>();
         List<Expr> newRhss = new List<Expr>();
 
         foreach (var pair in assign.Lhss.Zip(assign.Rhss))
         {
-          newLhss.Add(new ExprModifier(this.AC, this.PairInternalId).Visit(pair.Item1.Clone() as AssignLhs) as AssignLhs);
-          newRhss.Add(new ExprModifier(this.AC, this.PairInternalId).VisitExpr(pair.Item2.Clone() as Expr));
+          if (pair.Item1 is MapAssignLhs)
+          {
+            newLhss.Add(new ExprModifier(this.AC, this.PairInternalId).
+              VisitMapAssignLhs(pair.Item1.Clone() as MapAssignLhs) as AssignLhs);
+          }
+          else
+          {
+            newLhss.Add(new ExprModifier(this.AC, this.PairInternalId).
+              VisitSimpleAssignLhs(pair.Item1.Clone() as SimpleAssignLhs) as AssignLhs);
+          }
+
+          newRhss.Add(new ExprModifier(this.AC, this.PairInternalId).
+            VisitExpr(pair.Item2.Clone() as Expr) as Expr);
         }
 
         cmds.Add(new AssignCmd(Token.NoToken, newLhss, newRhss));
