@@ -22,36 +22,40 @@ namespace Whoop
 
   public class StaticLocksetAnalyser
   {
-    List<FunctionPairType> FunctionPairs;
+    AnalysisContext AC;
     PipelineStatistics Stats;
     WhoopErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser(List<FunctionPairType> functionPairs)
+    public StaticLocksetAnalyser(AnalysisContext ac)
     {
-      Contract.Requires(functionPairs.Count > 0);
-      this.FunctionPairs = functionPairs;
+      Contract.Requires(ac != null);
+      this.AC = ac;
       this.Stats = new PipelineStatistics();
       this.ErrorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
     {
-      foreach (var pair in this.FunctionPairs)
+      Console.WriteLine("00: " + GC.GetTotalMemory(true));
+      this.AC.EliminateDeadVariables();
+      this.AC.Inline();
+      Console.WriteLine("000: " + GC.GetTotalMemory(true));
+      if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
+        this.AC.Program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
+          Util.GetCommandLineOptions().SoundLoopUnrolling);
+
+      var decls = this.AC.Program.TopLevelDeclarations.ToArray();
+      foreach (var func in this.AC.GetImplementationsToAnalyse())
       {
-        Contract.Requires(pair.Item3 != null);
-
-        AnalysisContext ac = pair.Item3;
-        ac.EliminateDeadVariables();
-        ac.Inline();
-
-        if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
-          ac.Program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
-            Util.GetCommandLineOptions().SoundLoopUnrolling);
+        Console.WriteLine("Analyse: " + func);
+        if (!func.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
 
         VC.ConditionGeneration vcgen = null;
+
+        Console.WriteLine("0: " + GC.GetTotalMemory(true));
         try
         {
-          vcgen = new VC.VCGen(ac.Program, Util.GetCommandLineOptions().SimplifyLogFilePath,
+          vcgen = new VC.VCGen(this.AC.Program, Util.GetCommandLineOptions().SimplifyLogFilePath,
             Util.GetCommandLineOptions().SimplifyLogFileAppend, new List<Checker>());
         }
         catch (ProverException e)
@@ -59,70 +63,68 @@ namespace Whoop
           Whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
           Environment.Exit((int)Outcome.FatalError);
         }
+        Console.WriteLine("01: " + GC.GetTotalMemory(true));
+        Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
+          Find(val => val.Name.Equals(func.Name));
+        Contract.Assert(funcToAnalyse != null);
 
-        var decls = ac.Program.TopLevelDeclarations.ToArray();
-        foreach (var func in ac.GetImplementationsToAnalyse())
+        int prevAssertionCount = vcgen.CumulativeAssertionCount;
+
+        List<Counterexample> errors;
+
+        DateTime start = new DateTime();
+        if (Util.GetCommandLineOptions().Trace)
         {
-          if (!func.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
-
-          Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
-            Find(val => val.Name.Equals(func.Name));
-          Contract.Assert(funcToAnalyse != null);
-
-          int prevAssertionCount = vcgen.CumulativeAssertionCount;
-
-          List<Counterexample> errors;
-
-          DateTime start = new DateTime();
+          start = DateTime.UtcNow;
           if (Util.GetCommandLineOptions().Trace)
           {
-            start = DateTime.UtcNow;
-            if (Util.GetCommandLineOptions().Trace)
-            {
-              Console.WriteLine("");
-              Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
-            }
+            Console.WriteLine("");
+            Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
           }
-
-          VC.VCGen.Outcome vcOutcome;
-          try
-          {
-            vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
-          }
-          catch (VC.VCGenException e)
-          {
-            Whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
-              e.Message, funcToAnalyse.Name), true, true);
-            errors = null;
-            vcOutcome = VC.VCGen.Outcome.Inconclusive;
-          }
-          catch (UnexpectedProverOutputException e)
-          {
-            Whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
-              funcToAnalyse.Name, e.Message);
-            errors = null;
-            vcOutcome = VC.VCGen.Outcome.Inconclusive;
-          }
-
-          string timeIndication = "";
-          DateTime end = DateTime.UtcNow;
-          TimeSpan elapsed = end - start;
-
-          if (Util.GetCommandLineOptions().Trace)
-          {
-            int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
-            timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
-              elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
-          }
-
-          this.ProcessOutcome(ac, funcToAnalyse, vcOutcome, errors, timeIndication, this.Stats);
-
-          if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
-            Console.Out.Flush();
         }
 
-        vcgen.Close();
+        VC.VCGen.Outcome vcOutcome;
+        try
+        {
+          vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
+        }
+        catch (VC.VCGenException e)
+        {
+          Whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
+            e.Message, funcToAnalyse.Name), true, true);
+          errors = null;
+          vcOutcome = VC.VCGen.Outcome.Inconclusive;
+        }
+        catch (UnexpectedProverOutputException e)
+        {
+          Whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
+            funcToAnalyse.Name, e.Message);
+          errors = null;
+          vcOutcome = VC.VCGen.Outcome.Inconclusive;
+        }
+
+        string timeIndication = "";
+        DateTime end = DateTime.UtcNow;
+        TimeSpan elapsed = end - start;
+
+        if (Util.GetCommandLineOptions().Trace)
+        {
+          int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
+          timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
+            elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
+        }
+
+        this.ProcessOutcome(funcToAnalyse, vcOutcome, errors, timeIndication, this.Stats);
+
+        if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
+          Console.Out.Flush();
+
+        Console.WriteLine("1: " + GC.GetTotalMemory(true));
+
         cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
+        vcgen.Dispose();
+
+        Console.WriteLine("2: " + GC.GetTotalMemory(true));
       }
 
       Whoop.IO.WriteTrailer(this.Stats);
@@ -132,8 +134,8 @@ namespace Whoop
       return Outcome.Done;
     }
 
-    private void ProcessOutcome(AnalysisContext wp, Implementation impl, VC.VCGen.Outcome outcome,
-                                List<Counterexample> errors, string timeIndication, PipelineStatistics stats)
+    private void ProcessOutcome(Implementation impl, VC.VCGen.Outcome outcome, List<Counterexample> errors,
+      string timeIndication, PipelineStatistics stats)
     {
       switch (outcome)
       {
@@ -182,9 +184,10 @@ namespace Whoop
 
           errors.Sort(new CounterexampleComparer());
           int errorCount = 0;
+          Console.WriteLine("3: " + GC.GetTotalMemory(true));
           foreach (Counterexample error in errors)
             errorCount += this.ErrorReporter.ReportCounterexample(error);
-
+          Console.WriteLine("4: " + GC.GetTotalMemory(true));
           if (errorCount == 0)
           {
             Whoop.IO.Inform(String.Format("{0}verified", timeIndication));

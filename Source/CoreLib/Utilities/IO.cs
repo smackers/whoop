@@ -50,21 +50,6 @@ namespace Whoop
       return eps;
     }
 
-    public static void EmitProgram(Program program, string file, string additional, string extension = "bpl")
-    {
-      string directoryContainingFile = Path.GetDirectoryName(file);
-      if (string.IsNullOrEmpty(directoryContainingFile))
-        directoryContainingFile = Directory.GetCurrentDirectory();
-
-      var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
-                     Path.GetFileNameWithoutExtension(file);
-
-      using(TokenTextWriter writer = new TokenTextWriter(fileName + "$" + additional + "." + extension))
-      {
-        program.Emit(writer);
-      }
-    }
-
     public static void EmitProgram(Program program, string file, string extension = "bpl")
     {
       string directoryContainingFile = Path.GetDirectoryName(file);

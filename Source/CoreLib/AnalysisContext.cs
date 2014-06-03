@@ -30,6 +30,8 @@ namespace Whoop
 
     internal Implementation InitFunc;
     internal List<LocksetAnalysisRegion> LocksetAnalysisRegions;
+    internal List<LoggerRegion> LoggerSummaryRegions;
+    internal List<CheckerRegion> CheckerSummaryRegions;
 
     internal Lockset CurrLockset;
     internal List<Lockset> Locksets;
@@ -48,6 +50,8 @@ namespace Whoop
       this.ResContext = rc;
 
       this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
+      this.LoggerSummaryRegions = new List<LoggerRegion>();
+      this.CheckerSummaryRegions = new List<CheckerRegion>();
 
       this.Locksets = new List<Lockset>();
       this.Locks = new List<Lock>();
@@ -107,9 +111,9 @@ namespace Whoop
       return false;
     }
 
-    public bool IsCalledByAnyFunc(Implementation impl)
+    public bool IsCalledByAnyFunc(string name)
     {
-      Contract.Requires(impl != null);
+      Contract.Requires(name != null);
       foreach (var ep in this.Program.TopLevelDeclarations.OfType<Implementation>())
       {
         foreach (var block in ep.Blocks)
@@ -118,13 +122,13 @@ namespace Whoop
           {
             if (cmd is CallCmd)
             {
-              if ((cmd as CallCmd).callee.Equals(impl.Name))
+              if ((cmd as CallCmd).callee.Equals(name))
                 return true;
               foreach (var expr in (cmd as CallCmd).Ins)
               {
                 if (!(expr is IdentifierExpr))
                   continue;
-                if ((expr as IdentifierExpr).Name.Equals(impl.Name))
+                if ((expr as IdentifierExpr).Name.Equals(name))
                   return true;
               }
             }
@@ -134,7 +138,7 @@ namespace Whoop
               {
                 if (!(rhs is IdentifierExpr))
                   continue;
-                if ((rhs as IdentifierExpr).Name.Equals(impl.Name))
+                if ((rhs as IdentifierExpr).Name.Equals(name))
                   return true;
               }
             }

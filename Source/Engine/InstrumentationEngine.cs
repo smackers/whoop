@@ -25,20 +25,18 @@ namespace Whoop
 
   public class InstrumentationEngine
   {
-    private FunctionPairType FunctionPair;
     private AnalysisContext AC;
 
-    public InstrumentationEngine(FunctionPairType functionPair)
+    public InstrumentationEngine(AnalysisContext ac)
     {
-      Contract.Requires(functionPair.Item3 != null);
-      this.FunctionPair = functionPair;
-      this.AC = functionPair.Item3;
+      Contract.Requires(ac != null);
+      this.AC = ac;
     }
 
     public void Run()
     {
       Factory.CreateNewProgramSimplifier(this.AC).Run();
-      Factory.CreateNewPairInstrumentation(this.AC, this.FunctionPair.Item1).Run();
+      Factory.CreateNewPairInstrumentation(this.AC).Run();
 
       Factory.CreateNewLocksetInstrumentation(this.AC).Run();
       Factory.CreateNewRaceInstrumentation(this.AC).Run();
@@ -49,13 +47,13 @@ namespace Whoop
       Factory.CreateNewSharedStateAbstractor(this.AC).Run();
       Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
 
-//      ModelCleaner.RemoveEmptyBlocks(this.AC);
-//      ModelCleaner.RemoveMemoryRegions(this.AC);
-//      ModelCleaner.RemoveUnusedVars(this.AC);
+      ModelCleaner.RemoveEmptyBlocks(this.AC);
+      ModelCleaner.RemoveMemoryRegions(this.AC);
+      ModelCleaner.RemoveUnusedVars(this.AC);
 
       Util.GetCommandLineOptions().PrintUnstructured = 2;
       Whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[
-        Util.GetCommandLineOptions().Files.Count - 1], this.FunctionPair.Item1, "wbpl");
+        Util.GetCommandLineOptions().Files.Count - 1], "wbpl");
     }
   }
 }

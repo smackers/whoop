@@ -20,9 +20,9 @@ namespace Whoop.SLA
       return new ProgramSimplifier(ac);
     }
 
-    public static IPairInstrumentation CreateNewPairInstrumentation(AnalysisContext ac, string functionName)
+    public static IPairInstrumentation CreateNewPairInstrumentation(AnalysisContext ac)
     {
-      return new PairInstrumentation(ac, functionName);
+      return new PairInstrumentation(ac);
     }
 
     public static ILocksetInstrumentation CreateNewLocksetInstrumentation(AnalysisContext ac)

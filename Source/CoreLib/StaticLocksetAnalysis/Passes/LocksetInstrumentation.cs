@@ -35,7 +35,9 @@ namespace Whoop.SLA
       this.AddMemoryLocksets();
       this.AddUpdateLocksetFunc();
 
-      this.InstrumentRegions();
+      this.InstrumentLocksetAnalysisRegions();
+      this.InstrumentLoggerSummaryRegions();
+      this.InstrumentCheckerSummaryRegions();
     }
 
     private void AddCurrentLockset()
@@ -136,7 +138,7 @@ namespace Whoop.SLA
       this.AC.ResContext.AddProcedure(f);
     }
 
-    private void InstrumentRegions()
+    private void InstrumentLocksetAnalysisRegions()
     {
       foreach (var region in this.AC.LocksetAnalysisRegions)
       {
@@ -146,7 +148,25 @@ namespace Whoop.SLA
       }
     }
 
-    private void InstrumentImplementation(LocksetAnalysisRegion region)
+    private void InstrumentLoggerSummaryRegions()
+    {
+      foreach (var region in this.AC.LoggerSummaryRegions)
+      {
+        this.InstrumentImplementation(region);
+        this.InstrumentProcedure(region, true);
+      }
+    }
+
+    private void InstrumentCheckerSummaryRegions()
+    {
+      foreach (var region in this.AC.CheckerSummaryRegions)
+      {
+        this.InstrumentImplementation(region);
+        this.InstrumentProcedure(region, true);
+      }
+    }
+
+    private void InstrumentImplementation(IRegion region)
     {
       foreach (var c in region.Cmds().OfType<CallCmd>())
       {
@@ -163,13 +183,16 @@ namespace Whoop.SLA
       }
     }
 
-    private void InstrumentProcedure(LocksetAnalysisRegion region)
+    private void InstrumentProcedure(IRegion region, bool modifiesOnly=false)
     {
       if (region.Procedure().Modifies.Exists(val => val.Name.Equals(this.AC.CurrLockset.Id.Name)))
         return;
 
       region.Procedure().Modifies.Add(new IdentifierExpr(this.AC.CurrLockset.Id.tok,
         this.AC.CurrLockset.Id));
+
+      if (modifiesOnly)
+        return;
 
       List<Variable> vars = this.AC.SharedStateAnalyser.
         GetAccessedMemoryRegions(region.Implementation());

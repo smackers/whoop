@@ -33,6 +33,10 @@ namespace Whoop.SLA
       {
         if (result is NAryExpr)
         {
+          if (((result as NAryExpr).Args[0] is IdentifierExpr) &&
+            ((result as NAryExpr).Args[0] as IdentifierExpr).Name.Contains("$M."))
+            return null;
+
           Expr p = (result as NAryExpr).Args[0];
           Expr i = (result as NAryExpr).Args[1];
           Expr s = (result as NAryExpr).Args[2];
@@ -41,12 +45,10 @@ namespace Whoop.SLA
           {
             ixs += (i as LiteralExpr).asBigNum.ToInt * (s as LiteralExpr).asBigNum.ToInt;
           }
-//          else if ((i is IdentifierExpr) && (s is LiteralExpr))
-//          {
-//            Console.WriteLine("ComputeRootPointer 1: " + i + " " + i.Line);
-//            i = ComputeRootPointer(impl, i as IdentifierExpr);
-//            Console.WriteLine("ComputeRootPointer 2: " + i + " " + i.Line);
-//          }
+          else
+          {
+            return null;
+          }
 
           result = p;
         }
@@ -98,7 +100,7 @@ namespace Whoop.SLA
     public static NAryExpr RefactorExpr(NAryExpr expr, List<IdentifierExpr> iePre, List<IdentifierExpr> ieAfter)
     {
       NAryExpr result = expr;
-      Console.WriteLine(expr);
+
       for (int idx = 0; idx < result.Args.Count; idx++)
       {
         if (result.Args[idx] is LiteralExpr)

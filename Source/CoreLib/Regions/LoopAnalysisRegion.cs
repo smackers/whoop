@@ -23,6 +23,7 @@ namespace Whoop.Regions
     protected Graph<Block> RegionBlockGraph;
     protected Block RegionHeader;
 
+    private Implementation InternalImplementation;
     protected Dictionary<Block, HashSet<Block>> RegionLoopNodes = new Dictionary<Block, HashSet<Block>>();
     protected Dictionary<Block, Block> RegionInnermostHeader = new Dictionary<Block, Block>();
 
@@ -32,6 +33,7 @@ namespace Whoop.Regions
     {
       this.RegionBlockGraph = p.ProcessLoops(impl);
       this.RegionHeader = null;
+      this.InternalImplementation = impl;
 
       foreach (var h in this.RegionBlockGraph.SortHeadersByDominance())
       {
@@ -120,6 +122,16 @@ namespace Whoop.Regions
     public Block Header()
     {
       return this.RegionHeader;
+    }
+
+    public Implementation Implementation()
+    {
+      return this.InternalImplementation;
+    }
+
+    public Procedure Procedure()
+    {
+      return this.InternalImplementation.Proc;
     }
 
     public Expr Guard()

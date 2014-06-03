@@ -26,14 +26,37 @@ namespace Whoop.Regions
     protected string RegionName;
     protected int PairInternalId;
 
+    private Implementation InternalImplementation;
     protected Block RegionHeader;
     protected List<Block> RegionBlocks;
 
-    protected AsyncFuncRegion(AnalysisContext ac, Implementation impl, List<Implementation> implList)
+    protected AsyncFuncRegion(AnalysisContext ac, AnalysisRole role, Implementation impl)
     {
       Contract.Requires(ac != null);
       this.AC = ac;
+      this.AnalysisRole = role;
+      this.PairInternalId = 0;
+
+      if (role == AnalysisRole.LOGGER)
+        this.RegionName = impl.Name + "$logger";
+      else
+        this.RegionName = impl.Name + "$checker";
+
+      this.ProcessRegionBlocks(impl, null);
+      this.ProcessWrapperImplementation(impl);
+      this.ProcessWrapperProcedure(impl);
+    }
+
+    protected AsyncFuncRegion(AnalysisContext ac, AnalysisRole role, int id,
+      Implementation impl, List<Implementation> implList)
+    {
+      Contract.Requires(ac != null);
+      this.AC = ac;
+      this.AnalysisRole = role;
+      this.PairInternalId = id;
       this.RegionName = impl.Name;
+
+      this.ProcessRegionBlocks(impl, implList);
     }
 
     public object Identifier()
@@ -54,6 +77,16 @@ namespace Whoop.Regions
     public Block Header()
     {
       return this.RegionHeader;
+    }
+
+    public Implementation Implementation()
+    {
+      return this.InternalImplementation;
+    }
+
+    public Procedure Procedure()
+    {
+      return this.InternalImplementation.Proc;
     }
 
     public List<Block> Blocks()
@@ -114,7 +147,37 @@ namespace Whoop.Regions
       return result;
     }
 
-    protected void ProcessRegionBlocks(Implementation impl, List<Implementation> implList)
+    #region construction methods
+
+    private void ProcessWrapperImplementation(Implementation impl)
+    {
+      this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
+        new List<TypeVariable>(), this.CreateNewInParams(impl),
+        new List<Variable>(), new List<Variable>(), this.RegionBlocks);
+
+      this.CreateNewLocalVars(impl);
+
+      this.InternalImplementation.Attributes = new QKeyValue(Token.NoToken,
+        "summary", new List<object>(), null);
+    }
+
+    private void ProcessWrapperProcedure(Implementation impl)
+    {
+      this.InternalImplementation.Proc = new Procedure(Token.NoToken, this.RegionName,
+        new List<TypeVariable>(), this.CreateNewInParams(impl), 
+        new List<Variable>(), new List<Requires>(),
+        new List<IdentifierExpr>(), new List<Ensures>());
+
+      this.InternalImplementation.Proc.Attributes = new QKeyValue(Token.NoToken,
+        "summary", new List<object>(), null);
+
+      foreach (var v in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
+      {
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
+      }
+    }
+
+    private void ProcessRegionBlocks(Implementation impl, List<Implementation> implList)
     {
       this.RegionBlocks = new List<Block>();
       foreach (var b in impl.Blocks)
@@ -129,7 +192,13 @@ namespace Whoop.Regions
 
       if (originalBlock.TransferCmd is ReturnCmd)
       {
-        if (this.AnalysisRole == AnalysisRole.LOGGER)
+        if (this.AnalysisRole == AnalysisRole.CHECKER || implList == null)
+        {
+          this.RegionBlocks.Add(new Block(Token.NoToken,
+            this.CreateNewLabel(this.AnalysisRole, originalBlock.Label),
+            new List<Cmd>(), new ReturnCmd(Token.NoToken)));
+        }
+        else
         {
           List<string> gotos = new List<string>();
           foreach (var i in implList)
@@ -137,12 +206,6 @@ namespace Whoop.Regions
           this.RegionBlocks.Add(new Block(Token.NoToken,
             this.CreateNewLabel(this.AnalysisRole, originalBlock.Label),
             new List<Cmd>(), new GotoCmd(Token.NoToken, gotos)));
-        }
-        else
-        {
-          this.RegionBlocks.Add(new Block(Token.NoToken,
-            this.CreateNewLabel(this.AnalysisRole, originalBlock.Label),
-            new List<Cmd>(), new ReturnCmd(Token.NoToken)));
         }
       }
       else
@@ -183,7 +246,10 @@ namespace Whoop.Regions
         foreach (var v in call.Outs)
           newOuts.Add(new ExprModifier(this.AC, this.PairInternalId).VisitIdentifierExpr(v.Clone() as IdentifierExpr) as IdentifierExpr);
 
-        cmds.Add(new CallCmd(Token.NoToken, call.callee, newIns, newOuts));
+        if (this.AnalysisRole == AnalysisRole.LOGGER)
+          cmds.Add(new CallCmd(Token.NoToken, call.callee + "$logger", newIns, newOuts));
+        else
+          cmds.Add(new CallCmd(Token.NoToken, call.callee + "$checker", newIns, newOuts));
       }
       else if (originalCmd is AssignCmd)
       {
@@ -234,6 +300,30 @@ namespace Whoop.Regions
       }
     }
 
+    #endregion
+
+    #region helper methods
+
+    private List<Variable> CreateNewInParams(Implementation impl)
+    {
+      List<Variable> newInParams = new List<Variable>();
+
+      foreach (var v in impl.Proc.InParams)
+        newInParams.Add(new ExprModifier(this.AC, this.PairInternalId).
+          VisitVariable(v.Clone() as Variable) as Variable);
+
+      return newInParams;
+    }
+
+    private void CreateNewLocalVars(Implementation impl)
+    {
+      foreach (var v in impl.LocVars)
+      {
+        this.InternalImplementation.LocVars.Add(new ExprModifier(this.AC, this.PairInternalId).
+          VisitLocalVariable(v.Clone() as LocalVariable) as Variable);
+      }
+    }
+
     private Block CreateRegionHeader()
     {
       string label;
@@ -243,8 +333,8 @@ namespace Whoop.Regions
         label = "$checker$" + this.RegionName + "$header";
 
       Block header = new Block(Token.NoToken, label,
-                       new List<Cmd>(), new GotoCmd(Token.NoToken,
-                       new List<string> { this.RegionBlocks[0].Label }));
+        new List<Cmd>(), new GotoCmd(Token.NoToken,
+          new List<string> { this.RegionBlocks[0].Label }));
       this.RegionBlocks.Insert(0, header);
       return header;
     }
@@ -256,5 +346,7 @@ namespace Whoop.Regions
       else
         return "$checker$" + this.RegionName + "$" + oldLabel.Substring(3);
     }
+
+    #endregion
   }
 }

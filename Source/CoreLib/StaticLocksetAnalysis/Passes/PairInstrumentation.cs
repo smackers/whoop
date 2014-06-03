@@ -23,13 +23,11 @@ namespace Whoop.SLA
   internal class PairInstrumentation : IPairInstrumentation
   {
     private AnalysisContext AC;
-    private string FunctionName;
 
-    public PairInstrumentation(AnalysisContext ac, string functionName)
+    public PairInstrumentation(AnalysisContext ac)
     {
-      Contract.Requires(ac != null && functionName != null);
+      Contract.Requires(ac != null);
       this.AC = ac;
-      this.FunctionName = functionName;
     }
 
     /// <summary>
@@ -42,8 +40,10 @@ namespace Whoop.SLA
       foreach (var region in this.AC.LocksetAnalysisRegions)
         this.InstrumentInParamsEqualityRequireExprs(region);
 
-      this.CleanUpOriginalAsyncFuncs();
-      this.CleanUpOriginalInitFunc();
+      this.RemoveOriginalInitFunc();
+      this.RemoveUncalledFuncs();
+
+      this.CreateFunctionSummaryPairs();
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ namespace Whoop.SLA
     /// </summary>
     private void CreatePairs()
     {
-      foreach (var ep in PairConverterUtil.FunctionPairs[this.FunctionName])
+      foreach (var ep in PairConverterUtil.FunctionPairs)
       {
         Implementation impl = this.AC.GetImplementation(ep.Item1);
         List<Implementation> implList = new List<Implementation>();
@@ -71,6 +71,48 @@ namespace Whoop.SLA
         foreach (var v in ep.Item2) consList.Add(this.AC.GetConstant(v));
 
         this.CreateNewConstant(cons, consList);
+      }
+    }
+
+    private void CreateFunctionSummaryPairs()
+    {
+      List<LoggerRegion> loggers = new List<LoggerRegion>();
+      List<CheckerRegion> checkers = new List<CheckerRegion>();
+      List<Implementation> toRemove = new List<Implementation>();
+
+      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock"))
+          continue;
+        if (this.AC.LocksetAnalysisRegions.Any(val => val.Name().Equals(impl.Name)))
+          continue;
+
+        loggers.Add(new LoggerRegion(this.AC, impl));
+        checkers.Add(new CheckerRegion(this.AC, impl));
+        toRemove.Add(impl);
+      }
+
+      foreach (var pair in loggers.Zip(checkers))
+      {
+        this.AC.Program.TopLevelDeclarations.Add(pair.Item1.Procedure());
+        this.AC.Program.TopLevelDeclarations.Add(pair.Item1.Implementation());
+        this.AC.ResContext.AddProcedure(pair.Item1.Procedure());
+        this.AC.LoggerSummaryRegions.Add(pair.Item1);
+
+        this.AC.Program.TopLevelDeclarations.Add(pair.Item2.Procedure());
+        this.AC.Program.TopLevelDeclarations.Add(pair.Item2.Implementation());
+        this.AC.ResContext.AddProcedure(pair.Item2.Procedure());
+        this.AC.CheckerSummaryRegions.Add(pair.Item2);
+      }
+
+      foreach (var impl in toRemove)
+      {
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
       }
     }
 
@@ -160,30 +202,49 @@ namespace Whoop.SLA
 
     #region cleanup functions
 
-    private void CleanUpOriginalAsyncFuncs()
-    {
-      foreach (var kvp in PairConverterUtil.FunctionPairs)
-      {
-        foreach (var ep in kvp.Value)
-        {
-          if (!this.AC.Program.TopLevelDeclarations.OfType<Implementation>().
-            ToList().Any(val => val.Name.Equals(ep.Item1)))
-            continue;
-          if (ep.Item1 == this.AC.InitFunc.Name)
-            continue;
-
-          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetConstant(ep.Item1));
-          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(ep.Item1).Proc);
-          this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(ep.Item1));
-        }
-      }
-    }
-
-    private void CleanUpOriginalInitFunc()
+    /// <summary>
+    /// Removes original init function.
+    /// </summary>
+    private void RemoveOriginalInitFunc()
     {
       this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetConstant(this.AC.InitFunc.Name));
       this.AC.Program.TopLevelDeclarations.Remove(this.AC.InitFunc.Proc);
       this.AC.Program.TopLevelDeclarations.Remove(this.AC.InitFunc);
+    }
+
+    /// <summary>
+    /// Removes all functions that are not called in the program.
+    /// </summary>
+    private void RemoveUncalledFuncs()
+    {
+      HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
+
+      while (true)
+      {
+        int fixpoint = uncalledFuncs.Count;
+        foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+        {
+          if (impl.Name.Equals(this.AC.InitFunc.Name))
+            continue;
+          if (this.AC.GetImplementationsToAnalyse().Any(val => val.Name.Equals(impl.Name)))
+            continue;
+          if (this.AC.IsCalledByAnyFunc(impl.Name))
+            continue;
+
+          uncalledFuncs.Add(impl);
+        }
+        if (uncalledFuncs.Count == fixpoint) break;
+      }
+
+      foreach (var impl in uncalledFuncs)
+      {
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+      }
     }
 
     #endregion

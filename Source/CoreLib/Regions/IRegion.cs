@@ -23,6 +23,10 @@ namespace Whoop.Regions
 
     Block Header();
 
+    Implementation Implementation();
+
+    Procedure Procedure();
+
     IEnumerable<Cmd> Cmds();
 
     IEnumerable<object> CmdsChildRegions();

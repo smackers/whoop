@@ -50,14 +50,19 @@ namespace Whoop
       if (node is Constant)
         return base.VisitVariable(node);
 
-      node.TypedIdent = this.ModifyTypedIdent(node);
-      node.Name = node.Name + "$" + this.Fid;
+      node.TypedIdent = this.ModifyTypedIdent(node.TypedIdent.Name,
+        node.TypedIdent.Type, node.TypedIdent.tok);
+      if (this.Fid == 0)
+        node.Name = node.Name;
+      else
+        node.Name = node.Name + "$" + this.Fid;
       return node;
     }
 
     public override LocalVariable VisitLocalVariable(LocalVariable node)
     {
-      return new LocalVariable(node.tok, this.ModifyTypedIdent(node));
+      return new LocalVariable(node.tok, this.ModifyTypedIdent(node.TypedIdent.Name,
+        node.TypedIdent.Type, node.TypedIdent.tok));
     }
 
     public override Expr VisitExpr(Expr node)
@@ -88,16 +93,20 @@ namespace Whoop
 
     public override Expr VisitIdentifierExpr(IdentifierExpr node)
     {
-      return new IdentifierExpr(node.tok, new LocalVariable(node.tok, this.ModifyTypedIdent(node.Decl)));
+      return new IdentifierExpr(node.tok, new LocalVariable(node.tok,
+        this.ModifyTypedIdent(node.Name, node.Type, node.tok)));
     }
 
-    private TypedIdent ModifyTypedIdent(Variable v)
+    private TypedIdent ModifyTypedIdent(string name, Microsoft.Boogie.Type type, IToken token)
     {
-      if (this.AC.SharedStateAnalyser.MemoryRegions.Exists(val => val.Name.Equals(v.Name)) ||
-        this.AC.Program.TopLevelDeclarations.OfType<Implementation>().Any(val => val.Name.Equals(v.Name)) ||
-        this.AC.Program.TopLevelDeclarations.OfType<Constant>().Any(val => val.Name.Equals(v.Name)))
-        return new TypedIdent(v.tok, v.Name, v.TypedIdent.Type);
-      return new TypedIdent(v.tok, v.Name + "$" + this.Fid, v.TypedIdent.Type);
+      if (this.AC.SharedStateAnalyser.MemoryRegions.Exists(val => val.Name.Equals(name)) ||
+        this.AC.Program.TopLevelDeclarations.OfType<Implementation>().Any(val => val.Name.Equals(name)) ||
+        this.AC.Program.TopLevelDeclarations.OfType<Constant>().Any(val => val.Name.Equals(name)))
+        return new TypedIdent(token, name, type);
+      if (this.Fid == 0)
+        return new TypedIdent(token, name, type);
+      else
+        return new TypedIdent(token, name + "$" + this.Fid, type);
     }
   }
 }

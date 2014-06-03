@@ -69,29 +69,14 @@ namespace Whoop
         }
 
         PairConverterUtil.ParseAsyncFuncs();
-        PairConverterUtil.GetFunctionPairs();
 
         if (Util.GetCommandLineOptions().PrintPairs)
         {
           PairConverterUtil.PrintFunctionPairs();
         }
 
-        List<FunctionPairType> functionPairs = new List<FunctionPairType>();
-
-        foreach (var kvp in PairConverterUtil.FunctionPairs)
-        {
-          functionPairs.Add(new Tuple<string, List<Tuple<string, List<string>>>,
-            AnalysisContext>(kvp.Key, kvp.Value,
-            new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew()));
-
-          if (functionPairs[functionPairs.Count - 1].Item3 == null)
-            Environment.Exit((int)Outcome.ParsingError);
-        }
-
-        foreach (var pair in functionPairs)
-        {
-          new InstrumentationEngine(pair).Run();
-        }
+        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+        new InstrumentationEngine(ac).Run();
 
         Environment.Exit((int)Outcome.Done);
       }

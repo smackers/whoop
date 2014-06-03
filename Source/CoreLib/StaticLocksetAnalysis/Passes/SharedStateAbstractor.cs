@@ -50,7 +50,7 @@ namespace Whoop.SLA
       {
         if (this.AC.IsWhoopFunc(impl)) continue;
         if (this.AC.GetImplementationsToAnalyse().Exists(val => val.Name.Equals(impl.Name))) continue;
-        if (!this.AC.IsCalledByAnyFunc(impl)) continue;
+        if (!this.AC.IsCalledByAnyFunc(impl.Name)) continue;
 
         this.AbstractReadAccesses(impl);
         this.AbstractWriteAccesses(impl);

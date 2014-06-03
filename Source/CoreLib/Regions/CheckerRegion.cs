@@ -19,13 +19,16 @@ namespace Whoop.Regions
 {
   internal class CheckerRegion : AsyncFuncRegion
   {
-    internal CheckerRegion(AnalysisContext ac, Implementation impl, int id)
-      : base(ac, impl, null)
+    internal CheckerRegion(AnalysisContext ac, Implementation impl)
+      : base(ac, AnalysisRole.CHECKER, impl)
     {
-      Contract.Requires(ac != null);
-      base.AnalysisRole = AnalysisRole.CHECKER;
-      base.PairInternalId = id + 2;
-      base.ProcessRegionBlocks(impl, null);
+
+    }
+
+    internal CheckerRegion(AnalysisContext ac, Implementation impl, int id)
+      : base(ac, AnalysisRole.CHECKER, id + 2, impl, null)
+    {
+
     }
   }
 }

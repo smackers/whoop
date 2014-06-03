@@ -143,7 +143,7 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
-    self.noPointerAnalysis = False
+    self.inline = False
     self.functionPairing = "linear"
     self.raceChecking = "normal"
     self.verbose = False
@@ -154,7 +154,7 @@ class DefaultCmdLineOptions(object):
     self.debugging = False
     self.time = False
     self.timeCSVLabel = None
-    self.componentTimeout = 900
+    self.componentTimeout = 0
     self.solver = "z3"
     self.logic = "QF_ALL_SUPPORTED"
     self.stopAtRe = False
@@ -198,8 +198,8 @@ def showHelpAndExit():
 
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
+    --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
-    --no-pointer-analysis   Do not abstract locksets through pointer analysis at the Boogie level.
     --function-pairing=X    Choose which method of function checking to use. Options are: 'linear', 'triangular'
                             and 'quadratic'. Default is 'linear'.
     --race-checking=X       Choose which method of race checking to use. Options are: 'normal' and 'watchdog'.
@@ -294,10 +294,10 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
-    if o == "--no-pointer-analysis":
-      CommandLineOptions.noPointerAnalysis = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
+    if o == "--inline":
+      CommandLineOptions.inline = True
     if o == "--time":
       CommandLineOptions.time = True
     if o == "--time-as-csv":
@@ -490,7 +490,7 @@ def startToolChain(argv):
               'time', 'time-as-csv=', 'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'analyse-only=', 'no-pointer-analysis',
+              'analyse-only=', 'inline',
               'race-checking=', 'function-pairing=',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
@@ -510,7 +510,7 @@ def startToolChain(argv):
   reFilename = filename + '.re.c'
   bcFilename = filename + '.bc'
   bplFilename = filename + '.bpl'
-  # wbplFilename = filename + '.wbpl'
+  wbplFilename = filename + '.wbpl'
   infoFilename = filename + '.info'
   smt2Filename = filename + '.smt2'
   if not CommandLineOptions.keepTemps:
@@ -520,23 +520,26 @@ def startToolChain(argv):
       if filename == inputFilename: return
       try: os.remove(filename)
       except OSError: pass
-    def DeleteFilesWithPattern(patern):
-      """ Delete all the files with the given pattern if they exist """
-      thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
-      path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
-      for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
-        if fnmatch.fnmatch(file, thisfile + '$*.wbpl'):
-          try: os.remove(path + file)
-          except OSError: pass
+    # def DeleteFilesWithPattern(patern):
+    #   """ Delete all the files with the given pattern if they exist """
+    #   thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
+    #   path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
+    #   for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
+    #     if fnmatch.fnmatch(file, thisfile + '$*.wbpl'):
+    #       try: os.remove(path + file)
+    #       except OSError: pass
     cleanUpHandler.register(DeleteFile, bcFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, reFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
-    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFilesWithPattern, 'filename$*.wbpl')
+    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFile, wbplFilename)
 
+  if CommandLineOptions.inline:
+    CommandLineOptions.chauffeurOptions.append("-inline")
   CommandLineOptions.chauffeurOptions.append(filename + ext)
   CommandLineOptions.chauffeurOptions.append("--")
   CommandLineOptions.chauffeurOptions.append("-w")
+
   CommandLineOptions.clangOptions.append("-o")
   CommandLineOptions.clangOptions.append(bcFilename)
   CommandLineOptions.clangOptions.append(reFilename)
@@ -544,7 +547,7 @@ def startToolChain(argv):
   if ext in [ ".c" ]:
     CommandLineOptions.smackOptions += [ bcFilename, "-o", bplFilename ]
     CommandLineOptions.smackOptions += [ "--source-loc-syms" ]
-  
+
   if CommandLineOptions.solver == "cvc4":
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:SOLVER=cvc4" ]
     CommandLineOptions.whoopDriverOptions += [ "/proverOpt:SOLVER=cvc4" ]
@@ -568,9 +571,6 @@ def startToolChain(argv):
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
-
-  if CommandLineOptions.noPointerAnalysis:
-    CommandLineOptions.whoopEngineOptions += [ "/noPointerAnalysis" ]
 
   if CommandLineOptions.functionPairing == "linear":
     CommandLineOptions.whoopEngineOptions += [ "/functionPairing:LINEAR" ]

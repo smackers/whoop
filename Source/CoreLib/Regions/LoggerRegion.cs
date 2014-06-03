@@ -19,13 +19,16 @@ namespace Whoop.Regions
 {
   internal class LoggerRegion : AsyncFuncRegion
   {
-    internal LoggerRegion(AnalysisContext ac, Implementation impl, List<Implementation> implList)
-      : base(ac, impl, implList)
+    internal LoggerRegion(AnalysisContext ac, Implementation impl)
+      : base(ac, AnalysisRole.LOGGER, impl)
     {
-      Contract.Requires(ac != null);
-      base.AnalysisRole = AnalysisRole.LOGGER;
-      base.PairInternalId = 1;
-      base.ProcessRegionBlocks(impl, implList);
+
+    }
+
+    internal LoggerRegion(AnalysisContext ac, Implementation impl, List<Implementation> implList)
+      : base(ac, AnalysisRole.LOGGER, 1, impl, implList)
+    {
+
     }
   }
 }

@@ -71,6 +71,16 @@ namespace Whoop.Regions
       return this.RegionHeader;
     }
 
+    public Implementation Implementation()
+    {
+      return this.InternalImplementation;
+    }
+
+    public Procedure Procedure()
+    {
+      return this.InternalImplementation.Proc;
+    }
+
     public List<Block> Blocks()
     {
       return this.RegionBlocks;
@@ -139,17 +149,7 @@ namespace Whoop.Regions
       return this.CheckerRegions;
     }
 
-    public Implementation Implementation()
-    {
-      return this.InternalImplementation;
-    }
-
-    public Procedure Procedure()
-    {
-      return this.InternalImplementation.Proc;
-    }
-
-    #region region construction methods
+    #region construction methods
 
     private void ProcessWrapperImplementation(Implementation impl, List<Implementation> implList)
     {

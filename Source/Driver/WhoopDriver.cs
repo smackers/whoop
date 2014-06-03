@@ -69,21 +69,9 @@ namespace Whoop
         }
 
         PairConverterUtil.ParseAsyncFuncs();
-        PairConverterUtil.GetFunctionPairs();
 
-        List<FunctionPairType> functionPairs = new List<FunctionPairType>();
-
-        foreach (var kvp in PairConverterUtil.FunctionPairs)
-        {
-          functionPairs.Add(new Tuple<string, List<Tuple<string, List<string>>>,
-            AnalysisContext>(kvp.Key, kvp.Value, new AnalysisContextParser(
-            fileList[fileList.Count - 1], "wbpl").ParseNew(kvp.Key)));
-
-          if (functionPairs[functionPairs.Count - 1].Item3 == null)
-            Environment.Exit((int)Outcome.ParsingError);
-        }
-
-        Outcome oc = new StaticLocksetAnalyser(functionPairs).Run();
+        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").ParseNew();
+        Outcome oc = new StaticLocksetAnalyser(ac).Run();
 
         Environment.Exit((int)oc);
       }

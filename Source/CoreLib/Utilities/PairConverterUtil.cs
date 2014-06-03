@@ -20,42 +20,37 @@ namespace Whoop
 {
   public class PairConverterUtil
   {
-    private static Dictionary<string, Dictionary<string, string>> AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs;
-    private static List<Tuple<string, List<string>>> AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList;
+    private static Dictionary<string, Dictionary<string, string>> AbstractAsyncFuncs;
     internal static string InitFuncName;
+    public static List<Tuple<string, List<string>>> FunctionPairs;
     public static FunctionPairingMethod FunctionPairingMethod = FunctionPairingMethod.LINEAR;
-    public static Dictionary<string, List<Tuple<string, List<string>>>> FunctionPairs;
 
     public static void ParseAsyncFuncs()
     {
-      PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs = IO.ParseDriverInfo();
+      PairConverterUtil.AbstractAsyncFuncs = IO.ParseDriverInfo();
       PairConverterUtil.DetectInitFunction();
-    }
 
-    public static void GetFunctionPairs()
-    {
-      FunctionPairs = new Dictionary<string, List<Tuple<string, List<string>>>>();
-      PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList = new List<Tuple<string, List<string>>>();
+      PairConverterUtil.FunctionPairs = new List<Tuple<string, List<string>>>();
 
       if (PairConverterUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
       {
-        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
+        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            if (PairConverterUtil.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
             List<string> funcs = new List<string>();
 
-            if (PairConverterUtil.CanRunConcurrently(ep1.Value, ep1.Value))
+            if (PairConverterUtil.CanRunConcurrently(ep1.Key, ep1.Key))
             {
               funcs.Add(ep1.Value);
             }
 
-            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
+            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
-                if (!PairConverterUtil.CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+                if (!PairConverterUtil.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
                 if (!PairConverterUtil.IsNewPair(ep1.Value, ep2.Value)) continue;
                 if (funcs.Contains(ep2.Value)) continue;
                 funcs.Add(ep2.Value);
@@ -63,44 +58,36 @@ namespace Whoop
             }
 
             if (funcs.Count == 0) continue;
-            PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
+            PairConverterUtil.FunctionPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
           }
         }
       }
       else
       {
-        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
+        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Any(val => val.Item1.Equals(ep1.Value))) continue;
-            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
+            if (PairConverterUtil.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
-                if (!PairConverterUtil.CanRunConcurrently(ep1.Value, ep2.Value)) continue;
+                if (!PairConverterUtil.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
                 if (!PairConverterUtil.IsNewPair(ep1.Value, ep2.Value)) continue;
 
-                PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Add(new Tuple<string,
+                PairConverterUtil.FunctionPairs.Add(new Tuple<string,
                   List<string>>(ep1.Value, new List<string> { ep2.Value }));
               }
             }
           }
         }
       }
-
-      foreach (var v in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList)
-      {
-        if (FunctionPairs.ContainsKey(v.Item1))
-          FunctionPairs[v.Item1].Add(v);
-        else
-          FunctionPairs[v.Item1] = new List<Tuple<string, List<string>>> { v };
-      }
     }
 
     public static void PrintFunctionPairs()
     {
-      foreach (var v in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList)
+      foreach (var v in PairConverterUtil.FunctionPairs)
       {
         Console.WriteLine("Entry Point: " + v.Item1);
         foreach (var z in v.Item2)
@@ -117,7 +104,7 @@ namespace Whoop
 
       try
       {
-        foreach (var kvp in PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncs)
+        foreach (var kvp in PairConverterUtil.AbstractAsyncFuncs)
         {
           foreach (var ep in kvp.Value)
           {
@@ -139,24 +126,63 @@ namespace Whoop
       }
     }
 
-    private static bool CanRunConcurrently(string ep1, string ep2)
-    {
-      if (ep1.Equals(PairConverterUtil.InitFuncName) || ep2.Equals(PairConverterUtil.InitFuncName))
-        return false;
-      return true;
-    }
-
     private static bool IsNewPair(string ep1, string ep2)
     {
-      if ((PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Exists(val =>
+      if ((PairConverterUtil.FunctionPairs.Exists(val =>
         (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
-          (PairConverterUtil.AbstractAsyncFuncsInstrumentEndOfAbstractAsyncFuncPairList.Exists(val =>
+        (PairConverterUtil.FunctionPairs.Exists(val =>
           (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
       {
         return false;
       }
 
       return true;
+    }
+
+    private static bool CanRunConcurrently(string ep1, string ep2)
+    {
+      if (ep1.Equals("probe") || ep2.Equals("probe"))
+        return false;
+
+      if (PairConverterUtil.HasKernelImposedDeviceLock(ep1) &&
+          PairConverterUtil.HasKernelImposedDeviceLock(ep2))
+        return false;
+
+      if (PairConverterUtil.HasKernelImposedRTNL(ep1) &&
+        PairConverterUtil.HasKernelImposedRTNL(ep2))
+        return false;
+
+      return true;
+    }
+
+    // the entry point has been serialised by the kernel using device_lock(dev);
+    private static bool HasKernelImposedDeviceLock(string ep)
+    {
+      // pci driver API
+      if (ep.Equals("probe") || ep.Equals("remove") ||
+        ep.Equals("shutdown"))
+        return true;
+
+      // power management API
+      if (ep.Equals("prepare") || ep.Equals("complete") ||
+          ep.Equals("resume") || ep.Equals("suspend"))
+        return true;
+
+      return false;
+    }
+
+    // the entry point has been serialised by RTNL;
+    private static bool HasKernelImposedRTNL(string ep)
+    {
+      // network device management API
+      if (ep.Equals("ndo_open") || ep.Equals("ndo_stop"))
+        return true;
+
+      // ethernet device management API
+      if (ep.Equals("get_settings") || ep.Equals("get_ethtool_stats"))
+        return true;
+
+      return false;
     }
   }
 }

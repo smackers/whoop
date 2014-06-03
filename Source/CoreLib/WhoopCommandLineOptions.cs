@@ -21,7 +21,6 @@ namespace Whoop
 
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
-    public bool DoPointerAnalysis = true;
     public bool DebugWhoop = false;
 
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
@@ -88,12 +87,6 @@ namespace Whoop
       if (name == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;
-        return true;
-      }
-
-      if (name == "noPointerAnalysis")
-      {
-        this.DoPointerAnalysis = false;
         return true;
       }
 

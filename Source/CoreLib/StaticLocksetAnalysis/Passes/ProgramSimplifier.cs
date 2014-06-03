@@ -15,6 +15,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using System.ComponentModel.Design.Serialization;
 
 namespace Whoop.SLA
 {
@@ -34,8 +35,6 @@ namespace Whoop.SLA
     /// </summary>
     public void Run()
     {
-      this.RemoveUncalledFuncs();
-
       foreach (var impl in AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
         this.RemoveUnecesseryAssumes(impl);
@@ -48,40 +47,10 @@ namespace Whoop.SLA
       {
         if (impl.Name.Equals(this.AC.InitFunc.Name))
           continue;
+
         this.AnalyseAndInstrumentLocks(impl);
-      }
-    }
-
-    /// <summary>
-    /// Removes all functions that are not called in the program.
-    /// </summary>
-    private void RemoveUncalledFuncs()
-    {
-      HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
-
-      while (true)
-      {
-        int fixpoint = uncalledFuncs.Count;
-        foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
-        {
-          if (impl.Name.Equals(this.AC.InitFunc.Name))
-            continue;
-          if (this.AC.IsCalledByAnyFunc(impl))
-            continue;
-
-          uncalledFuncs.Add(impl);
-        }
-        if (uncalledFuncs.Count == fixpoint) break;
-      }
-
-      foreach (var impl in uncalledFuncs)
-      {
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+//        this.AnalyseAndInstrumentMemoryLocations(impl);
+//        this.RemoveUnusedAssignCmds(impl);
       }
     }
 
@@ -173,10 +142,9 @@ namespace Whoop.SLA
     }
 
     /// <summary>
-    /// Performs pointer analysis to identify and instrument unique locks in
-    /// the init function.
+    /// Performs pointer analysis to identify and instrument functions with locks.
     /// </summary>
-    /// <param name="impl">Impl.</param>
+    /// <param name="impl">Implementation</param>
     private void AnalyseAndInstrumentLocks(Implementation impl)
     {
       foreach (var block in impl.Blocks)
@@ -192,39 +160,145 @@ namespace Whoop.SLA
             !call.callee.Contains("mutex_unlock"))
             continue;
 
-          Expr lockExpr = PointerAliasAnalysis.ComputeRootPointer(impl, (call.Ins[0] as IdentifierExpr));
+          Expr lockExpr = PointerAliasAnalysis.ComputeRootPointer(impl, call.Ins[0] as IdentifierExpr);
 
+          bool matched = false;
           foreach (Lock l in this.AC.Locks)
           {
             if (l.IsEqual(this.AC, impl, lockExpr))
             {
               call.Ins[0] = new IdentifierExpr(l.Id.tok, l.Id);
+              matched = true;
               break;
+            }
+          }
+
+          if (!matched)
+            call.Ins[0] = lockExpr;
+        }
+      }
+    }
+
+    /// <summary>
+    /// Performs pointer analysis to identify and instrument functions with memory locations.
+    /// </summary>
+    /// <param name="impl">Implementation</param>
+    private void AnalyseAndInstrumentMemoryLocations(Implementation impl)
+    {
+      var memoryLocations = new Dictionary<string, Tuple<Expr, IdentifierExpr>>();
+      int counter = 0;
+
+      foreach (var block in impl.Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
+        {
+          if (!(block.Cmds[idx] is AssignCmd))
+            continue;
+
+          AssignCmd assign = block.Cmds[idx] as AssignCmd;
+
+          foreach (var lhs in assign.Lhss.OfType<MapAssignLhs>())
+          {
+            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+              !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1 ||
+              !(lhs.Indexes[0] is IdentifierExpr))
+              continue;
+            if (!(lhs.Indexes[0] as IdentifierExpr).Name.Contains("$p"))
+              continue;
+
+            Expr memLocExpr = PointerAliasAnalysis.ComputeRootPointer(impl, lhs.Indexes[0] as IdentifierExpr);
+            if (memLocExpr == null)
+              continue;
+
+            if (memoryLocations.ContainsKey(memLocExpr.ToString()))
+            {
+              lhs.Indexes[0] = memoryLocations[memLocExpr.ToString()].Item2;
+            }
+            else
+            {
+              IdentifierExpr memLoc;
+              if (counter == 0)
+                memLoc = new IdentifierExpr(Token.NoToken, "$ml", this.AC.MemoryModelType);
+              else
+                memLoc = new IdentifierExpr(Token.NoToken, "$ml" + counter, this.AC.MemoryModelType);
+              lhs.Indexes[0] = memLoc;
+              memoryLocations.Add(memLocExpr.ToString(), new Tuple<Expr, IdentifierExpr>(memLocExpr, memLoc));
+              counter++;
+            }
+          }
+
+          foreach (var rhs in assign.Rhss.OfType<NAryExpr>())
+          {
+            if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
+              !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+              continue;
+            if (!(rhs.Args[1] as IdentifierExpr).Name.Contains("$p"))
+              continue;
+
+            Expr memLocExpr = PointerAliasAnalysis.ComputeRootPointer(impl, rhs.Args[1] as IdentifierExpr);
+            if (memLocExpr == null)
+              continue;
+
+            if (memoryLocations.ContainsKey(memLocExpr.ToString()))
+            {
+              rhs.Args[1] = memoryLocations[memLocExpr.ToString()].Item2;
+            }
+            else
+            {
+              IdentifierExpr memLoc;
+              if (counter == 0)
+                memLoc = new IdentifierExpr(Token.NoToken, "$ml", this.AC.MemoryModelType);
+              else
+                memLoc = new IdentifierExpr(Token.NoToken, "$ml" + counter, this.AC.MemoryModelType);
+              rhs.Args[1] = memLoc;
+              memoryLocations.Add(memLocExpr.ToString(), new Tuple<Expr, IdentifierExpr>(memLocExpr, memLoc));
+              counter++;
             }
           }
         }
       }
+
+      counter = 0;
+      foreach (var kvp in memoryLocations)
+      {
+        SimpleAssignLhs lhs = new SimpleAssignLhs(Token.NoToken, kvp.Value.Item2);
+        AssignCmd assign = new AssignCmd(Token.NoToken,
+                             new List<AssignLhs> { lhs }, new List<Expr> { kvp.Value.Item1 });
+        impl.Blocks[0].Cmds.Insert(counter, assign);
+        impl.LocVars.Insert(counter, new LocalVariable(lhs.tok,
+          new TypedIdent(lhs.tok, lhs.DeepAssignedIdentifier.Name, lhs.Type)));
+        counter++;
+      }
     }
 
-    private bool ShouldSkip(Implementation impl, IdentifierExpr remove)
+    private void RemoveUnusedAssignCmds(Implementation impl)
     {
-      int count = 0;
+      HashSet<AssignCmd> unusedAssigns = new HashSet<AssignCmd>();
 
-      foreach (Block b in impl.Blocks)
+      while (true)
       {
-        for (int ci = 0; ci < b.Cmds.Count; ci++)
+        int fixpoint = unusedAssigns.Count;
+        foreach (var block in impl.Blocks)
         {
-          if (b.Cmds[ci] is AssignCmd)
+          foreach (var assign in block.Cmds.OfType<AssignCmd>())
           {
-            if (!((b.Cmds[ci] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(remove.Name)))
+            if (assign.Lhss[0] is MapAssignLhs)
               continue;
-            count++;
+            if ((assign.Lhss[0] as SimpleAssignLhs).DeepAssignedIdentifier.Name.Contains("$b"))
+              continue;
+            if (this.IsUsedByAnyCmd(impl, (assign.Lhss[0] as SimpleAssignLhs).DeepAssignedIdentifier))
+              continue;
+            unusedAssigns.Add(assign);
           }
         }
+        if (unusedAssigns.Count == fixpoint) break;
       }
 
-      return count > 1 ? true : false;
+      foreach (var block in impl.Blocks)
+        block.Cmds.RemoveAll(val => (val is AssignCmd) && unusedAssigns.Contains(val));
     }
+
+    #region helper functions
 
     private void ReplaceExprInImplementation(Implementation impl, IdentifierExpr remove, IdentifierExpr replace)
     {
@@ -301,5 +375,108 @@ namespace Whoop.SLA
 
       return expr;
     }
+
+    private bool ShouldSkip(Implementation impl, IdentifierExpr remove)
+    {
+      int count = 0;
+
+      foreach (Block b in impl.Blocks)
+      {
+        for (int ci = 0; ci < b.Cmds.Count; ci++)
+        {
+          if (b.Cmds[ci] is AssignCmd)
+          {
+            if (!((b.Cmds[ci] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(remove.Name)))
+              continue;
+            count++;
+          }
+        }
+      }
+
+      return count > 1 ? true : false;
+    }
+
+    private bool IsUsedByAnyCmd(Implementation impl, IdentifierExpr id)
+    {
+      if (id.Name.Equals("$r") || id.Name.Contains("$ml"))
+        return true;
+
+      foreach (var block in impl.Blocks)
+      {
+        foreach (var cmd in block.Cmds)
+        {
+          if (cmd is CallCmd)
+          {
+            if ((cmd as CallCmd).Ins.Any(val => (val is IdentifierExpr) &&
+                (val as IdentifierExpr).Name.Equals(id.Name)))
+              return true;
+            if ((cmd as CallCmd).Outs.Any(val => val.Name.Equals(id.Name)))
+              return true;
+          }
+          else if (cmd is AssignCmd)
+          {
+            foreach (var pair in (cmd as AssignCmd).Lhss.Zip((cmd as AssignCmd).Rhss))
+            {
+              if (pair.Item1 is MapAssignLhs)
+              {
+                if ((pair.Item1 as MapAssignLhs).Indexes[0] is IdentifierExpr)
+                {
+                  if (((pair.Item1 as MapAssignLhs).Indexes[0] as IdentifierExpr).Name.Equals(id.Name))
+                    return true;
+                }
+              }
+
+              if (pair.Item2 is NAryExpr)
+              {
+                foreach (var expr in PointerAliasAnalysis.GetSubExprs(pair.Item2 as NAryExpr))
+                {
+                  if (expr.Name.Equals(id.Name))
+                    return true;
+                }
+              }
+              else if (pair.Item2 is IdentifierExpr &&
+                (pair.Item2 as IdentifierExpr).Name.Equals(id.Name))
+              {
+                return true;
+              }
+            }
+          }
+          else if (cmd is HavocCmd)
+          {
+            foreach (var expr in (cmd as HavocCmd).Vars)
+            {
+              if (expr.Name.Equals(id.Name))
+                return true;
+            }
+          }
+          else if (cmd is AssertCmd)
+          {
+            if ((cmd as AssertCmd).Expr is NAryExpr)
+            {
+              foreach (var expr in ((cmd as AssertCmd).Expr as NAryExpr).Args)
+              {
+                if (expr is IdentifierExpr && (expr as IdentifierExpr).Name.Equals(id.Name))
+                  return true;
+              }
+            }
+          }
+          else if (cmd is AssumeCmd)
+          {
+            if ((cmd as AssumeCmd).Expr is NAryExpr)
+            {
+              foreach (var expr in ((cmd as AssumeCmd).Expr as NAryExpr).Args)
+              {
+                if (expr is IdentifierExpr && (expr as IdentifierExpr).Name.Equals(id.Name))
+                  return true;
+              }
+            }
+          }
+        }
+      }
+
+      return false;
+    }
+
+    #endregion
   }
 }
