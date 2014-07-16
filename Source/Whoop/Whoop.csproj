@@ -84,7 +84,6 @@
     <Compile Include="Regions\IRegion.cs" />
     <Compile Include="Regions\AsyncFuncRegion.cs" />
     <Compile Include="Utilities\IO.cs" />
-    <Compile Include="Utilities\Util.cs" />
     <Compile Include="Utilities\RaceInstrumentationUtil.cs" />
     <Compile Include="Utilities\AnalysisContextParser.cs" />
     <Compile Include="Utilities\PairConverterUtil.cs" />

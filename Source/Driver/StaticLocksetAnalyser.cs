@@ -20,7 +20,7 @@ namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
-  public class StaticLocksetAnalyser
+  internal sealed class StaticLocksetAnalyser
   {
     AnalysisContext AC;
     PipelineStatistics Stats;
@@ -40,23 +40,23 @@ namespace Whoop
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
       Console.WriteLine("000: " + GC.GetTotalMemory(true));
-      if (Util.GetCommandLineOptions().LoopUnrollCount != -1)
-        this.AC.Program.UnrollLoops(Util.GetCommandLineOptions().LoopUnrollCount,
-          Util.GetCommandLineOptions().SoundLoopUnrolling);
+      if (WhoopCommandLineOptions.Get().LoopUnrollCount != -1)
+        this.AC.Program.UnrollLoops(WhoopCommandLineOptions.Get().LoopUnrollCount,
+          WhoopCommandLineOptions.Get().SoundLoopUnrolling);
 
       var decls = this.AC.Program.TopLevelDeclarations.ToArray();
       foreach (var func in this.AC.GetImplementationsToAnalyse())
       {
         Console.WriteLine("Analyse: " + func);
-        if (!func.Name.Contains(Util.GetCommandLineOptions().AnalyseOnly)) continue;
+        if (!func.Name.Contains(WhoopCommandLineOptions.Get().AnalyseOnly)) continue;
 
         VC.ConditionGeneration vcgen = null;
 
         Console.WriteLine("0: " + GC.GetTotalMemory(true));
         try
         {
-          vcgen = new VC.VCGen(this.AC.Program, Util.GetCommandLineOptions().SimplifyLogFilePath,
-            Util.GetCommandLineOptions().SimplifyLogFileAppend, new List<Checker>());
+          vcgen = new VC.VCGen(this.AC.Program, WhoopCommandLineOptions.Get().SimplifyLogFilePath,
+            WhoopCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
         }
         catch (ProverException e)
         {
@@ -73,10 +73,10 @@ namespace Whoop
         List<Counterexample> errors;
 
         DateTime start = new DateTime();
-        if (Util.GetCommandLineOptions().Trace)
+        if (WhoopCommandLineOptions.Get().Trace)
         {
           start = DateTime.UtcNow;
-          if (Util.GetCommandLineOptions().Trace)
+          if (WhoopCommandLineOptions.Get().Trace)
           {
             Console.WriteLine("");
             Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
@@ -107,7 +107,7 @@ namespace Whoop
         DateTime end = DateTime.UtcNow;
         TimeSpan elapsed = end - start;
 
-        if (Util.GetCommandLineOptions().Trace)
+        if (WhoopCommandLineOptions.Get().Trace)
         {
           int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
           timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
@@ -116,12 +116,12 @@ namespace Whoop
 
         this.ProcessOutcome(funcToAnalyse, vcOutcome, errors, timeIndication, this.Stats);
 
-        if (vcOutcome == VC.VCGen.Outcome.Errors || Util.GetCommandLineOptions().Trace)
+        if (vcOutcome == VC.VCGen.Outcome.Errors || WhoopCommandLineOptions.Get().Trace)
           Console.Out.Flush();
 
         Console.WriteLine("1: " + GC.GetTotalMemory(true));
 
-        cce.NonNull(Util.GetCommandLineOptions().TheProverFactory).Close();
+        cce.NonNull(WhoopCommandLineOptions.Get().TheProverFactory).Close();
         vcgen.Dispose();
 
         Console.WriteLine("2: " + GC.GetTotalMemory(true));
@@ -142,12 +142,12 @@ namespace Whoop
         case VC.VCGen.Outcome.ReachedBound:
           Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
-            Util.GetCommandLineOptions().RecursionBound));
+            WhoopCommandLineOptions.Get().RecursionBound));
           stats.VerifiedCount++;
           break;
         
         case VC.VCGen.Outcome.Correct:
-          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
@@ -176,7 +176,7 @@ namespace Whoop
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
-          if (Util.GetCommandLineOptions().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;

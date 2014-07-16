@@ -25,7 +25,7 @@ namespace Whoop
     public static Dictionary<string, Dictionary<string, string>> ParseDriverInfo()
     {
       Dictionary<string, Dictionary<string, string>> eps = new Dictionary<string, Dictionary<string, string>>();
-      List<string> files = Util.GetCommandLineOptions().Files;
+      List<string> files = WhoopCommandLineOptions.Get().Files;
 
       string driverInfoFile = files[files.Count - 1].Substring(0,
                                 files[files.Count - 1].IndexOf(".")) + ".info";

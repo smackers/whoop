@@ -42,7 +42,7 @@ namespace Whoop.SLA
         this.InstrumentSourceLocationInfo(region);
         this.InstrumentRaceCheckingCaptureStates(region);
 
-        if (!Util.GetCommandLineOptions().OnlyRaceChecking)
+        if (!WhoopCommandLineOptions.Get().OnlyRaceChecking)
           this.InstrumentDeadlockCheckingCaptureStates(region);
       }
     }

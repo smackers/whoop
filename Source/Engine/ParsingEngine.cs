@@ -10,15 +10,30 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
 using Microsoft.Boogie;
+using Microsoft.Basetypes;
+
+using Whoop.SLA;
 
 namespace Whoop
 {
-  public class Util
+  internal sealed class ParsingEngine
   {
-    public static WhoopCommandLineOptions GetCommandLineOptions()
+    private AnalysisContext AC;
+
+    public ParsingEngine(AnalysisContext ac)
     {
-      return (WhoopCommandLineOptions)CommandLineOptions.Clo;
+      Contract.Requires(ac != null);
+      this.AC = ac;
+    }
+
+    public void Run()
+    {
+
     }
   }
 }

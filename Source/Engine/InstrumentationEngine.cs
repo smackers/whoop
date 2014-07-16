@@ -23,7 +23,7 @@ namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
-  public class InstrumentationEngine
+  internal sealed class InstrumentationEngine
   {
     private AnalysisContext AC;
 
@@ -51,9 +51,9 @@ namespace Whoop
       ModelCleaner.RemoveMemoryRegions(this.AC);
       ModelCleaner.RemoveUnusedVars(this.AC);
 
-      Util.GetCommandLineOptions().PrintUnstructured = 2;
-      Whoop.IO.EmitProgram(this.AC.Program, Util.GetCommandLineOptions().Files[
-        Util.GetCommandLineOptions().Files.Count - 1], "wbpl");
+      EngineCommandLineOptions.Get().PrintUnstructured = 2;
+      Whoop.IO.EmitProgram(this.AC.Program, EngineCommandLineOptions.Get().Files[
+        EngineCommandLineOptions.Get().Files.Count - 1], "wbpl");
     }
   }
 }

@@ -100,7 +100,7 @@ cleanUpHandler = BatchCaller()
 
 """ Timing for the toolchain.
 """
-Tools = [ "chauffeur", "clang", "smack", "whoopengine", "whoopdriver" ]
+Tools = [ "chauffeur", "clang", "smack", "whoopParser", "whoopInstrumentor", "whoopDriver" ]
 Timing = { }
 
 """ WindowsError is not defined on UNIX
@@ -137,6 +137,8 @@ class DefaultCmdLineOptions(object):
     self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
     self.smackOptions = [ ]
     self.whoopEngineOptions = [ ]
+    self.whoopParserOptions = [ ]
+    self.whoopInstrumentorOptions = [ ]
     self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
     self.includes = clangCoreIncludes
     self.defines = clangCoreDefines
@@ -595,7 +597,14 @@ def startToolChain(argv):
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
 
-  CommandLineOptions.whoopEngineOptions += [ bplFilename ]
+  CommandLineOptions.whoopParserOptions += CommandLineOptions.whoopEngineOptions
+  CommandLineOptions.whoopInstrumentorOptions += CommandLineOptions.whoopEngineOptions
+
+  CommandLineOptions.whoopParserOptions += [ "/mode:PARSING" ]
+  CommandLineOptions.whoopInstrumentorOptions += [ "/mode:INSTRUMENTING" ]
+
+  CommandLineOptions.whoopParserOptions += [ bplFilename ]
+  CommandLineOptions.whoopInstrumentorOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ bplFilename ]
 
   """ RUN CHAUFFEUR """
@@ -630,18 +639,28 @@ def startToolChain(argv):
     processBPL(bplFilename, infoFilename)
   if CommandLineOptions.stopAtBpl: return 0
 
-  """ RUN WHOOP ENGINE """
+  """ RUN WHOOP ENGINE :: PARSING MODE """
   if not CommandLineOptions.skip["engine"]:
-    runTool("whoopengine",
+    runTool("whoopParser",
             (["mono"] if os.name == "posix" else []) +
             [findtools.whoopBinDir + "/WhoopEngine.exe"] +
-            CommandLineOptions.whoopEngineOptions,
+            CommandLineOptions.whoopParserOptions,
+            ErrorCodes.ENGINE_ERROR,
+            CommandLineOptions.componentTimeout)
+    if CommandLineOptions.stopAtWbpl: return 0
+
+  """ RUN WHOOP ENGINE :: INSTRUMENTING MODE """
+  if not CommandLineOptions.skip["engine"]:
+    runTool("whoopInstrumentor",
+            (["mono"] if os.name == "posix" else []) +
+            [findtools.whoopBinDir + "/WhoopEngine.exe"] +
+            CommandLineOptions.whoopInstrumentorOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
     if CommandLineOptions.stopAtWbpl: return 0
 
   """ RUN WHOOP DRIVER """
-  runTool("whoopdriver",
+  runTool("whoopDriver",
           (["mono"] if os.name == "posix" else []) +
           [findtools.whoopBinDir + "/WhoopDriver.exe"] +
           CommandLineOptions.whoopDriverOptions,

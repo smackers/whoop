@@ -69,9 +69,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CoreLib\WhoopCoreLib.csproj">
+    <ProjectReference Include="..\Whoop\Whoop.csproj">
       <Project>{ED690CF6-D197-4E45-BEF3-EA47A491C757}</Project>
-      <Name>WhoopCoreLib</Name>
+      <Name>Whoop</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

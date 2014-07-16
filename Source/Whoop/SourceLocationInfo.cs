@@ -34,8 +34,8 @@ namespace Whoop
       this.Column = QKeyValue.FindIntAttribute(attributes, "column", -1);
       if (this.Column == -1) throw new Exception();
 
-      this.File = Util.GetCommandLineOptions().OriginalFile;
-      this.Directory = Path.GetDirectoryName(Util.GetCommandLineOptions().OriginalFile);
+      this.File = WhoopCommandLineOptions.Get().OriginalFile;
+      this.Directory = Path.GetDirectoryName(WhoopCommandLineOptions.Get().OriginalFile);
       this.StackTrace = SourceLocationInfo.TrimLeadingSpaces(this.FetchCodeLine(0), 2);
     }
 

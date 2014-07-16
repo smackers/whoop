@@ -28,9 +28,15 @@ namespace Whoop
 
     }
 
-    protected override bool ParseOption(string name, CommandLineOptionEngine.CommandLineParseState ps)
+    public WhoopCommandLineOptions(string toolName, string descriptiveName)
+      : base(toolName, descriptiveName)
     {
-      if (name == "originalFile")
+
+    }
+
+    protected override bool ParseOption(string option, CommandLineOptionEngine.CommandLineParseState ps)
+    {
+      if (option == "originalFile")
       {
         if (ps.ConfirmArgumentCount(1))
         {
@@ -39,7 +45,7 @@ namespace Whoop
         return true;
       }
 
-      if (name == "analyseOnly")
+      if (option == "analyseOnly")
       {
         if (ps.ConfirmArgumentCount(1))
         {
@@ -48,7 +54,7 @@ namespace Whoop
         return true;
       }
 
-      if (name == "raceChecking")
+      if (option == "raceChecking")
       {
         if (ps.ConfirmArgumentCount(1))
         {
@@ -64,7 +70,7 @@ namespace Whoop
         return true;
       }
 
-      if (name == "functionPairing")
+      if (option == "functionPairing")
       {
         if (ps.ConfirmArgumentCount(1))
         {
@@ -84,25 +90,30 @@ namespace Whoop
         return true;
       }
 
-      if (name == "onlyRaceChecking")
+      if (option == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;
         return true;
       }
 
-      if (name == "printPairs")
+      if (option == "printPairs")
       {
         this.PrintPairs = true;
         return true;
       }
 
-      if (name == "debugWhoop")
+      if (option == "debugWhoop")
       {
         this.DebugWhoop = true;
         return true;
       }
 
-      return base.ParseOption(name, ps);  // defer to superclass
+      return base.ParseOption(option, ps);
+    }
+
+    public static WhoopCommandLineOptions Get()
+    {
+      return (WhoopCommandLineOptions)CommandLineOptions.Clo;
     }
   }
 }

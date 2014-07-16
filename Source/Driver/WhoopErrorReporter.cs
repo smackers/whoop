@@ -17,7 +17,7 @@ using Microsoft.Boogie;
 
 namespace Whoop
 {
-  public class WhoopErrorReporter
+  internal sealed class WhoopErrorReporter
   {
     private List<Tuple<SourceLocationInfo, SourceLocationInfo>> ReportedErrors;
 
@@ -50,7 +50,7 @@ namespace Whoop
         else
         {
           errors++;
-          if (Util.GetCommandLineOptions().DebugWhoop)
+          if (WhoopCommandLineOptions.Get().DebugWhoop)
           {
             this.PopulateModelWithStatesIfNecessary(cex);
             Write(cex.Model);
@@ -136,7 +136,7 @@ namespace Whoop
       Contract.Requires(stateName != null);
 
       Block b = cex.Trace[cex.Trace.Count - 1];
-      if (Util.GetCommandLineOptions().DebugWhoop)
+      if (WhoopCommandLineOptions.Get().DebugWhoop)
       {
         this.Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
@@ -148,7 +148,7 @@ namespace Whoop
 
       AssertCmd assert = b.Cmds[b.Cmds.Count - 1] as AssertCmd;
       Contract.Requires(assert != null);
-      if (Util.GetCommandLineOptions().DebugWhoop)
+      if (WhoopCommandLineOptions.Get().DebugWhoop)
       {
         Console.WriteLine("assert: " + assert);
       }
@@ -168,7 +168,7 @@ namespace Whoop
       }
       Contract.Requires(aoff != null);
 
-      if (Util.GetCommandLineOptions().DebugWhoop)
+      if (WhoopCommandLineOptions.Get().DebugWhoop)
       {
         Console.WriteLine(aoffFunc.Name + " :: " + aoff);
       }
@@ -215,7 +215,7 @@ namespace Whoop
           Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          if (Util.GetCommandLineOptions().DebugWhoop)
+          if (WhoopCommandLineOptions.Get().DebugWhoop)
           {
             Console.WriteLine("*** STATE {0}", logState.Name);
             foreach (var v in logState.Variables)

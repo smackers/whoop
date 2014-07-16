@@ -25,17 +25,17 @@ namespace Whoop
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new WhoopCommandLineOptions());
+      CommandLineOptions.Install(new EngineCommandLineOptions());
 
       try
       {
-        Util.GetCommandLineOptions().RunningBoogieFromCommandLine = true;
+        EngineCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!Util.GetCommandLineOptions().Parse(args))
+        if (!EngineCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
-        if (Util.GetCommandLineOptions().Files.Count == 0)
+        if (EngineCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -43,7 +43,7 @@ namespace Whoop
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in Util.GetCommandLineOptions().Files)
+        foreach (string file in EngineCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -70,13 +70,20 @@ namespace Whoop
 
         PairConverterUtil.ParseAsyncFuncs();
 
-        if (Util.GetCommandLineOptions().PrintPairs)
+        if (EngineCommandLineOptions.Get().PrintPairs)
         {
           PairConverterUtil.PrintFunctionPairs();
         }
 
-        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
-        new InstrumentationEngine(ac).Run();
+        if (EngineCommandLineOptions.Get().EngineMode == EngineMode.PARSING)
+        {
+
+        }
+        else if (EngineCommandLineOptions.Get().EngineMode == EngineMode.INSTRUMENTING)
+        {
+          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+          new InstrumentationEngine(ac).Run();
+        }
 
         Environment.Exit((int)Outcome.Done);
       }
