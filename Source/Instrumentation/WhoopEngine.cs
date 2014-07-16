@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 
-namespace Whoop
+namespace Whoop.Instrumentation
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -25,17 +25,17 @@ namespace Whoop
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new EngineCommandLineOptions());
+      CommandLineOptions.Install(new InstrumentationCommandLineOptions());
 
       try
       {
-        EngineCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        InstrumentationCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!EngineCommandLineOptions.Get().Parse(args))
+        if (!InstrumentationCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
-        if (EngineCommandLineOptions.Get().Files.Count == 0)
+        if (InstrumentationCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -43,7 +43,7 @@ namespace Whoop
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in EngineCommandLineOptions.Get().Files)
+        foreach (string file in InstrumentationCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -70,20 +70,13 @@ namespace Whoop
 
         PairConverterUtil.ParseAsyncFuncs();
 
-        if (EngineCommandLineOptions.Get().PrintPairs)
+        if (InstrumentationCommandLineOptions.Get().PrintPairs)
         {
           PairConverterUtil.PrintFunctionPairs();
         }
 
-        if (EngineCommandLineOptions.Get().EngineMode == EngineMode.PARSING)
-        {
-
-        }
-        else if (EngineCommandLineOptions.Get().EngineMode == EngineMode.INSTRUMENTING)
-        {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
-          new InstrumentationEngine(ac).Run();
-        }
+        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+        new InstrumentationEngine(ac).Run();
 
         Environment.Exit((int)Outcome.Done);
       }

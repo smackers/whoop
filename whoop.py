@@ -600,9 +600,6 @@ def startToolChain(argv):
   CommandLineOptions.whoopParserOptions += CommandLineOptions.whoopEngineOptions
   CommandLineOptions.whoopInstrumentorOptions += CommandLineOptions.whoopEngineOptions
 
-  CommandLineOptions.whoopParserOptions += [ "/mode:PARSING" ]
-  CommandLineOptions.whoopInstrumentorOptions += [ "/mode:INSTRUMENTING" ]
-
   CommandLineOptions.whoopParserOptions += [ bplFilename ]
   CommandLineOptions.whoopInstrumentorOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ bplFilename ]
@@ -639,21 +636,21 @@ def startToolChain(argv):
     processBPL(bplFilename, infoFilename)
   if CommandLineOptions.stopAtBpl: return 0
 
-  """ RUN WHOOP ENGINE :: PARSING MODE """
+  """ RUN WHOOP PARSING ENGINE """
   if not CommandLineOptions.skip["engine"]:
     runTool("whoopParser",
             (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/WhoopEngine.exe"] +
+            [findtools.whoopBinDir + "/Whoop.Parsing.exe"] +
             CommandLineOptions.whoopParserOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
     if CommandLineOptions.stopAtWbpl: return 0
 
-  """ RUN WHOOP ENGINE :: INSTRUMENTING MODE """
+  """ RUN WHOOP INSTRUMENTATION ENGINE """
   if not CommandLineOptions.skip["engine"]:
     runTool("whoopInstrumentor",
             (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/WhoopEngine.exe"] +
+            [findtools.whoopBinDir + "/Whoop.Instrumentation.exe"] +
             CommandLineOptions.whoopInstrumentorOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
@@ -662,7 +659,7 @@ def startToolChain(argv):
   """ RUN WHOOP DRIVER """
   runTool("whoopDriver",
           (["mono"] if os.name == "posix" else []) +
-          [findtools.whoopBinDir + "/WhoopDriver.exe"] +
+          [findtools.whoopBinDir + "/Whoop.Driver.exe"] +
           CommandLineOptions.whoopDriverOptions,
           ErrorCodes.DRIVER_ERROR,
           CommandLineOptions.componentTimeout)

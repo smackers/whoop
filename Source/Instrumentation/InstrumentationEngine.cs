@@ -19,7 +19,7 @@ using Microsoft.Basetypes;
 
 using Whoop.SLA;
 
-namespace Whoop
+namespace Whoop.Instrumentation
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -51,9 +51,9 @@ namespace Whoop
       ModelCleaner.RemoveMemoryRegions(this.AC);
       ModelCleaner.RemoveUnusedVars(this.AC);
 
-      EngineCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.EmitProgram(this.AC.Program, EngineCommandLineOptions.Get().Files[
-        EngineCommandLineOptions.Get().Files.Count - 1], "wbpl");
+      InstrumentationCommandLineOptions.Get().PrintUnstructured = 2;
+      Whoop.IO.EmitProgram(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
+        InstrumentationCommandLineOptions.Get().Files.Count - 1], "wbpl");
     }
   }
 }

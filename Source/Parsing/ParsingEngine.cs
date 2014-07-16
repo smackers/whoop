@@ -10,13 +10,30 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using Microsoft.Boogie;
+using Microsoft.Basetypes;
 
-namespace Whoop
+using Whoop.SLA;
+
+namespace Whoop.Parsing
 {
-  internal enum EngineMode
+  internal sealed class ParsingEngine
   {
-    INACTIVE,
-    PARSING,
-    INSTRUMENTING
+    private AnalysisContext AC;
+
+    public ParsingEngine(AnalysisContext ac)
+    {
+      Contract.Requires(ac != null);
+      this.AC = ac;
+    }
+
+    public void Run()
+    {
+
+    }
   }
 }

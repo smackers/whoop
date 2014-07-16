@@ -10,30 +10,25 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
 using Microsoft.Boogie;
-using Microsoft.Basetypes;
 
-using Whoop.SLA;
-
-namespace Whoop
+namespace Whoop.Driver
 {
-  internal sealed class ParsingEngine
+  internal class DriverCommandLineOptions : WhoopCommandLineOptions
   {
-    private AnalysisContext AC;
-
-    public ParsingEngine(AnalysisContext ac)
+    public DriverCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
-      Contract.Requires(ac != null);
-      this.AC = ac;
+
     }
 
-    public void Run()
+    protected override bool ParseOption(string option, CommandLineOptionEngine.CommandLineParseState ps)
     {
+      return base.ParseOption(option, ps);
+    }
 
+    internal static DriverCommandLineOptions Get()
+    {
+      return (DriverCommandLineOptions)CommandLineOptions.Clo;
     }
   }
 }

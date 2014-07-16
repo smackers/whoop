@@ -111,7 +111,7 @@ namespace Whoop
       return base.ParseOption(option, ps);
     }
 
-    public static WhoopCommandLineOptions Get()
+    internal static WhoopCommandLineOptions Get()
     {
       return (WhoopCommandLineOptions)CommandLineOptions.Clo;
     }

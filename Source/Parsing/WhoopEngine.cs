@@ -15,27 +15,27 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 
-namespace Whoop.Driver
+namespace Whoop.Parsing
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
-  public class WhoopDriver
+  public class WhoopEngine
   {
     public static void Main(string[] args)
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new DriverCommandLineOptions());
+      CommandLineOptions.Install(new ParsingCommandLineOptions());
 
       try
       {
-        DriverCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        ParsingCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!DriverCommandLineOptions.Get().Parse(args))
+        if (!ParsingCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
-        if (DriverCommandLineOptions.Get().Files.Count == 0)
+        if (ParsingCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -43,7 +43,7 @@ namespace Whoop.Driver
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in DriverCommandLineOptions.Get().Files)
+        foreach (string file in ParsingCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -70,10 +70,15 @@ namespace Whoop.Driver
 
         PairConverterUtil.ParseAsyncFuncs();
 
-        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").ParseNew();
-        Outcome oc = new StaticLocksetAnalyser(ac).Run();
+        if (ParsingCommandLineOptions.Get().PrintPairs)
+        {
+          PairConverterUtil.PrintFunctionPairs();
+        }
 
-        Environment.Exit((int)oc);
+        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+        new ParsingEngine(ac).Run();
+
+        Environment.Exit((int)Outcome.Done);
       }
       catch (Exception e)
       {
