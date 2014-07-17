@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
@@ -35,7 +36,7 @@ namespace Whoop.Regions
       Contract.Requires(impl != null && implList != null);
       this.AC = ac;
 
-      if (PairConverterUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
+      if (WhoopCommandLineOptions.Get().FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
         this.RegionName = "$" + impl.Name;
       else
         this.RegionName = "$" + impl.Name + "$" + implList[0].Name;

@@ -10,11 +10,17 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
 
-namespace Whoop.SLA
+using Microsoft.Boogie;
+using Microsoft.Basetypes;
+
+namespace Whoop.Domain.Drivers
 {
-  public interface ILocksetInstrumentation
+  public sealed class EntryPointDescription
   {
-    void Run();
+
   }
 }

@@ -13,7 +13,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Instrumentation
 {
@@ -37,7 +39,7 @@ namespace Whoop.Instrumentation
         }
         if (InstrumentationCommandLineOptions.Get().Files.Count == 0)
         {
-          Whoop.IO.ErrorWriteLine("Whoop: error: no input files were specified");
+          Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
         }
 
@@ -63,16 +65,16 @@ namespace Whoop.Instrumentation
           }
           if (extension != ".bpl")
           {
-            Whoop.IO.ErrorWriteLine("Whoop: error: {0} is not a .bpl file", file);
+            Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: {0} is not a .bpl file", file);
             Environment.Exit((int)Outcome.FatalError);
           }
         }
 
-        PairConverterUtil.ParseAsyncFuncs();
+        EntryPointPairing.ParseAsyncFuncs(fileList);
 
         if (InstrumentationCommandLineOptions.Get().PrintPairs)
         {
-          PairConverterUtil.PrintFunctionPairs();
+          EntryPointPairing.PrintFunctionPairs();
         }
 
         AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();

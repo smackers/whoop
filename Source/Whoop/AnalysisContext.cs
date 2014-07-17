@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.Domain.Drivers;
 using Whoop.Regions;
 using Whoop.SLA;
 
@@ -186,7 +187,7 @@ namespace Whoop
       try
       {
         this.InitFunc = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(PairConverterUtil.InitFuncName)) as Implementation);
+          (val as Implementation).Name.Equals(EntryPointPairing.InitFuncName)) as Implementation);
         if (this.InitFunc == null) throw new Exception("no main function found");
       }
       catch (Exception e)

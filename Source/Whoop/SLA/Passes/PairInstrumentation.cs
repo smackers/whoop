@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.Domain.Drivers;
 using Whoop.Regions;
 
 namespace Whoop.SLA
@@ -51,7 +52,7 @@ namespace Whoop.SLA
     /// </summary>
     private void CreatePairs()
     {
-      foreach (var ep in PairConverterUtil.FunctionPairs)
+      foreach (var ep in EntryPointPairing.FunctionPairs)
       {
         Implementation impl = this.AC.GetImplementation(ep.Item1);
         List<Implementation> implList = new List<Implementation>();
@@ -188,7 +189,7 @@ namespace Whoop.SLA
     {
       string consName = "$";
 
-      if (PairConverterUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
+      if (WhoopCommandLineOptions.Get().FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
         consName += cons.Name;
       else
         consName += cons.Name + "$" + consList[0].Name;

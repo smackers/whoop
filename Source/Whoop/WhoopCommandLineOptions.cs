@@ -23,6 +23,8 @@ namespace Whoop
     public bool OnlyRaceChecking = false;
     public bool DebugWhoop = false;
 
+    public FunctionPairingMethod FunctionPairingMethod = FunctionPairingMethod.LINEAR;
+
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -76,15 +78,15 @@ namespace Whoop
         {
           if (ps.args[ps.i] == "LINEAR")
           {
-            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
+            this.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
           }
           else if (ps.args[ps.i] == "TRIANGULAR")
           {
-            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
+            this.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
           }
           else if (ps.args[ps.i] == "QUADRATIC")
           {
-            PairConverterUtil.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
+            this.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
           }
         }
         return true;

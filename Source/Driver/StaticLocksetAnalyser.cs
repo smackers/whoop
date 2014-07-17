@@ -60,7 +60,7 @@ namespace Whoop.Driver
         }
         catch (ProverException e)
         {
-          Whoop.IO.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
+          Whoop.IO.Reporter.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
           Environment.Exit((int)Outcome.FatalError);
         }
         Console.WriteLine("01: " + GC.GetTotalMemory(true));
@@ -90,14 +90,14 @@ namespace Whoop.Driver
         }
         catch (VC.VCGenException e)
         {
-          Whoop.IO.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
+          Whoop.IO.Reporter.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
             e.Message, funcToAnalyse.Name), true, true);
           errors = null;
           vcOutcome = VC.VCGen.Outcome.Inconclusive;
         }
         catch (UnexpectedProverOutputException e)
         {
-          Whoop.IO.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
+          Whoop.IO.Reporter.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
             funcToAnalyse.Name, e.Message);
           errors = null;
           vcOutcome = VC.VCGen.Outcome.Inconclusive;
@@ -127,7 +127,7 @@ namespace Whoop.Driver
         Console.WriteLine("2: " + GC.GetTotalMemory(true));
       }
 
-      Whoop.IO.WriteTrailer(this.Stats);
+      Whoop.IO.Reporter.WriteTrailer(this.Stats);
 
       if ((this.Stats.ErrorCount + this.Stats.InconclusiveCount + this.Stats.TimeoutCount + this.Stats.OutOfMemoryCount) > 0)
         return Outcome.LocksetAnalysisError;
@@ -140,7 +140,7 @@ namespace Whoop.Driver
       switch (outcome)
       {
         case VC.VCGen.Outcome.ReachedBound:
-          Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+          Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
             DriverCommandLineOptions.Get().RecursionBound));
           stats.VerifiedCount++;
@@ -149,36 +149,36 @@ namespace Whoop.Driver
         case VC.VCGen.Outcome.Correct:
           if (DriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
-            Whoop.IO.Inform(String.Format("{0}credible", timeIndication));
+            Whoop.IO.Reporter.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
           }
           else
           {
-            Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+            Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
           }
           break;
         
         case VC.VCGen.Outcome.TimedOut:
           stats.TimeoutCount++;
-          Whoop.IO.Inform(String.Format("{0}timed out", timeIndication));
+          Whoop.IO.Reporter.Inform(String.Format("{0}timed out", timeIndication));
           break;
         
         case VC.VCGen.Outcome.OutOfMemory:
           stats.OutOfMemoryCount++;
-          Whoop.IO.Inform(String.Format("{0}out of memory", timeIndication));
+          Whoop.IO.Reporter.Inform(String.Format("{0}out of memory", timeIndication));
           break;
         
         case VC.VCGen.Outcome.Inconclusive:
           stats.InconclusiveCount++;
-          Whoop.IO.Inform(String.Format("{0}inconclusive", timeIndication));
+          Whoop.IO.Reporter.Inform(String.Format("{0}inconclusive", timeIndication));
           break;
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
           if (DriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
-            Whoop.IO.Inform(String.Format("{0}doomed", timeIndication));
+            Whoop.IO.Reporter.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;
           }
 
@@ -190,12 +190,12 @@ namespace Whoop.Driver
           Console.WriteLine("4: " + GC.GetTotalMemory(true));
           if (errorCount == 0)
           {
-            Whoop.IO.Inform(String.Format("{0}verified", timeIndication));
+            Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));
             stats.VerifiedCount++;
           }
           else
           {
-            Whoop.IO.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
+            Whoop.IO.Reporter.Inform(String.Format("{0}error{1}", timeIndication, errorCount == 1 ? "" : "s"));
             stats.ErrorCount += errorCount;
           }
           break;

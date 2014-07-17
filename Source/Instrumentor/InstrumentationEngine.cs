@@ -14,6 +14,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
@@ -52,7 +53,7 @@ namespace Whoop.Instrumentation
       ModelCleaner.RemoveUnusedVars(this.AC);
 
       InstrumentationCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.EmitProgram(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
         InstrumentationCommandLineOptions.Get().Files.Count - 1], "wbpl");
     }
   }

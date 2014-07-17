@@ -15,56 +15,13 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using Microsoft.Boogie;
 
-namespace Whoop
+namespace Whoop.IO
 {
   /// <summary>
-  /// IO utility class for whoop.
+  /// IO reporter class.
   /// </summary>
-  public static class IO
+  public static class Reporter
   {
-    public static Dictionary<string, Dictionary<string, string>> ParseDriverInfo()
-    {
-      Dictionary<string, Dictionary<string, string>> eps = new Dictionary<string, Dictionary<string, string>>();
-      List<string> files = WhoopCommandLineOptions.Get().Files;
-
-      string driverInfoFile = files[files.Count - 1].Substring(0,
-                                files[files.Count - 1].IndexOf(".")) + ".info";
-
-      StreamReader file = new StreamReader(driverInfoFile);
-      string line;
-
-      while ((line = file.ReadLine()) != null)
-      {
-        string type = line.Trim(new char[] { '<', '>' });
-        Dictionary<string, string> inner = new Dictionary<string, string>();
-        while ((line = file.ReadLine()) != null)
-        {
-          if (line.Equals("</>")) break;
-          string[] pair = line.Split(new string[] { "::" }, StringSplitOptions.None);
-          inner.Add(pair[0], pair[1]);
-        }
-        eps.Add(type, inner);
-      }
-
-      file.Close();
-      return eps;
-    }
-
-    public static void EmitProgram(Program program, string file, string extension = "bpl")
-    {
-      string directoryContainingFile = Path.GetDirectoryName(file);
-      if (string.IsNullOrEmpty(directoryContainingFile))
-        directoryContainingFile = Directory.GetCurrentDirectory();
-
-      var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
-                     Path.GetFileNameWithoutExtension(file);
-
-      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension))
-      {
-        program.Emit(writer);
-      }
-    }
-
     public static void ReportBplError(Absy node, string message, bool error, bool showBplLocation)
     {
       Contract.Requires(message != null);
@@ -81,7 +38,7 @@ namespace Whoop
       }
       if (error)
       {
-        IO.ErrorWriteLine(s);
+        Whoop.IO.Reporter.ErrorWriteLine(s);
       }
       else
       {
@@ -99,7 +56,7 @@ namespace Whoop
     {
       Contract.Requires(format != null);
       string s = string.Format(format, args);
-      IO.ErrorWriteLine(s);
+      Whoop.IO.Reporter.ErrorWriteLine(s);
     }
 
     public static void AdvisoryWriteLine(string format, params object[] args)

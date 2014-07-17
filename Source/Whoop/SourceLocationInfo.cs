@@ -66,7 +66,7 @@ namespace Whoop
 
     public void PrintStackTrace()
     {
-      IO.ErrorWriteLine(this.StackTrace);
+      Whoop.IO.Reporter.ErrorWriteLine(this.StackTrace);
       Console.Error.WriteLine();
     }
 

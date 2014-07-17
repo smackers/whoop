@@ -13,70 +13,70 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-namespace Whoop
+namespace Whoop.Domain.Drivers
 {
-  public class PairConverterUtil
+  public static class EntryPointPairing
   {
     private static Dictionary<string, Dictionary<string, string>> AbstractAsyncFuncs;
     internal static string InitFuncName;
     public static List<Tuple<string, List<string>>> FunctionPairs;
-    public static FunctionPairingMethod FunctionPairingMethod = FunctionPairingMethod.LINEAR;
 
-    public static void ParseAsyncFuncs()
+    public static void ParseAsyncFuncs(List<string> files)
     {
-      PairConverterUtil.AbstractAsyncFuncs = IO.ParseDriverInfo();
-      PairConverterUtil.DetectInitFunction();
+      EntryPointPairing.AbstractAsyncFuncs = DeviceDriverParser.ParseInfo(files);
+      EntryPointPairing.DetectInitFunction();
 
-      PairConverterUtil.FunctionPairs = new List<Tuple<string, List<string>>>();
+      EntryPointPairing.FunctionPairs = new List<Tuple<string, List<string>>>();
 
-      if (PairConverterUtil.FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
+      if (WhoopCommandLineOptions.Get().FunctionPairingMethod != FunctionPairingMethod.QUADRATIC)
       {
-        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncs)
+        foreach (var kvp1 in EntryPointPairing.AbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            if (EntryPointPairing.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
             List<string> funcs = new List<string>();
 
-            if (PairConverterUtil.CanRunConcurrently(ep1.Key, ep1.Key))
+            if (EntryPointPairing.CanRunConcurrently(ep1.Key, ep1.Key))
             {
               funcs.Add(ep1.Value);
             }
 
-            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncs)
+            foreach (var kvp2 in EntryPointPairing.AbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
-                if (!PairConverterUtil.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
-                if (!PairConverterUtil.IsNewPair(ep1.Value, ep2.Value)) continue;
+                if (!EntryPointPairing.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
+                if (!EntryPointPairing.IsNewPair(ep1.Value, ep2.Value)) continue;
                 if (funcs.Contains(ep2.Value)) continue;
                 funcs.Add(ep2.Value);
               }
             }
 
             if (funcs.Count == 0) continue;
-            PairConverterUtil.FunctionPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
+            EntryPointPairing.FunctionPairs.Add(new Tuple<string, List<string>>(ep1.Value, funcs));
           }
         }
       }
       else
       {
-        foreach (var kvp1 in PairConverterUtil.AbstractAsyncFuncs)
+        foreach (var kvp1 in EntryPointPairing.AbstractAsyncFuncs)
         {
           foreach (var ep1 in kvp1.Value)
           {
-            if (PairConverterUtil.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
-            foreach (var kvp2 in PairConverterUtil.AbstractAsyncFuncs)
+            if (EntryPointPairing.FunctionPairs.Any(val => val.Item1.Equals(ep1.Value))) continue;
+            foreach (var kvp2 in EntryPointPairing.AbstractAsyncFuncs)
             {
               foreach (var ep2 in kvp2.Value)
               {
-                if (!PairConverterUtil.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
-                if (!PairConverterUtil.IsNewPair(ep1.Value, ep2.Value)) continue;
+                if (!EntryPointPairing.CanRunConcurrently(ep1.Key, ep2.Key)) continue;
+                if (!EntryPointPairing.IsNewPair(ep1.Value, ep2.Value)) continue;
 
-                PairConverterUtil.FunctionPairs.Add(new Tuple<string,
+                EntryPointPairing.FunctionPairs.Add(new Tuple<string,
                   List<string>>(ep1.Value, new List<string> { ep2.Value }));
               }
             }
@@ -87,7 +87,7 @@ namespace Whoop
 
     public static void PrintFunctionPairs()
     {
-      foreach (var v in PairConverterUtil.FunctionPairs)
+      foreach (var v in EntryPointPairing.FunctionPairs)
       {
         Console.WriteLine("Entry Point: " + v.Item1);
         foreach (var z in v.Item2)
@@ -99,18 +99,18 @@ namespace Whoop
 
     private static void DetectInitFunction()
     {
-      PairConverterUtil.InitFuncName = null;
+      EntryPointPairing.InitFuncName = null;
       bool found = false;
 
       try
       {
-        foreach (var kvp in PairConverterUtil.AbstractAsyncFuncs)
+        foreach (var kvp in EntryPointPairing.AbstractAsyncFuncs)
         {
           foreach (var ep in kvp.Value)
           {
             if (ep.Key.Equals("probe"))
             {
-              PairConverterUtil.InitFuncName = ep.Value;
+              EntryPointPairing.InitFuncName = ep.Value;
               found = true;
               break;
             }
@@ -128,9 +128,9 @@ namespace Whoop
 
     private static bool IsNewPair(string ep1, string ep2)
     {
-      if ((PairConverterUtil.FunctionPairs.Exists(val =>
+      if ((EntryPointPairing.FunctionPairs.Exists(val =>
         (val.Item1.Equals(ep1) && val.Item2.Exists(str => str.Equals(ep2))))) ||
-        (PairConverterUtil.FunctionPairs.Exists(val =>
+        (EntryPointPairing.FunctionPairs.Exists(val =>
           (val.Item1.Equals(ep2) && val.Item2.Exists(str => str.Equals(ep1))))))
       {
         return false;
@@ -144,12 +144,12 @@ namespace Whoop
       if (ep1.Equals("probe") || ep2.Equals("probe"))
         return false;
 
-      if (PairConverterUtil.HasKernelImposedDeviceLock(ep1) &&
-          PairConverterUtil.HasKernelImposedDeviceLock(ep2))
+      if (EntryPointPairing.HasKernelImposedDeviceLock(ep1) &&
+        EntryPointPairing.HasKernelImposedDeviceLock(ep2))
         return false;
 
-      if (PairConverterUtil.HasKernelImposedRTNL(ep1) &&
-        PairConverterUtil.HasKernelImposedRTNL(ep2))
+      if (EntryPointPairing.HasKernelImposedRTNL(ep1) &&
+        EntryPointPairing.HasKernelImposedRTNL(ep2))
         return false;
 
       return true;
