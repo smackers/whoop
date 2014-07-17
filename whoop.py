@@ -640,7 +640,7 @@ def startToolChain(argv):
   if not CommandLineOptions.skip["engine"]:
     runTool("whoopParser",
             (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/Whoop.Parsing.exe"] +
+            [findtools.whoopBinDir + "/Parser.exe"] +
             CommandLineOptions.whoopParserOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
@@ -650,7 +650,7 @@ def startToolChain(argv):
   if not CommandLineOptions.skip["engine"]:
     runTool("whoopInstrumentor",
             (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/Whoop.Instrumentation.exe"] +
+            [findtools.whoopBinDir + "/Instrumentor.exe"] +
             CommandLineOptions.whoopInstrumentorOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
@@ -659,7 +659,7 @@ def startToolChain(argv):
   """ RUN WHOOP DRIVER """
   runTool("whoopDriver",
           (["mono"] if os.name == "posix" else []) +
-          [findtools.whoopBinDir + "/Whoop.Driver.exe"] +
+          [findtools.whoopBinDir + "/Driver.exe"] +
           CommandLineOptions.whoopDriverOptions,
           ErrorCodes.DRIVER_ERROR,
           CommandLineOptions.componentTimeout)

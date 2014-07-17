@@ -2,16 +2,16 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{A90C76E0-EAE4-4098-90D4-67740883457F}</ProjectGuid>
+    <ProjectGuid>{FD4F2900-FF82-4282-B76A-6775A5643B87}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Whoop.Driver</RootNamespace>
-    <AssemblyName>Whoop.Driver</AssemblyName>
+    <RootNamespace>Whoop</RootNamespace>
+    <AssemblyName>Driver</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,48 +20,50 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\Binaries</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Reference Include="Basetypes">
-      <HintPath>..\..\BoogieBinaries\Basetypes.dll</HintPath>
-    </Reference>
-    <Reference Include="CodeContractsExtender">
-      <HintPath>..\..\BoogieBinaries\CodeContractsExtender.dll</HintPath>
-    </Reference>
-    <Reference Include="Core">
-      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="VCGeneration">
-      <HintPath>..\..\BoogieBinaries\VCGeneration.dll</HintPath>
-    </Reference>
-    <Reference Include="Model">
-      <HintPath>..\..\BoogieBinaries\Model.dll</HintPath>
-    </Reference>
-    <Reference Include="ExecutionEngine">
-      <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="DriverCommandLineOptions.cs" />
-    <Compile Include="WhoopErrorReporter.cs" />
-    <Compile Include="WhoopDriver.cs" />
     <Compile Include="StaticLocksetAnalyser.cs" />
+    <Compile Include="WhoopDriver.cs" />
+    <Compile Include="WhoopErrorReporter.cs" />
+    <Compile Include="DriverCommandLineOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">
       <Project>{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}</Project>
       <Name>Whoop</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Core">
+      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
+    </Reference>
+    <Reference Include="ExecutionEngine">
+      <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="VCGeneration">
+      <HintPath>..\..\BoogieBinaries\VCGeneration.dll</HintPath>
+    </Reference>
+    <Reference Include="Model">
+      <HintPath>..\..\BoogieBinaries\Model.dll</HintPath>
+    </Reference>
+    <Reference Include="CodeContractsExtender">
+      <HintPath>..\..\BoogieBinaries\CodeContractsExtender.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Provers.SMTLib">
+      <HintPath>..\..\BoogieBinaries\Provers.SMTLib.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>
