@@ -35,7 +35,7 @@
   <ItemGroup>
     <Compile Include="InstrumentationCommandLineOptions.cs" />
     <Compile Include="InstrumentationEngine.cs" />
-    <Compile Include="WhoopEngine.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">

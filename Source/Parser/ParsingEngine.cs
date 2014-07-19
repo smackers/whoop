@@ -17,23 +17,32 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-using Whoop.SLA;
+using Whoop.Domain.Drivers;
+using Whoop.Refactoring;
 
 namespace Whoop.Parsing
 {
   internal sealed class ParsingEngine
   {
     private AnalysisContext AC;
+    private EntryPoint EP;
 
-    public ParsingEngine(AnalysisContext ac)
+    public ParsingEngine(AnalysisContext ac, EntryPoint ep)
     {
-      Contract.Requires(ac != null);
+      Contract.Requires(ac != null && ep != null);
       this.AC = ac;
+      this.EP = ep;
     }
 
     public void Run()
     {
+      Console.WriteLine(this.EP.Name);
 
+      Refactoring.Factory.CreateNewEntryPointRefactoring(this.AC, this.EP).Run();
+
+      ParsingCommandLineOptions.Get().PrintUnstructured = 2;
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, ParsingCommandLineOptions.Get().Files[
+        ParsingCommandLineOptions.Get().Files.Count - 1], this.EP.Name, "wbpl");
     }
   }
 }

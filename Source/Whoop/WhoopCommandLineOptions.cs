@@ -23,8 +23,6 @@ namespace Whoop
     public bool OnlyRaceChecking = false;
     public bool DebugWhoop = false;
 
-    public FunctionPairingMethod FunctionPairingMethod = FunctionPairingMethod.LINEAR;
-
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -67,26 +65,6 @@ namespace Whoop
           else if (ps.args[ps.i] == "WATCHDOG")
           {
             RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
-          }
-        }
-        return true;
-      }
-
-      if (option == "functionPairing")
-      {
-        if (ps.ConfirmArgumentCount(1))
-        {
-          if (ps.args[ps.i] == "LINEAR")
-          {
-            this.FunctionPairingMethod = FunctionPairingMethod.LINEAR;
-          }
-          else if (ps.args[ps.i] == "TRIANGULAR")
-          {
-            this.FunctionPairingMethod = FunctionPairingMethod.TRIANGULAR;
-          }
-          else if (ps.args[ps.i] == "QUADRATIC")
-          {
-            this.FunctionPairingMethod = FunctionPairingMethod.QUADRATIC;
           }
         }
         return true;

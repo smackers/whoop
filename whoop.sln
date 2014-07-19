@@ -51,7 +51,7 @@ Global
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Source\Whoop\Whoop.csproj
+		StartupItem = Source\Driver\Driver.csproj
 		Policies = $0
 		$0.TextStylePolicy = $1
 		$1.inheritsSet = null

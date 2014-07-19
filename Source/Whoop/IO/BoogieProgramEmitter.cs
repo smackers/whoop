@@ -36,5 +36,20 @@ namespace Whoop.IO
         program.Emit(writer);
       }
     }
+
+    public static void Emit(Program program, string file, string suffix, string extension = "bpl")
+    {
+      string directoryContainingFile = Path.GetDirectoryName(file);
+      if (string.IsNullOrEmpty(directoryContainingFile))
+        directoryContainingFile = Directory.GetCurrentDirectory();
+
+      var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
+        Path.GetFileNameWithoutExtension(file) + "_" + suffix;
+
+      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension))
+      {
+        program.Emit(writer);
+      }
+    }
   }
 }

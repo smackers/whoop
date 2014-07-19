@@ -1,0 +1,110 @@
+﻿//// ===-----------------------------------------------------------------------==//
+////
+////                 Whoop - a Verifier for Device Drivers
+////
+////  Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)
+////
+////  This file is distributed under the Microsoft Public License.  See
+////  LICENSE.TXT for details.
+////
+//// ===----------------------------------------------------------------------===//
+//
+//using System;
+//using System.Collections.Generic;
+//using System.Diagnostics.Contracts;
+//using System.Linq;
+//using Microsoft.Boogie;
+//using Microsoft.Basetypes;
+//
+//namespace Whoop
+//{
+//  public class ModelCleaner
+//  {
+//    public static void RemoveEmptyBlocks(AnalysisContext ac)
+//    {
+//      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+//      {
+//        if (ac.LocksetAnalysisRegions.Exists(val => val.Implementation().Name.Equals(impl.Name)))
+//          continue;
+//
+//        foreach (var b1 in impl.Blocks)
+//        {
+//          if (b1.Cmds.Count != 0) continue;
+//          if (b1.TransferCmd is ReturnCmd) continue;
+//
+//          GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
+//
+//          foreach (var b2 in impl.Blocks)
+//          {
+//            if (b2.TransferCmd is ReturnCmd) continue;
+//            GotoCmd g = b2.TransferCmd as GotoCmd;
+//            for (int i = 0; i < g.labelNames.Count; i++)
+//            {
+//              if (g.labelNames[i].Equals(b1.Label))
+//              {
+//                g.labelNames[i] = t.labelNames[0];
+//              }
+//            }
+//          }
+//        }
+//
+//        impl.Blocks.RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd);
+//      }
+//    }
+//
+//    public static void RemoveEmptyBlocksInAsyncFuncPairs(AnalysisContext ac)
+//    {
+//      foreach (var region in ac.LocksetAnalysisRegions)
+//      {
+//        string label = region.Logger().Name();
+//        Implementation original = ac.GetImplementation(label);
+//        List<int> returnIdxs = new List<int>();
+//
+//        foreach (var b in original.Blocks)
+//        {
+//          if (b.TransferCmd is ReturnCmd)
+//            returnIdxs.Add(Convert.ToInt32(b.Label.Substring(3)));
+//        }
+//
+//        foreach (var b1 in region.Blocks())
+//        {
+//          if (b1.Cmds.Count != 0) continue;
+//          if (b1.TransferCmd is ReturnCmd) continue;
+//
+//          int idx = Convert.ToInt32(b1.Label.Split(new char[] { '$' })[3]);
+//          if (returnIdxs.Exists(val => val == idx)) continue;
+//
+//          GotoCmd t = b1.TransferCmd.Clone() as GotoCmd;
+//
+//          foreach (var b2 in region.Blocks())
+//          {
+//            if (b2.TransferCmd is ReturnCmd) continue;
+//            GotoCmd g = b2.TransferCmd as GotoCmd;
+//            for (int i = 0; i < g.labelNames.Count; i++)
+//            {
+//              if (g.labelNames[i].Equals(b1.Label))
+//              {
+//                g.labelNames[i] = t.labelNames[0];
+//              }
+//            }
+//          }
+//        }
+//
+//        region.Blocks().RemoveAll(val => val.Cmds.Count == 0 && val.TransferCmd is GotoCmd && returnIdxs.
+//          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[3])));
+//      }
+//    }
+//
+//    public static void RemoveMemoryRegions(AnalysisContext wp)
+//    {
+////      foreach (var v in wp.memoryRegions) {
+////        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
+////      }
+//    }
+//
+//    public static void RemoveUnusedVars(AnalysisContext wp)
+//    {
+//
+//    }
+//  }
+//}

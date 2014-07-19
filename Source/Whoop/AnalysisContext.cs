@@ -16,9 +16,9 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
-using Whoop.SLA;
 
 namespace Whoop
 {
@@ -30,9 +30,8 @@ namespace Whoop
     internal SharedStateAnalyser SharedStateAnalyser;
 
     internal Implementation InitFunc;
-    internal List<LocksetAnalysisRegion> LocksetAnalysisRegions;
-    internal List<LoggerRegion> LoggerSummaryRegions;
-    internal List<CheckerRegion> CheckerSummaryRegions;
+    internal List<PairCheckingRegion> PairCheckingRegions;
+    internal List<InstrumentationRegion> InstrumentationRegions;
 
     internal Lockset CurrLockset;
     internal List<Lockset> Locksets;
@@ -50,9 +49,8 @@ namespace Whoop
       this.Program = program;
       this.ResContext = rc;
 
-      this.LocksetAnalysisRegions = new List<LocksetAnalysisRegion>();
-      this.LoggerSummaryRegions = new List<LoggerRegion>();
-      this.CheckerSummaryRegions = new List<CheckerRegion>();
+      this.PairCheckingRegions = new List<PairCheckingRegion>();
+      this.InstrumentationRegions = new List<InstrumentationRegion>();
 
       this.Locksets = new List<Lockset>();
       this.Locks = new List<Lock>();
@@ -187,7 +185,7 @@ namespace Whoop
       try
       {
         this.InitFunc = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(EntryPointPairing.InitFuncName)) as Implementation);
+          (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint)) as Implementation);
         if (this.InitFunc == null) throw new Exception("no main function found");
       }
       catch (Exception e)

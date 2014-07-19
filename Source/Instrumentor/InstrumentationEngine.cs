@@ -18,7 +18,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-using Whoop.SLA;
+using Whoop.Refactoring;
 
 namespace Whoop.Instrumentation
 {
@@ -36,21 +36,21 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
-      Factory.CreateNewProgramSimplifier(this.AC).Run();
-      Factory.CreateNewPairInstrumentation(this.AC).Run();
-
-      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
-      Factory.CreateNewRaceInstrumentation(this.AC).Run();
+      Refactoring.Factory.CreateNewProgramSimplifier(this.AC).Run();
+//      Factory.CreateNewPairInstrumentation(this.AC).Run();
+//
+//      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
+//      Factory.CreateNewRaceInstrumentation(this.AC).Run();
 
 //      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
 //        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
 
-      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
-      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
-
-      ModelCleaner.RemoveEmptyBlocks(this.AC);
-      ModelCleaner.RemoveMemoryRegions(this.AC);
-      ModelCleaner.RemoveUnusedVars(this.AC);
+//      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
+//      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
+//
+//      ModelCleaner.RemoveEmptyBlocks(this.AC);
+//      ModelCleaner.RemoveMemoryRegions(this.AC);
+//      ModelCleaner.RemoveUnusedVars(this.AC);
 
       InstrumentationCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
