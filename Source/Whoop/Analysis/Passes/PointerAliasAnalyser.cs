@@ -19,9 +19,17 @@ using System.Linq.Expressions;
 
 namespace Whoop.Analysis
 {
+  /// <summary>
+  /// Static class implementing methods for pointer alias analysis.
+  /// </summary>
   internal static class PointerAliasAnalyser
   {
-    // do $pa(p, i, s) == p + i * s);
+    /// <summary>
+    /// Compute $pa(p, i, s) == p + i * s);
+    /// </summary>
+    /// <returns>The root pointer.</returns>
+    /// <param name="impl">Implementation</param>
+    /// <param name="id">Identifier expression</param>
     public static Expr ComputeRootPointer(Implementation impl, IdentifierExpr id)
     {
       NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
@@ -115,6 +123,16 @@ namespace Whoop.Analysis
       }
 
       return result;
+    }
+
+    public static Expr ComputeLiteralsInExpr(Expr expr)
+    {
+      int l1 = ((expr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+      int l2 = (((expr as NAryExpr).Args[0] as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+
+      Expr result = ((expr as NAryExpr).Args[0] as NAryExpr).Args[0];
+
+      return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(l1 + l2)));
     }
   }
 }

@@ -72,11 +72,13 @@
     <Compile Include="Refactoring\Interfaces\ISharedStateAbstractor.cs" />
     <Compile Include="Refactoring\Passes\ProgramSimplifier.cs" />
     <Compile Include="Refactoring\Passes\SharedStateAbstractor.cs" />
-    <Compile Include="Refactoring\Passes\EntryPointAbstractor.cs" />
     <Compile Include="Refactoring\Factory.cs" />
     <Compile Include="Analysis\Factory.cs" />
     <Compile Include="Instrumentation\Factory.cs" />
     <Compile Include="Refactoring\Interfaces\IEntryPointRefactoring.cs" />
+    <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
+    <Compile Include="Refactoring\Passes\LockAbstractor.cs" />
+    <Compile Include="Refactoring\Interfaces\ILockAbstractor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

@@ -41,6 +41,7 @@ namespace Whoop.Refactoring
         this.AC.GetImplementation(this.EP.Name));
 
       this.RefactorNestedFunctions(nestedFunctions);
+      this.CleanUp(nestedFunctions);
     }
 
     private void RefactorGlobalVariables()
@@ -63,11 +64,11 @@ namespace Whoop.Refactoring
 
           if (cmd is CallCmd)
           {
-            functions = this.ParseAndRenameFunctionsFromCallCmd(cmd as CallCmd);
+            functions = this.ParseAndRenameFunctionsInCall(cmd as CallCmd);
           }
           else if (cmd is AssignCmd)
           {
-            functions = this.ParseAndRenameFunctionsFromAssignCmd(cmd as AssignCmd);
+            functions = this.ParseAndRenameFunctionsInAssign(cmd as AssignCmd);
           }
 
           if (functions == null) continue;
@@ -98,7 +99,7 @@ namespace Whoop.Refactoring
       return nestedFunctions;
     }
 
-    private List<Implementation> ParseAndRenameFunctionsFromCallCmd(CallCmd cmd)
+    private List<Implementation> ParseAndRenameFunctionsInCall(CallCmd cmd)
     {
       List<Implementation> functions = new List<Implementation>();
 
@@ -125,7 +126,7 @@ namespace Whoop.Refactoring
       return functions;
     }
 
-    private List<Implementation> ParseAndRenameFunctionsFromAssignCmd(AssignCmd cmd)
+    private List<Implementation> ParseAndRenameFunctionsInAssign(AssignCmd cmd)
     {
       List<Implementation> functions = new List<Implementation>();
 
@@ -148,14 +149,38 @@ namespace Whoop.Refactoring
     {
       foreach (var func in functions)
       {
-        Constant cons = this.AC.GetConstant(func.Name);
-        this.CreateNewConstant(cons);
+        this.RefactorFunction(func);
+      }
+    }
 
+    private void CleanUp(List<Implementation> functions)
+    {
+      HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
+
+      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (functions.Contains(impl))
+          continue;
+        if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
+          continue;
+        if (impl.Name.Equals(this.EP.Name))
+          continue;
+        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio"))
+          continue;
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock"))
+          continue;
+
+        uncalledFuncs.Add(impl);
+      }
+
+      foreach (var func in uncalledFuncs)
+      {
         this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
           (val is Constant) && (val as Constant).Name.Equals(func.Name));
-
-        func.Proc.Name = func.Proc.Name + "$" + this.EP.Name;
-        func.Name = func.Name + "$" + this.EP.Name;
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(func.Name));
+        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(func.Name));
       }
     }
 
@@ -168,6 +193,18 @@ namespace Whoop.Refactoring
       if (funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock"))
         return false;
       return true;
+    }
+
+    private void RefactorFunction(Implementation func)
+    {
+      Constant cons = this.AC.GetConstant(func.Name);
+      this.CreateNewConstant(cons);
+
+      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Constant) && (val as Constant).Name.Equals(func.Name));
+
+      func.Proc.Name = func.Proc.Name + "$" + this.EP.Name;
+      func.Name = func.Name + "$" + this.EP.Name;
     }
 
     private void CreateNewConstant(Constant cons)

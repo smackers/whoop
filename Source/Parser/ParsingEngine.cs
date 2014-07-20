@@ -38,6 +38,8 @@ namespace Whoop.Parsing
     {
       Console.WriteLine(this.EP.Name);
 
+      Refactoring.Factory.CreateNewProgramSimplifier(this.AC).Run();
+      Refactoring.Factory.CreateNewLockAbstractor(this.AC, this.EP).Run();
       Refactoring.Factory.CreateNewEntryPointRefactoring(this.AC, this.EP).Run();
 
       ParsingCommandLineOptions.Get().PrintUnstructured = 2;

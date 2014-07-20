@@ -26,6 +26,11 @@ namespace Whoop.Refactoring
       return new ProgramSimplifier(ac);
     }
 
+    public static ILockAbstractor CreateNewLockAbstractor(AnalysisContext ac, EntryPoint ep)
+    {
+      return new LockAbstractor(ac, ep);
+    }
+
 //    public static ISharedStateAbstractor CreateNewSharedStateAbstractor(AnalysisContext ac)
 //    {
 //      return new SharedStateAbstractor(ac);

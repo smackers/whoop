@@ -36,7 +36,7 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
-      Refactoring.Factory.CreateNewProgramSimplifier(this.AC).Run();
+//      Refactoring.Factory.CreateNewProgramSimplifier(this.AC).Run();
 //      Factory.CreateNewPairInstrumentation(this.AC).Run();
 //
 //      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
