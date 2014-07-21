@@ -34,7 +34,7 @@ namespace Whoop
       if (additional != null)
       {
         this.File = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
-          "$" + additional + "." + this.Extension;
+          "_" + additional + "." + this.Extension;
       }
       else
       {
@@ -46,9 +46,6 @@ namespace Whoop
 
       Program program = ExecutionEngine.ParseBoogieProgram(filesToParse, false);
       if (program == null) return null;
-
-      // Microsoft.Boogie.CommandLineOptions.Clo.DoModSetAnalysis = true;
-      // Microsoft.Boogie.CommandLineOptions.Clo.PruneInfeasibleEdges = clo.PruneInfeasibleEdges;
 
       ResolutionContext rc = new ResolutionContext(null);
       program.Resolve(rc);

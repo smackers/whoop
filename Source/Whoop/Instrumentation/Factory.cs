@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Instrumentation
 {
@@ -19,27 +20,30 @@ namespace Whoop.Instrumentation
 //    {
 //      return new PairInstrumentation(ac);
 //    }
-//
-//    public static ILocksetInstrumentation CreateNewLocksetInstrumentation(AnalysisContext ac)
-//    {
-//      return new LocksetInstrumentation(ac);
-//    }
-//
-//    public static IRaceInstrumentation CreateNewRaceInstrumentation(AnalysisContext ac)
-//    {
-//      if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-//        return new WatchdogRaceInstrumentation(ac);
-//      return new BasicRaceInstrumentation(ac);
-//    }
-//
+
+    public static IInstrumentationRegionsConstructor CreateInstrumentationRegionsConstructor(AnalysisContext ac)
+    {
+      return new InstrumentationRegionsConstructor(ac);
+    }
+
+    public static ILocksetInstrumentation CreateLocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new LocksetInstrumentation(ac, ep);
+    }
+
+    public static IRaceInstrumentation CreateRaceInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new RaceInstrumentation(ac, ep);
+    }
+
 //    public static IDeadlockInstrumentation CreateNewDeadlockInstrumentation(AnalysisContext ac)
 //    {
 //      return new DeadlockInstrumentation(ac);
 //    }
-//
-//    public static IErrorReportingInstrumentation CreateNewErrorReportingInstrumentation(AnalysisContext ac)
-//    {
-//      return new ErrorReportingInstrumentation(ac);
-//    }
+
+    public static IErrorReportingInstrumentation CreateErrorReportingInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new ErrorReportingInstrumentation(ac, ep);
+    }
   }
 }

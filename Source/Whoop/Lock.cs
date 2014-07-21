@@ -20,8 +20,8 @@ namespace Whoop
     private IdentifierExpr Ptr;
     private int Ixs;
 
-    public Constant Id;
-    public string Name;
+    public readonly Constant Id;
+    public readonly string Name;
 
     public Lock(Constant id, Expr lockExpr)
     {

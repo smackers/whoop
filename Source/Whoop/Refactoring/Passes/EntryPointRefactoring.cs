@@ -24,24 +24,32 @@ namespace Whoop.Refactoring
   internal class EntryPointRefactoring : IEntryPointRefactoring
   {
     private AnalysisContext AC;
-    private EntryPoint EP;
+    private Implementation EP;
 
     public EntryPointRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = ep;
+      this.EP = this.AC.GetImplementation(ep.Name);
     }
 
     public void Run()
     {
+      this.RefactorEntryPointAttributes();
       this.RefactorGlobalVariables();
 
-      List<Implementation> nestedFunctions = this.ParseAndRenameNestedFunctions(
-        this.AC.GetImplementation(this.EP.Name));
+      List<Implementation> nestedFunctions = this.ParseAndRenameNestedFunctions(this.EP);
 
       this.RefactorNestedFunctions(nestedFunctions);
       this.CleanUp(nestedFunctions);
+    }
+
+    private void RefactorEntryPointAttributes()
+    {
+      this.EP.Proc.Attributes = new QKeyValue(Token.NoToken,
+        "entrypoint", new List<object>(), null);
+      this.EP.Attributes = new QKeyValue(Token.NoToken,
+        "entrypoint", new List<object>(), null);
     }
 
     private void RefactorGlobalVariables()
@@ -182,6 +190,13 @@ namespace Whoop.Refactoring
         this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
           (val is Implementation) && (val as Implementation).Name.Equals(func.Name));
       }
+
+      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Constant) && (val as Constant).Name.Equals(this.AC.InitFunc.Name));
+      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Procedure) && (val as Procedure).Name.Equals(this.AC.InitFunc.Name));
+      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Implementation) && (val as Implementation).Name.Equals(this.AC.InitFunc.Name));
     }
 
     #region helper functions

@@ -10,22 +10,11 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.Diagnostics.Contracts;
-using Microsoft.Boogie;
 
-namespace Whoop
+namespace Whoop.Instrumentation
 {
-  internal class Lockset
+  public interface IInstrumentationRegionsConstructor
   {
-    public readonly Variable Id;
-    public readonly Variable Lock;
-    public string TargetName;
-
-    public Lockset(Variable id, Variable l, string target = "")
-    {
-      this.Id = id;
-      this.Lock = l;
-      this.TargetName = target;
-    }
+    void Run();
   }
 }

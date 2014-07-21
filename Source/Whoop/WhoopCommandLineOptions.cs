@@ -54,22 +54,6 @@ namespace Whoop
         return true;
       }
 
-      if (option == "raceChecking")
-      {
-        if (ps.ConfirmArgumentCount(1))
-        {
-          if (ps.args[ps.i] == "NORMAL")
-          {
-            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.NORMAL;
-          }
-          else if (ps.args[ps.i] == "WATCHDOG")
-          {
-            RaceInstrumentationUtil.RaceCheckingMethod = RaceCheckingMethod.WATCHDOG;
-          }
-        }
-        return true;
-      }
-
       if (option == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;

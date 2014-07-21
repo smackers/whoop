@@ -147,7 +147,6 @@ class DefaultCmdLineOptions(object):
     self.onlyRaces = False
     self.onlyDeadlocks = False
     self.inline = False
-    self.raceChecking = "normal"
     self.verbose = False
     self.silent = False
     self.printPairs = False
@@ -202,8 +201,6 @@ def showHelpAndExit():
     --print-pairs           Print information about the entry point pairs.
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
-    --race-checking=X       Choose which method of race checking to use. Options are: 'normal' and 'watchdog'.
-                            Default is 'normal'.
 
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
@@ -337,11 +334,6 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopDriverOptions += [ a ]
-    if o == "--race-checking":
-      if a.lower() in ("normal","watchdog"):
-        CommandLineOptions.raceChecking = a.lower()
-      else:
-        raise GPUVerifyException(ErrorCodes.COMMAND_LINE_ERROR, "argument to --race-checking must be one of 'normal' or 'watchdog'")
     if o == "--solver":
       if a.lower() in ("z3","cvc4"):
         CommandLineOptions.solver = a.lower()
@@ -486,7 +478,6 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline',
-              'race-checking=',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-wbpl'
              ])
@@ -566,13 +557,6 @@ def startToolChain(argv):
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
-
-  if CommandLineOptions.raceChecking == "watchdog":
-    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:WATCHDOG" ]
-    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:WATCHDOG" ]
-  else:
-    CommandLineOptions.whoopEngineOptions += [ "/raceChecking:NORMAL" ]
-    CommandLineOptions.whoopDriverOptions += [ "/raceChecking:NORMAL" ]
 
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]

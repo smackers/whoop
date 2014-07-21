@@ -11,9 +11,9 @@
 
 using System;
 
-namespace Whoop.Refactoring
+namespace Whoop.Analysis
 {
-  public interface ISharedStateAbstractor
+  public interface ISharedStateAbstraction
   {
     void Run();
   }

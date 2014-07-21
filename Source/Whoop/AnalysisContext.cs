@@ -30,12 +30,11 @@ namespace Whoop
     internal SharedStateAnalyser SharedStateAnalyser;
 
     internal Implementation InitFunc;
-    internal List<PairCheckingRegion> PairCheckingRegions;
     internal List<InstrumentationRegion> InstrumentationRegions;
-
-    internal Lockset CurrLockset;
-    internal List<Lockset> Locksets;
+    internal List<PairCheckingRegion> PairCheckingRegions;
     internal List<Lock> Locks;
+    internal List<Lockset> CurrentLocksets;
+    internal List<Lockset> Locksets;
     internal Dictionary<string, List<MemoryLocation>> MemoryLocations;
 
     internal Microsoft.Boogie.Type MemoryModelType;
@@ -49,11 +48,11 @@ namespace Whoop
       this.Program = program;
       this.ResContext = rc;
 
-      this.PairCheckingRegions = new List<PairCheckingRegion>();
       this.InstrumentationRegions = new List<InstrumentationRegion>();
-
-      this.Locksets = new List<Lockset>();
+      this.PairCheckingRegions = new List<PairCheckingRegion>();
       this.Locks = new List<Lock>();
+      this.CurrentLocksets = new List<Lockset>();
+      this.Locksets = new List<Lockset>();
       this.MemoryLocations = new Dictionary<string, List<MemoryLocation>>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
@@ -75,6 +74,30 @@ namespace Whoop
     {
       return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entryPair"));
+    }
+
+    public List<Implementation> GetEntryPointImplementations()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entrypoint"));
+    }
+
+    public List<Variable> GetLockVariables()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lock"));
+    }
+
+    public List<Variable> GetCurrentLocksetVariables()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "current_lockset"));
+    }
+
+    public List<Variable> GetMemoryLocksetVariables()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lockset"));
     }
 
     public List<Variable> GetRaceCheckingVariables()
@@ -99,11 +122,11 @@ namespace Whoop
       return cons;
     }
 
-    public bool IsWhoopFunc(Implementation impl)
+    public bool IsAWhoopFunc(Implementation impl)
     {
       Contract.Requires(impl != null);
-      if (impl.Name.Contains("_UPDATE_CURRENT_LOCKSET") ||
-        impl.Name.Contains("_LOG_WRITE_LS_") || impl.Name.Contains("_LOG_READ_LS_") ||
+      if (impl.Name.Contains("_UPDATE_CLS") ||
+        impl.Name.Contains("_WRITE_LS_") || impl.Name.Contains("_READ_LS_") ||
         impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
         impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
         return true;

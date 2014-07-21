@@ -15,6 +15,9 @@ namespace Whoop.Analysis
 {
   public static class Factory
   {
-
+    public static ISharedStateAbstraction CreateSharedStateAbstraction(AnalysisContext ac)
+    {
+      return new SharedStateAbstraction(ac);
+    }
   }
 }

@@ -77,8 +77,12 @@ namespace Whoop.Instrumentation
           DeviceDriver.PrintEntryPointPairs();
         }
 
-        AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
-        new InstrumentationEngine(ac).Run();
+        foreach (var ep in DeviceDriver.EntryPoints)
+        {
+          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
+            "wbpl").ParseNew(ep.Name);
+          new InstrumentationEngine(ac, ep).Run();
+        }
 
         Environment.Exit((int)Outcome.Done);
       }

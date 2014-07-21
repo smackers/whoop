@@ -225,39 +225,11 @@ namespace Whoop.Driver
 
           Model.Element aoff = null;
 
-          if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.NORMAL)
-          {
-            string accessOffset = "ACCESS_OFFSET_" + sharedResourceName;
+          string ptrName = logState.Variables.LastOrDefault(val =>
+            val.Contains(sharedResourceName) && val.Contains("$ptr"));
+          if (ptrName == null) continue;
 
-            Model.Element aoffMap = logState.TryGet(accessOffset);
-            if (aoffMap == null) continue;
-
-            string ptrName = logState.Variables.LastOrDefault(val =>
-              val.Contains(sharedResourceName) && val.Contains("$ptr"));
-            if (ptrName == null) continue;
-
-            Model.Element ptrVal = logState.TryGet(ptrName);
-            if (ptrVal == null) continue;
-
-            Model.Func mapSelectFunc = cex.Model.GetFunc("Select_[$int]$int");
-            if (mapSelectFunc == null && mapSelectFunc.Arity != 0) continue;
-
-            foreach (var app in mapSelectFunc.Apps)
-            {
-              if (!app.Args[0].ToString().Equals(aoffMap.ToString())) continue;
-              if (!app.Args[1].ToString().Equals(ptrVal.ToString())) continue;
-              aoff = app.Result;
-              break;
-            }
-          }
-          else if (RaceInstrumentationUtil.RaceCheckingMethod == RaceCheckingMethod.WATCHDOG)
-          {
-            string ptrName = logState.Variables.LastOrDefault(val =>
-              val.Contains(sharedResourceName) && val.Contains("$ptr"));
-            if (ptrName == null) continue;
-
-            aoff = logState.TryGet(ptrName);
-          }
+          aoff = logState.TryGet(ptrName);
 
           if (aoff == null || !aoff.ToString().Equals(raceyOffset)) continue;
 

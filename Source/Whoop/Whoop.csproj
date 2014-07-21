@@ -39,7 +39,6 @@
     <Compile Include="AccessType.cs" />
     <Compile Include="Outcome.cs" />
     <Compile Include="Utilities\AnalysisContextParser.cs" />
-    <Compile Include="Utilities\RaceInstrumentationUtil.cs" />
     <Compile Include="IO\Reporter.cs" />
     <Compile Include="IO\BoogieProgramEmitter.cs" />
     <Compile Include="Domain\Drivers\DeviceDriver.cs" />
@@ -51,16 +50,13 @@
     <Compile Include="Regions\LoopAnalysisRegion.cs" />
     <Compile Include="Regions\PairCheckingRegion.cs" />
     <Compile Include="Lock.cs" />
-    <Compile Include="Lockset.cs" />
     <Compile Include="MemoryLocation.cs" />
     <Compile Include="ModelCleaner.cs" />
-    <Compile Include="Instrumentation\Passes\BasicRaceInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\DeadlockInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\LocksetInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\PairInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\RaceInstrumentation.cs" />
-    <Compile Include="Instrumentation\Passes\WatchdogRaceInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IDeadlockInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IErrorReportingInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\ILocksetInstrumentation.cs" />
@@ -69,9 +65,7 @@
     <Compile Include="Analysis\Passes\SharedStateAnalyser.cs" />
     <Compile Include="Analysis\Passes\PointerAliasAnalyser.cs" />
     <Compile Include="Refactoring\Interfaces\IProgramSimplifier.cs" />
-    <Compile Include="Refactoring\Interfaces\ISharedStateAbstractor.cs" />
     <Compile Include="Refactoring\Passes\ProgramSimplifier.cs" />
-    <Compile Include="Refactoring\Passes\SharedStateAbstractor.cs" />
     <Compile Include="Refactoring\Factory.cs" />
     <Compile Include="Analysis\Factory.cs" />
     <Compile Include="Instrumentation\Factory.cs" />
@@ -79,6 +73,11 @@
     <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
     <Compile Include="Refactoring\Passes\LockAbstractor.cs" />
     <Compile Include="Refactoring\Interfaces\ILockAbstractor.cs" />
+    <Compile Include="Lockset.cs" />
+    <Compile Include="Instrumentation\Interfaces\IInstrumentationRegionsConstructor.cs" />
+    <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
+    <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
+    <Compile Include="Analysis\Interfaces\ISharedStateAbstraction.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
@@ -113,11 +112,11 @@
     <Reference Include="ParserHelper">
       <HintPath>..\..\BoogieBinaries\ParserHelper.dll</HintPath>
     </Reference>
-    <Reference Include="ExecutionEngine">
-      <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
-    </Reference>
     <Reference Include="VCGeneration">
       <HintPath>..\..\BoogieBinaries\VCGeneration.dll</HintPath>
+    </Reference>
+    <Reference Include="ExecutionEngine">
+      <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

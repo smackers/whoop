@@ -18,7 +18,8 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
-using Whoop.Refactoring;
+using Whoop.Analysis;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Instrumentation
 {
@@ -27,34 +28,36 @@ namespace Whoop.Instrumentation
   internal sealed class InstrumentationEngine
   {
     private AnalysisContext AC;
+    private EntryPoint EP;
 
-    public InstrumentationEngine(AnalysisContext ac)
+    public InstrumentationEngine(AnalysisContext ac, EntryPoint ep)
     {
-      Contract.Requires(ac != null);
+      Contract.Requires(ac != null && ep != null);
       this.AC = ac;
+      this.EP = ep;
     }
 
     public void Run()
     {
-//      Refactoring.Factory.CreateNewProgramSimplifier(this.AC).Run();
-//      Factory.CreateNewPairInstrumentation(this.AC).Run();
-//
-//      Factory.CreateNewLocksetInstrumentation(this.AC).Run();
-//      Factory.CreateNewRaceInstrumentation(this.AC).Run();
+      Instrumentation.Factory.CreateInstrumentationRegionsConstructor(this.AC).Run();
+
+      Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();
+      Instrumentation.Factory.CreateRaceInstrumentation(this.AC, this.EP).Run();
 
 //      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
 //        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
 
-//      Factory.CreateNewSharedStateAbstractor(this.AC).Run();
-//      Factory.CreateNewErrorReportingInstrumentation(this.AC).Run();
-//
+      Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();
+
+      Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
+//      Factory.CreateNewPairInstrumentation(this.AC).Run();
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);
 //      ModelCleaner.RemoveUnusedVars(this.AC);
 
       InstrumentationCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
-        InstrumentationCommandLineOptions.Get().Files.Count - 1], "wbpl");
+        InstrumentationCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
     }
   }
 }

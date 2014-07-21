@@ -19,7 +19,6 @@ using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
 using Whoop.Domain.Drivers;
-
 using Whoop.Analysis;
 
 namespace Whoop.Refactoring
@@ -33,7 +32,7 @@ namespace Whoop.Refactoring
 
     public LockAbstractor(AnalysisContext ac, EntryPoint ep)
     {
-      Contract.Requires(ac != null);
+      Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = this.AC.GetImplementation(ep.Name);
       this.AC.DetectInitFunction();
