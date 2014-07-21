@@ -37,6 +37,10 @@ namespace Whoop.Instrumentation
       {
         if (this.AC.IsAWhoopFunc(impl))
           continue;
+        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio"))
+          continue;
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock"))
+          continue;
 
         InstrumentationRegion region = new InstrumentationRegion(this.AC, impl);
         this.AC.InstrumentationRegions.Add(region);

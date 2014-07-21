@@ -17,7 +17,7 @@ using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
 
-namespace Whoop.Instrumentation
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -27,17 +27,17 @@ namespace Whoop.Instrumentation
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new InstrumentationCommandLineOptions());
+      CommandLineOptions.Install(new WhoopEngineCommandLineOptions());
 
       try
       {
-        InstrumentationCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        WhoopEngineCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!InstrumentationCommandLineOptions.Get().Parse(args))
+        if (!WhoopEngineCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
-        if (InstrumentationCommandLineOptions.Get().Files.Count == 0)
+        if (WhoopEngineCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -45,7 +45,7 @@ namespace Whoop.Instrumentation
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in InstrumentationCommandLineOptions.Get().Files)
+        foreach (string file in WhoopEngineCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -72,16 +72,28 @@ namespace Whoop.Instrumentation
 
         DeviceDriver.ParseAndInitialize(fileList);
 
-        if (InstrumentationCommandLineOptions.Get().PrintPairs)
+        if (WhoopEngineCommandLineOptions.Get().PrintPairs)
         {
           DeviceDriver.PrintEntryPointPairs();
         }
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
+          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+          new ParsingEngine(ac, ep).Run();
+        }
+
+        foreach (var ep in DeviceDriver.EntryPoints)
+        {
           AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-            "wbpl").ParseNew(ep.Name);
-          new InstrumentationEngine(ac, ep).Run();
+            "wbpl").ParseNew(new List<string> { ep.Name });
+          new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
+        }
+
+        foreach (var pair in DeviceDriver.EntryPointPairs)
+        {
+          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+          new PairWiseCheckingInstrumentationEngine(ac, pair.Item1, pair.Item2).Run();
         }
 
         Environment.Exit((int)Outcome.Done);

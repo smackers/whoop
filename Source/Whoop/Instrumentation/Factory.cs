@@ -16,11 +16,6 @@ namespace Whoop.Instrumentation
 {
   public static class Factory
   {
-//    public static IPairInstrumentation CreateNewPairInstrumentation(AnalysisContext ac)
-//    {
-//      return new PairInstrumentation(ac);
-//    }
-
     public static IInstrumentationRegionsConstructor CreateInstrumentationRegionsConstructor(AnalysisContext ac)
     {
       return new InstrumentationRegionsConstructor(ac);
@@ -36,14 +31,19 @@ namespace Whoop.Instrumentation
       return new RaceInstrumentation(ac, ep);
     }
 
-//    public static IDeadlockInstrumentation CreateNewDeadlockInstrumentation(AnalysisContext ac)
-//    {
-//      return new DeadlockInstrumentation(ac);
-//    }
+    public static IDeadlockInstrumentation CreateDeadlockInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new DeadlockInstrumentation(ac, ep);
+    }
 
     public static IErrorReportingInstrumentation CreateErrorReportingInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new ErrorReportingInstrumentation(ac, ep);
+    }
+
+    public static IPairInstrumentation CreatePairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    {
+      return new PairInstrumentation(ac, ep1, ep2);
     }
   }
 }

@@ -10,27 +10,20 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-
-using Microsoft.Boogie;
-using Microsoft.Basetypes;
 
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
+using Whoop.Instrumentation;
 
-namespace Whoop.Instrumentation
+namespace Whoop
 {
-  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
-
-  internal sealed class InstrumentationEngine
+  internal sealed class StaticLocksetAnalysisInstrumentationEngine
   {
     private AnalysisContext AC;
     private EntryPoint EP;
 
-    public InstrumentationEngine(AnalysisContext ac, EntryPoint ep)
+    public StaticLocksetAnalysisInstrumentationEngine(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
@@ -44,20 +37,21 @@ namespace Whoop.Instrumentation
       Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();
       Instrumentation.Factory.CreateRaceInstrumentation(this.AC, this.EP).Run();
 
-//      if (!Util.GetCommandLineOptions().OnlyRaceChecking)
-//        Factory.CreateNewDeadlockInstrumentation(this.AC).Run();
+//      if (!InstrumentationCommandLineOptions.Get().OnlyRaceChecking)
+//        Instrumentation.Factory.CreateDeadlockInstrumentation(this.AC, this.EP).Run();
 
       Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();
 
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
-//      Factory.CreateNewPairInstrumentation(this.AC).Run();
+
+      ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC);
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);
 //      ModelCleaner.RemoveUnusedVars(this.AC);
 
-      InstrumentationCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, InstrumentationCommandLineOptions.Get().Files[
-        InstrumentationCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
+      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
+        WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
     }
   }
 }

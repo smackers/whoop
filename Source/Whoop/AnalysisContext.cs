@@ -70,12 +70,6 @@ namespace Whoop
       ExecutionEngine.Inline(this.Program);
     }
 
-    public List<Implementation> GetImplementationsToAnalyse()
-    {
-      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
-        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entryPair"));
-    }
-
     public List<Implementation> GetEntryPointImplementations()
     {
       return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
@@ -122,13 +116,24 @@ namespace Whoop
       return cons;
     }
 
+    public bool IsAWhoopVariable(Variable v)
+    {
+      Contract.Requires(v != null);
+      if (QKeyValue.FindBoolAttribute(v.Attributes, "lock") ||
+          QKeyValue.FindBoolAttribute(v.Attributes, "current_lockset") ||
+          QKeyValue.FindBoolAttribute(v.Attributes, "lockset") ||
+          QKeyValue.FindBoolAttribute(v.Attributes, "access_checking"))
+        return true;
+      return false;
+    }
+
     public bool IsAWhoopFunc(Implementation impl)
     {
       Contract.Requires(impl != null);
       if (impl.Name.Contains("_UPDATE_CLS") ||
-        impl.Name.Contains("_WRITE_LS_") || impl.Name.Contains("_READ_LS_") ||
-        impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
-        impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+          impl.Name.Contains("_WRITE_LS_") || impl.Name.Contains("_READ_LS_") ||
+          impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
+          impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
         return true;
       return false;
     }

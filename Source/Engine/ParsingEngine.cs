@@ -10,17 +10,12 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using Microsoft.Boogie;
-using Microsoft.Basetypes;
 
 using Whoop.Domain.Drivers;
 using Whoop.Refactoring;
 
-namespace Whoop.Parsing
+namespace Whoop
 {
   internal sealed class ParsingEngine
   {
@@ -40,9 +35,9 @@ namespace Whoop.Parsing
       Refactoring.Factory.CreateLockAbstractor(this.AC, this.EP).Run();
       Refactoring.Factory.CreateEntryPointRefactoring(this.AC, this.EP).Run();
 
-      ParsingCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, ParsingCommandLineOptions.Get().Files[
-        ParsingCommandLineOptions.Get().Files.Count - 1], this.EP.Name, "wbpl");
+      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
+        WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name, "wbpl");
     }
   }
 }

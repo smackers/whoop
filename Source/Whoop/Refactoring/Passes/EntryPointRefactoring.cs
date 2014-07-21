@@ -64,6 +64,23 @@ namespace Whoop.Refactoring
     {
       List<Implementation> nestedFunctions = new List<Implementation>();
 
+      if (!WhoopCommandLineOptions.Get().InlineHelperFunctions)
+      {
+        QKeyValue attribute = impl.Attributes;
+        while (attribute != null)
+        {
+          if (attribute.Key.Equals("inline"))
+          {
+            impl.Attributes = impl.Attributes.Next;
+            attribute = impl.Attributes;
+          }
+          else
+          {
+            attribute = impl.Attributes.Next;
+          }
+        }
+      }
+
       foreach (var block in impl.Blocks)
       {
         foreach (var cmd in block.Cmds)

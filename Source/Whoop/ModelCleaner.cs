@@ -1,25 +1,60 @@
-﻿//// ===-----------------------------------------------------------------------==//
-////
-////                 Whoop - a Verifier for Device Drivers
-////
-////  Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)
-////
-////  This file is distributed under the Microsoft Public License.  See
-////  LICENSE.TXT for details.
-////
-//// ===----------------------------------------------------------------------===//
+﻿// ===-----------------------------------------------------------------------==//
 //
-//using System;
-//using System.Collections.Generic;
-//using System.Diagnostics.Contracts;
-//using System.Linq;
-//using Microsoft.Boogie;
-//using Microsoft.Basetypes;
+//                 Whoop - a Verifier for Device Drivers
 //
-//namespace Whoop
-//{
-//  public class ModelCleaner
-//  {
+//  Copyright (c) 2013-2014 Pantazis Deligiannis (p.deligiannis@imperial.ac.uk)
+//
+//  This file is distributed under the Microsoft Public License.  See
+//  LICENSE.TXT for details.
+//
+// ===----------------------------------------------------------------------===//
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using Microsoft.Boogie;
+using Microsoft.Basetypes;
+
+namespace Whoop
+{
+  public class ModelCleaner
+  {
+    public static void RemoveGenericTopLevelDeclerations(AnalysisContext ac)
+    {
+      List<Implementation> toRemove = new List<Implementation>();
+
+      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (ac.InstrumentationRegions.Exists(region => region.Implementation().Name.Equals(impl.Name)))
+          continue;
+        if (ac.IsAWhoopFunc(impl))
+          continue;
+        toRemove.Add(impl);
+      }
+
+      foreach (var impl in toRemove)
+      {
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+      }
+
+      ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Procedure) && ((val as Procedure).Name.Equals("$malloc") ||
+          (val as Procedure).Name.Equals("$free") ||
+          (val as Procedure).Name.Equals("$alloca")));
+
+      ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        (val is Variable) && !ac.IsAWhoopVariable(val as Variable));
+
+      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
+      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Function));
+    }
+
 //    public static void RemoveEmptyBlocks(AnalysisContext ac)
 //    {
 //      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
@@ -94,17 +129,17 @@
 //          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[3])));
 //      }
 //    }
-//
-//    public static void RemoveMemoryRegions(AnalysisContext wp)
-//    {
-////      foreach (var v in wp.memoryRegions) {
-////        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
-////      }
-//    }
-//
-//    public static void RemoveUnusedVars(AnalysisContext wp)
-//    {
-//
-//    }
-//  }
-//}
+
+    public static void RemoveMemoryRegions(AnalysisContext wp)
+    {
+//      foreach (var v in wp.memoryRegions) {
+//        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
+//      }
+    }
+
+    public static void RemoveUnusedVars(AnalysisContext wp)
+    {
+
+    }
+  }
+}

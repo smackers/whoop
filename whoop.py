@@ -101,7 +101,7 @@ cleanUpHandler = BatchCaller()
 
 """ Timing for the toolchain.
 """
-Tools = [ "chauffeur", "clang", "smack", "whoopParser", "whoopInstrumentor", "whoopDriver" ]
+Tools = [ "chauffeur", "clang", "smack", "whoopEngine", "whoopDriver" ]
 Timing = { }
 
 """ WindowsError is not defined on UNIX
@@ -138,8 +138,6 @@ class DefaultCmdLineOptions(object):
     self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
     self.smackOptions = [ ]
     self.whoopEngineOptions = [ ]
-    self.whoopParserOptions = [ ]
-    self.whoopInstrumentorOptions = [ ]
     self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
     self.includes = clangCoreIncludes
     self.defines = clangCoreDefines
@@ -522,6 +520,7 @@ def startToolChain(argv):
 
   if CommandLineOptions.inline:
     CommandLineOptions.chauffeurOptions.append("-inline")
+    CommandLineOptions.whoopEngineOptions += [ "/inline" ]
   CommandLineOptions.chauffeurOptions.append(filename + ext)
   CommandLineOptions.chauffeurOptions.append("--")
   CommandLineOptions.chauffeurOptions.append("-w")
@@ -564,11 +563,7 @@ def startToolChain(argv):
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
 
-  CommandLineOptions.whoopParserOptions += CommandLineOptions.whoopEngineOptions
-  CommandLineOptions.whoopInstrumentorOptions += CommandLineOptions.whoopEngineOptions
-
-  CommandLineOptions.whoopParserOptions += [ bplFilename ]
-  CommandLineOptions.whoopInstrumentorOptions += [ bplFilename ]
+  CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ bplFilename ]
 
   """ RUN CHAUFFEUR """
@@ -603,22 +598,12 @@ def startToolChain(argv):
     processBPL(bplFilename, infoFilename)
   if CommandLineOptions.stopAtBpl: return 0
 
-  """ RUN WHOOP PARSING ENGINE """
+  """ RUN WHOOP ENGINE """
   if not CommandLineOptions.skip["engine"]:
-    runTool("whoopParser",
+    runTool("whoopEngine",
             (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/Parser.exe"] +
-            CommandLineOptions.whoopParserOptions,
-            ErrorCodes.ENGINE_ERROR,
-            CommandLineOptions.componentTimeout)
-    if CommandLineOptions.stopAtWbpl: return 0
-
-  """ RUN WHOOP INSTRUMENTATION ENGINE """
-  if not CommandLineOptions.skip["engine"]:
-    runTool("whoopInstrumentor",
-            (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/Instrumentor.exe"] +
-            CommandLineOptions.whoopInstrumentorOptions,
+            [findtools.whoopBinDir + "/WhoopEngine.exe"] +
+            CommandLineOptions.whoopEngineOptions,
             ErrorCodes.ENGINE_ERROR,
             CommandLineOptions.componentTimeout)
     if CommandLineOptions.stopAtWbpl: return 0
@@ -626,7 +611,7 @@ def startToolChain(argv):
   """ RUN WHOOP DRIVER """
   runTool("whoopDriver",
           (["mono"] if os.name == "posix" else []) +
-          [findtools.whoopBinDir + "/Driver.exe"] +
+          [findtools.whoopBinDir + "/WhoopDriver.exe"] +
           CommandLineOptions.whoopDriverOptions,
           ErrorCodes.DRIVER_ERROR,
           CommandLineOptions.componentTimeout)

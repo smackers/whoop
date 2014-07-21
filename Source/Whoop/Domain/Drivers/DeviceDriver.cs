@@ -123,7 +123,8 @@ namespace Whoop.Domain.Drivers
     private static bool IsNewPair(string ep1, string ep2)
     {
       if (DeviceDriver.EntryPointPairs.Exists(val =>
-        (val.Item1.Equals(ep1) && (val.Item2.Equals(ep2)))))
+        (val.Item1.Name.Equals(ep1) && (val.Item2.Name.Equals(ep2))) ||
+        (val.Item1.Name.Equals(ep2) && (val.Item2.Name.Equals(ep1)))))
       {
         return false;
       }

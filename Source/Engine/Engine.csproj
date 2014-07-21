@@ -5,10 +5,10 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{EF0674C4-B9D2-4A52-BD1A-BB8275605FA2}</ProjectGuid>
+    <ProjectGuid>{502822C2-B456-424E-9980-F2535010A057}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Whoop</RootNamespace>
-    <AssemblyName>Instrumentor</AssemblyName>
+    <AssemblyName>WhoopEngine</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -33,11 +33,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Compile Include="InstrumentationCommandLineOptions.cs" />
-    <Compile Include="InstrumentationEngine.cs" />
-    <Compile Include="Program.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">
       <Project>{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}</Project>
       <Name>Whoop</Name>
@@ -46,14 +41,21 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Core">
-      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
-    </Reference>
     <Reference Include="Basetypes">
       <HintPath>..\..\BoogieBinaries\Basetypes.dll</HintPath>
     </Reference>
     <Reference Include="CodeContractsExtender">
       <HintPath>..\..\BoogieBinaries\CodeContractsExtender.dll</HintPath>
     </Reference>
+    <Reference Include="Core">
+      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="WhoopEngineCommandLineOptions.cs" />
+    <Compile Include="ParsingEngine.cs" />
+    <Compile Include="PairWiseCheckingInstrumentationEngine.cs" />
+    <Compile Include="StaticLocksetAnalysisInstrumentationEngine.cs" />
   </ItemGroup>
 </Project>

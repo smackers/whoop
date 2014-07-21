@@ -8,7 +8,7 @@
     <ProjectGuid>{FD4F2900-FF82-4282-B76A-6775A5643B87}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Whoop</RootNamespace>
-    <AssemblyName>Driver</AssemblyName>
+    <AssemblyName>WhoopDriver</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">

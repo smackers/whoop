@@ -14,7 +14,9 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Driver
 {
@@ -23,109 +25,104 @@ namespace Whoop.Driver
   internal sealed class StaticLocksetAnalyser
   {
     AnalysisContext AC;
+    private EntryPoint EP1;
+    private EntryPoint EP2;
+
     PipelineStatistics Stats;
     WhoopErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser(AnalysisContext ac)
+    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2,
+      PipelineStatistics stats, WhoopErrorReporter errorReporter)
     {
-      Contract.Requires(ac != null);
+      Contract.Requires(ac != null && ep1 != null && ep2 != null);
       this.AC = ac;
-      this.Stats = new PipelineStatistics();
-      this.ErrorReporter = new WhoopErrorReporter();
+      this.EP1 = ep1;
+      this.EP2 = ep2;
+      this.Stats = stats;
+      this.ErrorReporter = errorReporter;
     }
 
     public Outcome Run()
     {
-      Console.WriteLine("00: " + GC.GetTotalMemory(true));
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
-      Console.WriteLine("000: " + GC.GetTotalMemory(true));
       if (DriverCommandLineOptions.Get().LoopUnrollCount != -1)
         this.AC.Program.UnrollLoops(DriverCommandLineOptions.Get().LoopUnrollCount,
           DriverCommandLineOptions.Get().SoundLoopUnrolling);
 
       var decls = this.AC.Program.TopLevelDeclarations.ToArray();
-      foreach (var func in this.AC.GetImplementationsToAnalyse())
+      string checkerName = "check$" + this.EP1.Name + "$" + this.EP2.Name;
+      Implementation checker = decls.OfType<Implementation>().ToList().
+        Find(val => val.Name.Equals(checkerName));
+      Contract.Assert(checker != null);
+      Console.WriteLine("Analyse: " + checker.Name);
+
+      VC.ConditionGeneration vcgen = null;
+
+      try
       {
-        Console.WriteLine("Analyse: " + func);
-        if (!func.Name.Contains(DriverCommandLineOptions.Get().AnalyseOnly)) continue;
-
-        VC.ConditionGeneration vcgen = null;
-
-        Console.WriteLine("0: " + GC.GetTotalMemory(true));
-        try
-        {
-          vcgen = new VC.VCGen(this.AC.Program, DriverCommandLineOptions.Get().SimplifyLogFilePath,
-            DriverCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
-        }
-        catch (ProverException e)
-        {
-          Whoop.IO.Reporter.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
-          Environment.Exit((int)Outcome.FatalError);
-        }
-        Console.WriteLine("01: " + GC.GetTotalMemory(true));
-        Implementation funcToAnalyse = decls.OfType<Implementation>().ToList().
-          Find(val => val.Name.Equals(func.Name));
-        Contract.Assert(funcToAnalyse != null);
-
-        int prevAssertionCount = vcgen.CumulativeAssertionCount;
-
-        List<Counterexample> errors;
-
-        DateTime start = new DateTime();
-        if (DriverCommandLineOptions.Get().Trace)
-        {
-          start = DateTime.UtcNow;
-          if (DriverCommandLineOptions.Get().Trace)
-          {
-            Console.WriteLine("");
-            Console.WriteLine("Verifying {0} ...", funcToAnalyse.Name.Substring(5));
-          }
-        }
-
-        VC.VCGen.Outcome vcOutcome;
-        try
-        {
-          vcOutcome = vcgen.VerifyImplementation(funcToAnalyse, out errors);
-        }
-        catch (VC.VCGenException e)
-        {
-          Whoop.IO.Reporter.ReportBplError(funcToAnalyse, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
-            e.Message, funcToAnalyse.Name), true, true);
-          errors = null;
-          vcOutcome = VC.VCGen.Outcome.Inconclusive;
-        }
-        catch (UnexpectedProverOutputException e)
-        {
-          Whoop.IO.Reporter.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
-            funcToAnalyse.Name, e.Message);
-          errors = null;
-          vcOutcome = VC.VCGen.Outcome.Inconclusive;
-        }
-
-        string timeIndication = "";
-        DateTime end = DateTime.UtcNow;
-        TimeSpan elapsed = end - start;
-
-        if (DriverCommandLineOptions.Get().Trace)
-        {
-          int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
-          timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
-            elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
-        }
-
-        this.ProcessOutcome(funcToAnalyse, vcOutcome, errors, timeIndication, this.Stats);
-
-        if (vcOutcome == VC.VCGen.Outcome.Errors || DriverCommandLineOptions.Get().Trace)
-          Console.Out.Flush();
-
-        Console.WriteLine("1: " + GC.GetTotalMemory(true));
-
-        cce.NonNull(DriverCommandLineOptions.Get().TheProverFactory).Close();
-        vcgen.Dispose();
-
-        Console.WriteLine("2: " + GC.GetTotalMemory(true));
+        vcgen = new VC.VCGen(this.AC.Program, DriverCommandLineOptions.Get().SimplifyLogFilePath,
+          DriverCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
       }
+      catch (ProverException e)
+      {
+        Whoop.IO.Reporter.ErrorWriteLine("Fatal Error: ProverException: {0}", e);
+        Environment.Exit((int)Outcome.FatalError);
+      }
+
+      int prevAssertionCount = vcgen.CumulativeAssertionCount;
+
+      List<Counterexample> errors;
+
+      DateTime start = new DateTime();
+      if (DriverCommandLineOptions.Get().Trace)
+      {
+        start = DateTime.UtcNow;
+        if (DriverCommandLineOptions.Get().Trace)
+        {
+          Console.WriteLine("");
+          Console.WriteLine("Verifying {0} ...", checker.Name.Substring(5));
+        }
+      }
+
+      VC.VCGen.Outcome vcOutcome;
+      try
+      {
+        vcOutcome = vcgen.VerifyImplementation(checker, out errors);
+      }
+      catch (VC.VCGenException e)
+      {
+        Whoop.IO.Reporter.ReportBplError(checker, String.Format("Error BP5010: {0}  Encountered in implementation {1}.",
+          e.Message, checker.Name), true, true);
+        errors = null;
+        vcOutcome = VC.VCGen.Outcome.Inconclusive;
+      }
+      catch (UnexpectedProverOutputException e)
+      {
+        Whoop.IO.Reporter.AdvisoryWriteLine("Advisory: {0} SKIPPED because of internal error: unexpected prover output: {1}",
+          checker.Name, e.Message);
+        errors = null;
+        vcOutcome = VC.VCGen.Outcome.Inconclusive;
+      }
+
+      string timeIndication = "";
+      DateTime end = DateTime.UtcNow;
+      TimeSpan elapsed = end - start;
+
+      if (DriverCommandLineOptions.Get().Trace)
+      {
+        int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
+        timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
+          elapsed.TotalSeconds, poCount, poCount == 1 ? "" : "s");
+      }
+
+      this.ProcessOutcome(checker, vcOutcome, errors, timeIndication, this.Stats);
+
+      if (vcOutcome == VC.VCGen.Outcome.Errors || DriverCommandLineOptions.Get().Trace)
+        Console.Out.Flush();
+
+      cce.NonNull(DriverCommandLineOptions.Get().TheProverFactory).Close();
+      vcgen.Dispose();
 
       Whoop.IO.Reporter.WriteTrailer(this.Stats);
 
@@ -184,10 +181,10 @@ namespace Whoop.Driver
 
           errors.Sort(new CounterexampleComparer());
           int errorCount = 0;
-          Console.WriteLine("3: " + GC.GetTotalMemory(true));
+
           foreach (Counterexample error in errors)
             errorCount += this.ErrorReporter.ReportCounterexample(error);
-          Console.WriteLine("4: " + GC.GetTotalMemory(true));
+
           if (errorCount == 0)
           {
             Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));

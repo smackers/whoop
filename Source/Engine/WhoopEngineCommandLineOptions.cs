@@ -12,11 +12,11 @@
 using System;
 using Microsoft.Boogie;
 
-namespace Whoop.Instrumentation
+namespace Whoop
 {
-  internal class InstrumentationCommandLineOptions : WhoopCommandLineOptions
+  internal class WhoopEngineCommandLineOptions : WhoopCommandLineOptions
   {
-    public InstrumentationCommandLineOptions()
+    public WhoopEngineCommandLineOptions()
       : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -27,9 +27,9 @@ namespace Whoop.Instrumentation
       return base.ParseOption(option, ps);
     }
 
-    internal static InstrumentationCommandLineOptions Get()
+    internal static WhoopEngineCommandLineOptions Get()
     {
-      return (InstrumentationCommandLineOptions)CommandLineOptions.Clo;
+      return (WhoopEngineCommandLineOptions)CommandLineOptions.Clo;
     }
   }
 }
