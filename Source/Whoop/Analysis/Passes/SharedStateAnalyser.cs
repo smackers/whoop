@@ -18,23 +18,39 @@ using System.Security.Policy;
 
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Analysis
 {
-  internal class SharedStateAnalyser
+  public static class SharedStateAnalyser
   {
-    private AnalysisContext AC;
+    private static List<Implementation> AlreadyAnalyzedFunctions =
+      new List<Implementation>();
 
-    public List<Variable> MemoryRegions;
+    private static Dictionary<EntryPoint, List<Variable>> EntryPointMemoryRegions =
+      new Dictionary<EntryPoint, List<Variable>>();
 
-    public SharedStateAnalyser(AnalysisContext ac)
+    private static Dictionary<Implementation, List<Variable>> MemoryRegions =
+      new Dictionary<Implementation, List<Variable>>();
+
+    public static List<Variable> GetMemoryRegions(EntryPoint ep)
     {
-      Contract.Requires(ac != null);
-      this.AC = ac;
-      this.MemoryRegions = this.GetMemoryRegions();
+      return SharedStateAnalyser.EntryPointMemoryRegions[ep];
     }
 
-    public bool IsImplementationRacing(Implementation impl)
+    public static List<Variable> GetMemoryRegions(string name)
+    {
+      foreach (var mr in SharedStateAnalyser.MemoryRegions)
+      {
+        if (!mr.Key.Name.Equals(name))
+          continue;
+        return mr.Value;
+      }
+
+      return new List<Variable>();
+    }
+
+    public static bool IsImplementationRacing(Implementation impl)
     {
       Contract.Requires(impl != null);
       foreach (var b in impl.Blocks)
@@ -64,67 +80,120 @@ namespace Whoop.Analysis
       return false;
     }
 
-    public List<Variable> GetAccessedMemoryRegions(Implementation impl)
+    public static void AnalyseMemoryRegions(AnalysisContext ac, EntryPoint ep)
     {
+      if (SharedStateAnalyser.EntryPointMemoryRegions.ContainsKey(ep))
+        return;
+      SharedStateAnalyser.EntryPointMemoryRegions.Add(ep, new List<Variable>());
+      SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, ac.GetImplementation(ep.Name));
+    }
+
+    private static void AnalyseMemoryRegions(AnalysisContext ac, EntryPoint ep, Implementation impl)
+    {
+      if (SharedStateAnalyser.AlreadyAnalyzedFunctions.Contains(impl))
+        return;
+      SharedStateAnalyser.AlreadyAnalyzedFunctions.Add(impl);
+
       List<Variable> vars = new List<Variable>();
 
       foreach (Block b in impl.Blocks)
       {
-        for (int i = 0; i < b.Cmds.Count; i++)
+        foreach (var cmd in b.Cmds)
         {
-          if (!(b.Cmds[i] is AssignCmd))
-            continue;
-
-          foreach (var lhs in (b.Cmds[i] as AssignCmd).Lhss.OfType<MapAssignLhs>())
+          if (cmd is CallCmd)
           {
-            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
-              !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
-              continue;
-
-            Variable v = this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
-              Find(val => val.Name.Equals(lhs.DeepAssignedIdentifier.Name));
-
-            if (!vars.Any(val => val.Name.Equals(v.Name)))
-              vars.Add(v);
+            SharedStateAnalyser.AnalyseMemoryRegionsInCall(ac, ep, cmd as CallCmd);
           }
-
-          foreach (var rhs in (b.Cmds[i] as AssignCmd).Rhss.OfType<NAryExpr>())
+          else if (cmd is AssignCmd)
           {
-            if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
-              !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
-              continue;
+            foreach (var lhs in (cmd as AssignCmd).Lhss.OfType<MapAssignLhs>())
+            {
+              if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+                !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+                continue;
 
-            Variable v = this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
-              Find(val => val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name));
+              Variable v = ac.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+                Find(val => val.Name.Equals(lhs.DeepAssignedIdentifier.Name));
 
-            if (!vars.Any(val => val.Name.Equals(v.Name)))
-              vars.Add(v);
+              if (!vars.Any(val => val.Name.Equals(v.Name)))
+                vars.Add(v);
+            }
+
+            foreach (var rhs in (cmd as AssignCmd).Rhss.OfType<NAryExpr>())
+            {
+              if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
+                !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+                continue;
+
+              Variable v = ac.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+                Find(val => val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name));
+
+              if (!vars.Any(val => val.Name.Equals(v.Name)))
+                vars.Add(v);
+            }
+
+            SharedStateAnalyser.AnalyseMemoryRegionsInAssign(ac, ep, cmd as AssignCmd);
           }
         }
       }
 
       vars = vars.OrderBy(val => val.Name).ToList();
+      SharedStateAnalyser.MemoryRegions.Add(impl, vars);
 
-      return vars;
-    }
-
-    private List<Variable> GetMemoryRegions()
-    {
-      List<Variable> vars = new List<Variable>();
-
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var v in vars)
       {
-        List<Variable> implVars = this.GetAccessedMemoryRegions(impl);
-        foreach (var v in implVars)
-        {
-          if (!vars.Any(val => val.Name.Equals(v.Name)))
-            vars.Add(v);
-        }
+        if (SharedStateAnalyser.EntryPointMemoryRegions[ep].Any(val => val.Name.Equals(v.Name)))
+          continue;
+        SharedStateAnalyser.EntryPointMemoryRegions[ep].Add(v);
+      }
+    }
+
+    private static void AnalyseMemoryRegionsInCall(AnalysisContext ac, EntryPoint ep, CallCmd cmd)
+    {
+      var impl = ac.GetImplementation(cmd.callee);
+
+      if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+      {
+        SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
       }
 
-      vars = vars.OrderBy(val => val.Name).ToList();
+      foreach (var expr in cmd.Ins)
+      {
+        if (!(expr is IdentifierExpr)) continue;
+        impl = ac.GetImplementation((expr as IdentifierExpr).Name);
 
-      return vars;
+        if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+        {
+          SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
+        }
+      }
     }
+
+    private static void AnalyseMemoryRegionsInAssign(AnalysisContext ac, EntryPoint ep, AssignCmd cmd)
+    {
+      foreach (var rhs in cmd.Rhss)
+      {
+        if (!(rhs is IdentifierExpr)) continue;
+        var impl = ac.GetImplementation((rhs as IdentifierExpr).Name);
+
+        if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+        {
+          SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
+        }
+      }
+    }
+
+    #region helper functions
+
+    private static bool ShouldAccessFunction(string funcName)
+    {
+      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio"))
+        return false;
+      if (funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock"))
+        return false;
+      return true;
+    }
+
+    #endregion
   }
 }

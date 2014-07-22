@@ -11,18 +11,10 @@
 
 using System;
 
-namespace Whoop.Analysis
+namespace Whoop.Instrumentation
 {
-  public static class Factory
+  public interface IGlobalRaceCheckingInstrumentation
   {
-    public static ISharedStateAbstraction CreateSharedStateAbstraction(AnalysisContext ac)
-    {
-      return new SharedStateAbstraction(ac);
-    }
-
-    public static ILockAbstraction CreateLockAbstraction(AnalysisContext ac)
-    {
-      return new LockAbstraction(ac);
-    }
+    void Run();
   }
 }

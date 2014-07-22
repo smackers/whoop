@@ -79,13 +79,27 @@ namespace Whoop.Driver
 
         foreach (var pair in DeviceDriver.EntryPointPairs)
         {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-            "wbpl").ParseNew(new List<string>
-            {
-              "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
-              pair.Item1.Name + "_instrumented",
-              pair.Item2.Name + "_instrumented"
-            });
+          AnalysisContext ac = null;
+
+          if (pair.Item1.Name.Equals(pair.Item2.Name))
+          {
+            ac = new AnalysisContextParser(fileList[fileList.Count - 1],
+              "wbpl").ParseNew(new List<string>
+              {
+                "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
+                pair.Item1.Name + "_instrumented"
+              });
+          }
+          else
+          {
+            ac = new AnalysisContextParser(fileList[fileList.Count - 1],
+              "wbpl").ParseNew(new List<string>
+              {
+                "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
+                pair.Item1.Name + "_instrumented",
+                pair.Item2.Name + "_instrumented"
+              });
+          }
 
           Outcome oc = new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();
 

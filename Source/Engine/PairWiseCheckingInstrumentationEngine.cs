@@ -34,6 +34,18 @@ namespace Whoop
 
     public void Run()
     {
+      Analysis.Factory.CreateLockAbstraction(this.AC).Run();
+
+      if (this.EP1.Name.Equals(this.EP2.Name))
+      {
+        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP1).Run();
+      }
+      else
+      {
+        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP1).Run();
+        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP2).Run();
+      }
+
       Instrumentation.Factory.CreatePairInstrumentation(this.AC, this.EP1, this.EP2).Run();
 
       ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);

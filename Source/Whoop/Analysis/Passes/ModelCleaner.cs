@@ -84,6 +84,24 @@ namespace Whoop.Analysis
       }
     }
 
+    public static void RemoveGlobalLocksets(AnalysisContext ac)
+    {
+      List<Variable> toRemove = new List<Variable>();
+
+      foreach (var v in ac.Program.TopLevelDeclarations.OfType<Variable>())
+      {
+        if (!ac.IsAWhoopVariable(v))
+          continue;
+        toRemove.Add(v);
+      }
+
+      foreach (var v in toRemove)
+      {
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Variable) && (val as Variable).Name.Equals(v.Name));
+      }
+    }
+
     public static void RemoveAssumesFromImplementation(Implementation impl)
     {
       foreach (var b in impl.Blocks)

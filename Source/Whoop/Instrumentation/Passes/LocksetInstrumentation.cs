@@ -17,6 +17,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
 
@@ -36,8 +37,6 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
-      this.AddCurrentLocksets();
-      this.AddMemoryLocksets();
       this.AddUpdateLocksetFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
@@ -48,35 +47,6 @@ namespace Whoop.Instrumentation
     }
 
     #region lockset verification variables and methods
-
-    private void AddCurrentLocksets()
-    {
-      foreach (var l in this.AC.GetLockVariables())
-      {
-        Variable ls = new GlobalVariable(Token.NoToken,
-                        new TypedIdent(Token.NoToken, l.Name + "_in_CLS_$" + this.EP.Name,
-                          Microsoft.Boogie.Type.Bool));
-        ls.AddAttribute("current_lockset", new object[] { });
-        this.AC.Program.TopLevelDeclarations.Add(ls);
-        this.AC.CurrentLocksets.Add(new Lockset(ls, l));
-      }
-    }
-
-    private void AddMemoryLocksets()
-    {
-      foreach (var mr in this.AC.SharedStateAnalyser.MemoryRegions)
-      {
-        foreach (var l in this.AC.GetLockVariables())
-        {
-          Variable ls = new GlobalVariable(Token.NoToken,
-                          new TypedIdent(Token.NoToken, l.Name + "_in_LS_" + mr.Name +
-                          "_$" + this.EP.Name, Microsoft.Boogie.Type.Bool));
-          ls.AddAttribute("lockset", new object[] { });
-          this.AC.Program.TopLevelDeclarations.Add(ls);
-          this.AC.Locksets.Add(new Lockset(ls, l, mr.Name));
-        }
-      }
-    }
 
     private void AddUpdateLocksetFunc()
     {
@@ -158,8 +128,7 @@ namespace Whoop.Instrumentation
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
-      List<Variable> vars = this.AC.SharedStateAnalyser.
-        GetAccessedMemoryRegions(region.Implementation());
+      List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(region.Implementation().Name);
 
       foreach (var ls in this.AC.Locksets)
       {

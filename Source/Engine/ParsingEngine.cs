@@ -32,7 +32,8 @@ namespace Whoop
     public void Run()
     {
       Refactoring.Factory.CreateProgramSimplifier(this.AC).Run();
-      Refactoring.Factory.CreateLockAbstractor(this.AC, this.EP).Run();
+      Analysis.Factory.CreateLockAbstraction(this.AC).Run();
+      Refactoring.Factory.CreateLockRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateEntryPointRefactoring(this.AC, this.EP).Run();
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;

@@ -26,9 +26,9 @@ namespace Whoop.Refactoring
       return new ProgramSimplifier(ac);
     }
 
-    public static ILockAbstractor CreateLockAbstractor(AnalysisContext ac, EntryPoint ep)
+    public static ILockRefactoring CreateLockRefactoring(AnalysisContext ac, EntryPoint ep)
     {
-      return new LockAbstractor(ac, ep);
+      return new LockRefactoring(ac, ep);
     }
   }
 }

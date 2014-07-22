@@ -95,6 +95,11 @@ namespace Whoop.Domain.Drivers
       }
     }
 
+    public static EntryPoint GetEntryPoint(string name)
+    {
+      return DeviceDriver.EntryPoints.Find(ep => ep.Name.Equals(name));
+    }
+
     #endregion
 
     #region other methods

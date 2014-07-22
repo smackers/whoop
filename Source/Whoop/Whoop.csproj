@@ -70,14 +70,18 @@
     <Compile Include="Instrumentation\Factory.cs" />
     <Compile Include="Refactoring\Interfaces\IEntryPointRefactoring.cs" />
     <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
-    <Compile Include="Refactoring\Passes\LockAbstractor.cs" />
-    <Compile Include="Refactoring\Interfaces\ILockAbstractor.cs" />
     <Compile Include="Lockset.cs" />
     <Compile Include="Instrumentation\Interfaces\IInstrumentationRegionsConstructor.cs" />
     <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
     <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
     <Compile Include="Analysis\Interfaces\ISharedStateAbstraction.cs" />
     <Compile Include="Analysis\Passes\ModelCleaner.cs" />
+    <Compile Include="Refactoring\Passes\LockRefactoring.cs" />
+    <Compile Include="Refactoring\Interfaces\ILockRefactoring.cs" />
+    <Compile Include="Analysis\Passes\LockAbstraction.cs" />
+    <Compile Include="Analysis\Interfaces\ILockAbstraction.cs" />
+    <Compile Include="Instrumentation\Passes\GlobalRaceCheckingInstrumentation.cs" />
+    <Compile Include="Instrumentation\Interfaces\GlobalRaceCheckingInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

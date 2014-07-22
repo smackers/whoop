@@ -13,16 +13,8 @@ using System;
 
 namespace Whoop.Analysis
 {
-  public static class Factory
+  public interface ILockAbstraction
   {
-    public static ISharedStateAbstraction CreateSharedStateAbstraction(AnalysisContext ac)
-    {
-      return new SharedStateAbstraction(ac);
-    }
-
-    public static ILockAbstraction CreateLockAbstraction(AnalysisContext ac)
-    {
-      return new LockAbstraction(ac);
-    }
+    void Run();
   }
 }

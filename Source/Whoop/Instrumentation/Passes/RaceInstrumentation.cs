@@ -17,6 +17,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
 
@@ -37,7 +38,6 @@ namespace Whoop.Instrumentation
     public void Run()
     {
 //      this.AddTrackingGlobalVar();
-      this.AddAccessOffsetGlobalVars();
 
       this.AddAccessFuncs(AccessType.WRITE);
       this.AddAccessFuncs(AccessType.READ);
@@ -57,22 +57,9 @@ namespace Whoop.Instrumentation
       this.AC.Program.TopLevelDeclarations.Add(tracking);
     }
 
-    private void AddAccessOffsetGlobalVars()
-    {
-      for (int i = 0; i < this.AC.SharedStateAnalyser.MemoryRegions.Count; i++)
-      {
-        TypedIdent ti = new TypedIdent(Token.NoToken,
-          this.MakeOffsetVariableName(this.AC.SharedStateAnalyser.MemoryRegions[i].Name)
-          + "_$" + this.EP.Name, this.AC.MemoryModelType);
-        Variable aoff = new Constant(Token.NoToken, ti, false);
-        aoff.AddAttribute("access_checking", new object[] { });
-        this.AC.Program.TopLevelDeclarations.Add(aoff);
-      }
-    }
-
     private void AddAccessFuncs(AccessType access)
     {
-      foreach (var mr in this.AC.SharedStateAnalyser.MemoryRegions)
+      foreach (var mr in SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name)))
       {
         List<Variable> inParams = new List<Variable>();
         inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",

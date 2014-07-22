@@ -27,8 +27,6 @@ namespace Whoop
     public Program Program;
     public ResolutionContext ResContext;
 
-    internal SharedStateAnalyser SharedStateAnalyser;
-
     internal List<InstrumentationRegion> InstrumentationRegions;
     internal List<Lock> Locks;
     internal List<Lockset> CurrentLocksets;
@@ -53,8 +51,6 @@ namespace Whoop
       this.MemoryLocations = new Dictionary<string, List<MemoryLocation>>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
-
-      this.SharedStateAnalyser = new SharedStateAnalyser(this);
     }
 
     public void EliminateDeadVariables()
@@ -182,7 +178,7 @@ namespace Whoop
     public bool IsImplementationRacing(Implementation impl)
     {
       Contract.Requires(impl != null);
-      return this.SharedStateAnalyser.IsImplementationRacing(impl);
+      return SharedStateAnalyser.IsImplementationRacing(impl);
     }
 
     internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)

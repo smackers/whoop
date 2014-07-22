@@ -23,14 +23,14 @@ using Whoop.Analysis;
 
 namespace Whoop.Refactoring
 {
-  internal class LockAbstractor : ILockAbstractor
+  internal class LockRefactoring : ILockRefactoring
   {
     private AnalysisContext AC;
     private Implementation EP;
 
     private HashSet<Implementation> AlreadyAnalyzedFunctions;
 
-    public LockAbstractor(AnalysisContext ac, EntryPoint ep)
+    public LockRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
@@ -43,38 +43,7 @@ namespace Whoop.Refactoring
     /// </summary>
     public void Run()
     {
-      this.IdentifyAndCreateUniqueLocks();
       this.AnalyseAndInstrumentLocks(this.EP);
-    }
-
-    /// <summary>
-    /// Performs pointer analysis to identify and create unique locks.
-    /// </summary>
-    private void IdentifyAndCreateUniqueLocks()
-    {
-      Implementation initFunc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint);
-
-      foreach (var block in initFunc.Blocks)
-      {
-        for (int idx = 0; idx < block.Cmds.Count; idx++)
-        {
-          if (!(block.Cmds[idx] is CallCmd))
-            continue;
-          if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
-            continue;
-
-          Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(initFunc,
-            ((block.Cmds[idx] as CallCmd).Ins[0] as IdentifierExpr));
-
-          Lock newLock = new Lock(new Constant(Token.NoToken,
-            new TypedIdent(Token.NoToken, "lock$" + this.AC.Locks.Count,
-              Microsoft.Boogie.Type.Int), true), lockExpr);
-
-          newLock.Id.AddAttribute("lock", new object[] { });
-          this.AC.Program.TopLevelDeclarations.Add(newLock.Id);
-          this.AC.Locks.Add(newLock);
-        }
-      }
     }
 
     /// <summary>

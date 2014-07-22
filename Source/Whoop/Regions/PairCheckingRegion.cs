@@ -17,6 +17,8 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 using System.Runtime.InteropServices;
+
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 
 namespace Whoop.Regions
@@ -189,8 +191,8 @@ namespace Whoop.Regions
       this.InternalImplementation.Proc.Attributes = new QKeyValue(Token.NoToken,
         "checker", new List<object>(), null);
 
-      List<Variable> varsEp1 = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl1);
-      List<Variable> varsEp2 = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl2);
+      List<Variable> varsEp1 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl1.Name));
+      List<Variable> varsEp2 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl2.Name));
       Procedure initProc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc;
 
       foreach (var v in initProc.Modifies)
@@ -200,6 +202,18 @@ namespace Whoop.Regions
           !varsEp2.Any(val => val.Name.Equals(v.Name)))
           continue;
         this.InternalImplementation.Proc.Modifies.Add(new Duplicator().Visit(v.Clone()) as IdentifierExpr);
+      }
+
+      foreach (var v in this.AC.GetCurrentLocksetVariables())
+      {
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
+          v.tok, new Duplicator().Visit(v.Clone()) as Variable));
+      }
+
+      foreach (var v in this.AC.GetMemoryLocksetVariables())
+      {
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
+          v.tok, new Duplicator().Visit(v.Clone()) as Variable));
       }
     }
 

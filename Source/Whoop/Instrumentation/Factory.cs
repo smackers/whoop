@@ -41,6 +41,11 @@ namespace Whoop.Instrumentation
       return new ErrorReportingInstrumentation(ac, ep);
     }
 
+    public static IGlobalRaceCheckingInstrumentation CreateGlobalRaceCheckingInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new GlobalRaceCheckingInstrumentation(ac, ep);
+    }
+
     public static IPairInstrumentation CreatePairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
       return new PairInstrumentation(ac, ep1, ep2);

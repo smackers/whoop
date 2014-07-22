@@ -32,7 +32,10 @@ namespace Whoop
 
     public void Run()
     {
+      SharedStateAnalyser.AnalyseMemoryRegions(this.AC, this.EP);
+
       Instrumentation.Factory.CreateInstrumentationRegionsConstructor(this.AC).Run();
+      Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP).Run();
 
       Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();
       Instrumentation.Factory.CreateRaceInstrumentation(this.AC, this.EP).Run();
@@ -45,6 +48,7 @@ namespace Whoop
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
       ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC);
+      ModelCleaner.RemoveGlobalLocksets(this.AC);
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);
 //      ModelCleaner.RemoveUnusedVars(this.AC);

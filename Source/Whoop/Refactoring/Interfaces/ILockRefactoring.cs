@@ -13,7 +13,7 @@ using System;
 
 namespace Whoop.Refactoring
 {
-  public interface ILockAbstractor
+  public interface ILockRefactoring
   {
     void Run();
   }
