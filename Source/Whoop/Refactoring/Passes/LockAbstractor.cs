@@ -35,8 +35,6 @@ namespace Whoop.Refactoring
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = this.AC.GetImplementation(ep.Name);
-      this.AC.DetectInitFunction();
-
       this.AlreadyAnalyzedFunctions = new HashSet<Implementation>();
     }
 
@@ -54,7 +52,9 @@ namespace Whoop.Refactoring
     /// </summary>
     private void IdentifyAndCreateUniqueLocks()
     {
-      foreach (var block in this.AC.InitFunc.Blocks)
+      Implementation initFunc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint);
+
+      foreach (var block in initFunc.Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
         {
@@ -63,7 +63,7 @@ namespace Whoop.Refactoring
           if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
             continue;
 
-          Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(this.AC.InitFunc,
+          Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(initFunc,
             ((block.Cmds[idx] as CallCmd).Ins[0] as IdentifierExpr));
 
           Lock newLock = new Lock(new Constant(Token.NoToken,

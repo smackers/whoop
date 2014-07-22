@@ -15,8 +15,9 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Domain.Drivers;
 
-namespace Whoop
+namespace Whoop.Analysis
 {
   public class ModelCleaner
   {
@@ -53,6 +54,42 @@ namespace Whoop
 
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Function));
+      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is TypeCtorDecl));
+      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is TypeSynonymDecl));
+    }
+
+    public static void RemoveEntryPointSpecificTopLevelDeclerations(AnalysisContext ac)
+    {
+      List<Implementation> toRemove = new List<Implementation>();
+
+      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
+          continue;
+        if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
+          continue;
+        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio"))
+          continue;
+        toRemove.Add(impl);
+      }
+
+      foreach (var impl in toRemove)
+      {
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+      }
+    }
+
+    public static void RemoveAssumesFromImplementation(Implementation impl)
+    {
+      foreach (var b in impl.Blocks)
+      {
+        b.Cmds.RemoveAll(cmd => cmd is AssumeCmd);
+      }
     }
 
 //    public static void RemoveEmptyBlocks(AnalysisContext ac)

@@ -36,6 +36,8 @@ namespace Whoop
     {
       Instrumentation.Factory.CreatePairInstrumentation(this.AC, this.EP1, this.EP2).Run();
 
+      ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
+
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
         WhoopEngineCommandLineOptions.Get().Files.Count - 1], "_check_" +

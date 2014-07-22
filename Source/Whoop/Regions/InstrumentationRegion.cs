@@ -155,11 +155,7 @@ namespace Whoop.Regions
 
     private Block CreateRegionHeader()
     {
-      string label;
-
-      label = "$header";
-
-      Block header = new Block(Token.NoToken, label,
+      Block header = new Block(Token.NoToken, "$header",
         new List<Cmd>(), new GotoCmd(Token.NoToken,
           new List<string> { this.RegionBlocks[0].Label }));
       this.RegionBlocks.Insert(0, header);

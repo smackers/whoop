@@ -12,6 +12,7 @@
 using System;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop
 {
@@ -48,7 +49,9 @@ namespace Whoop
       if (index == -1)
         return false;
 
-      foreach (var b in ac.InitFunc.Blocks)
+      Implementation initFunc = ac.GetImplementation(DeviceDriver.InitEntryPoint);
+
+      foreach (var b in initFunc.Blocks)
       {
         foreach (var c in b.Cmds)
         {

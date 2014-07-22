@@ -17,6 +17,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 using System.Runtime.InteropServices;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Regions
 {
@@ -31,8 +32,10 @@ namespace Whoop.Regions
     private Block RegionHeader;
     private List<Block> RegionBlocks;
 
-    private InstrumentationRegion IR1;
-    private InstrumentationRegion IR2;
+    Dictionary<int, Variable> InParamMatcher;
+
+    private string CL1;
+    private string CL2;
 
     #endregion
 
@@ -40,19 +43,21 @@ namespace Whoop.Regions
 
     public PairCheckingRegion(AnalysisContext ac, Implementation impl1, Implementation impl2)
     {
-      Contract.Requires(impl1 != null && impl2 != null);
+      Contract.Requires(ac != null && impl1 != null && impl2 != null);
       this.AC = ac;
 
       this.RegionName = "check$" + impl1.Name + "$" + impl2.Name;
-      this.IR1 = new InstrumentationRegion(ac, impl1);
-      this.IR2 = new InstrumentationRegion(ac, impl2);
+      this.CL1 = impl1.Name;
+      this.CL2 = impl2.Name;
 
       this.RegionBlocks = new List<Block>();
+      this.InParamMatcher = new Dictionary<int, Variable>();
 
-      this.ProcessWrapperImplementation(impl1, impl2);
-      this.ProcessWrapperProcedure(impl1, impl2);
+      this.CreateInParamMatcher(impl1, impl2);
+      this.CreateImplementation(impl1, impl2);
+      this.CreateProcedure(impl1, impl2);
 
-      this.RegionHeader = this.RegionBlocks[0];
+      this.RegionHeader = this.CreateRegionHeader();
     }
 
     #endregion
@@ -142,33 +147,39 @@ namespace Whoop.Regions
       return result;
     }
 
-    public InstrumentationRegion InstrumentationRegion1()
+    public string Callee1()
     {
-      return this.IR1;
+      return this.CL1;
     }
 
-    public InstrumentationRegion InstrumentationRegion2()
+    public string Callee2()
     {
-      return this.IR2;
+      return this.CL2;
     }
 
     #endregion
 
     #region construction methods
 
-    private void ProcessWrapperImplementation(Implementation impl1, Implementation impl2)
+    private void CreateImplementation(Implementation impl1, Implementation impl2)
     {
       this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
         new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2),
         new List<Variable>(), new List<Variable>(), this.RegionBlocks);
 
-      this.CreateNewLocalVars(impl1, impl2);
+      Block check = new Block(Token.NoToken, "_CHECK",
+        new List<Cmd>(), new ReturnCmd(Token.NoToken));
+
+      check.Cmds.Add(this.CreateCallCmd(impl1, impl2));
+      check.Cmds.Add(this.CreateCallCmd(impl2, impl1, true));
+
+      this.RegionBlocks.Add(check);
 
       this.InternalImplementation.Attributes = new QKeyValue(Token.NoToken,
-        "entryPair", new List<object>(), null);
+        "checker", new List<object>(), null);
     }
 
-    private void ProcessWrapperProcedure(Implementation impl1, Implementation impl2)
+    private void CreateProcedure(Implementation impl1, Implementation impl2)
     {
       this.InternalImplementation.Proc = new Procedure(Token.NoToken, this.RegionName,
         new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2), 
@@ -176,17 +187,85 @@ namespace Whoop.Regions
         new List<IdentifierExpr>(), new List<Ensures>());
 
       this.InternalImplementation.Proc.Attributes = new QKeyValue(Token.NoToken,
-        "entryPair", new List<object>(), null);
+        "checker", new List<object>(), null);
 
-      foreach (var v in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
+      List<Variable> varsEp1 = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl1);
+      List<Variable> varsEp2 = this.AC.SharedStateAnalyser.GetAccessedMemoryRegions(impl2);
+      Procedure initProc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc;
+
+      foreach (var v in initProc.Modifies)
       {
-        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(Token.NoToken, v));
+        if (!v.Name.Equals("$Alloc") && !v.Name.Equals("$CurrAddr") &&
+          !varsEp1.Any(val => val.Name.Equals(v.Name)) &&
+          !varsEp2.Any(val => val.Name.Equals(v.Name)))
+          continue;
+        this.InternalImplementation.Proc.Modifies.Add(new Duplicator().Visit(v.Clone()) as IdentifierExpr);
       }
     }
 
     #endregion
 
     #region helper methods
+
+    private Block CreateRegionHeader()
+    {
+      Block header = new Block(Token.NoToken, "$header",
+        new List<Cmd>(), new GotoCmd(Token.NoToken,
+          new List<string> { this.RegionBlocks[0].Label }));
+      this.RegionBlocks.Insert(0, header);
+      return header;
+    }
+
+    private CallCmd CreateCallCmd(Implementation impl, Implementation otherImpl, bool checkMatcher = false)
+    {
+      List<Expr> ins = new List<Expr>();
+
+      for (int i = 0; i < impl.Proc.InParams.Count; i++)
+      {
+        if (checkMatcher && this.InParamMatcher.ContainsKey(i))
+        {
+          Variable v = new Duplicator().Visit(this.InParamMatcher[i].Clone()) as Variable;
+          ins.Add(new IdentifierExpr(v.tok, v));
+        }
+        else
+        {
+          ins.Add(new IdentifierExpr(impl.Proc.InParams[i].tok, impl.Proc.InParams[i]));
+        }
+      }
+
+      CallCmd call = new CallCmd(Token.NoToken, impl.Name, ins, new List<IdentifierExpr>());
+
+      return call;
+    }
+
+    private void CreateInParamMatcher(Implementation impl1, Implementation impl2)
+    {
+      Implementation initFunc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint);
+      List<Expr> insEp1 = new List<Expr>();
+      List<Expr> insEp2 = new List<Expr>();
+
+      foreach (Block block in initFunc.Blocks)
+      {
+        foreach (CallCmd call in block.Cmds.OfType<CallCmd>())
+        {
+          if (call.callee.Equals(impl1.Name))
+            insEp1.AddRange(call.Ins);
+          if (call.callee.Equals(impl2.Name))
+            insEp2.AddRange(call.Ins);
+        }
+      }
+
+      for (int i = 0; i < insEp2.Count; i++)
+      {
+        for (int j = 0; j < insEp1.Count; j++)
+        {
+          if (insEp2[i].ToString().Equals(insEp1[j].ToString()))
+          {
+            this.InParamMatcher.Add(i, impl1.InParams[j]);
+          }
+        }
+      }
+    }
 
     private List<Variable> CreateNewInParams(Implementation impl1, Implementation impl2)
     {
@@ -197,27 +276,15 @@ namespace Whoop.Regions
         newInParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable) as Variable);
       }
 
-      foreach (var v in impl2.Proc.InParams)
+      for (int i = 0; i < impl2.Proc.InParams.Count; i++)
       {
-        newInParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable) as Variable);
+        if (this.InParamMatcher.ContainsKey(i))
+          continue;
+        newInParams.Add(new Duplicator().VisitVariable(
+          impl2.Proc.InParams[i].Clone() as Variable) as Variable);
       }
 
       return newInParams;
-    }
-
-    private void CreateNewLocalVars(Implementation impl1, Implementation impl2)
-    {
-      foreach (var v in impl1.LocVars)
-      {
-        this.InternalImplementation.LocVars.Add(new Duplicator().
-          VisitLocalVariable(v.Clone() as LocalVariable) as Variable);
-      }
-
-      foreach (var v in impl2.LocVars)
-      {
-        this.InternalImplementation.LocVars.Add(new Duplicator().
-          VisitLocalVariable(v.Clone() as LocalVariable) as Variable);
-      }
     }
 
     #endregion

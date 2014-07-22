@@ -30,7 +30,6 @@ namespace Whoop.Refactoring
     {
       Contract.Requires(ac != null);
       this.AC = ac;
-      this.AC.DetectInitFunction();
     }
 
     /// <summary>

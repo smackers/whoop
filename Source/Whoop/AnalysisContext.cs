@@ -29,9 +29,7 @@ namespace Whoop
 
     internal SharedStateAnalyser SharedStateAnalyser;
 
-    internal Implementation InitFunc;
     internal List<InstrumentationRegion> InstrumentationRegions;
-    internal List<PairCheckingRegion> PairCheckingRegions;
     internal List<Lock> Locks;
     internal List<Lockset> CurrentLocksets;
     internal List<Lockset> Locksets;
@@ -49,7 +47,6 @@ namespace Whoop
       this.ResContext = rc;
 
       this.InstrumentationRegions = new List<InstrumentationRegion>();
-      this.PairCheckingRegions = new List<PairCheckingRegion>();
       this.Locks = new List<Lock>();
       this.CurrentLocksets = new List<Lockset>();
       this.Locksets = new List<Lockset>();
@@ -68,6 +65,12 @@ namespace Whoop
     public void Inline()
     {
       ExecutionEngine.Inline(this.Program);
+    }
+
+    public List<Implementation> GetCheckerImplementations()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "checker"));
     }
 
     public List<Implementation> GetEntryPointImplementations()
@@ -206,21 +209,6 @@ namespace Whoop
       Function f = this.GetOrCreateBVFunction(functionName, smtName, resultType);
       var e = new NAryExpr(Token.NoToken, new FunctionCall(f), new List<Expr>(args));
       return e;
-    }
-
-    internal void DetectInitFunction()
-    {
-      try
-      {
-        this.InitFunc = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint)) as Implementation);
-        if (this.InitFunc == null) throw new Exception("no main function found");
-      }
-      catch (Exception e)
-      {
-        Console.Error.Write("Exception thrown in Whoop: ");
-        Console.Error.WriteLine(e);
-      }
     }
   }
 }
