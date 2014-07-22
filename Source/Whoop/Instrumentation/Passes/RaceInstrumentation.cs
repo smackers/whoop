@@ -37,8 +37,6 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
-//      this.AddTrackingGlobalVar();
-
       this.AddAccessFuncs(AccessType.WRITE);
       this.AddAccessFuncs(AccessType.READ);
 
@@ -49,13 +47,6 @@ namespace Whoop.Instrumentation
     }
 
     #region race checking verification variables and methods
-
-    private void AddTrackingGlobalVar()
-    {
-      TypedIdent ti = new TypedIdent(Token.NoToken, "TRACKING", Microsoft.Boogie.Type.Bool);
-      Variable tracking = new GlobalVariable(Token.NoToken, ti);
-      this.AC.Program.TopLevelDeclarations.Add(tracking);
-    }
 
     private void AddAccessFuncs(AccessType access)
     {

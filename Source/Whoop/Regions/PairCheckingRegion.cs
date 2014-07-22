@@ -195,25 +195,42 @@ namespace Whoop.Regions
       List<Variable> varsEp2 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl2.Name));
       Procedure initProc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc;
 
-      foreach (var v in initProc.Modifies)
+      foreach (var ls in this.AC.GetCurrentLocksetVariables())
       {
-        if (!v.Name.Equals("$Alloc") && !v.Name.Equals("$CurrAddr") &&
-          !varsEp1.Any(val => val.Name.Equals(v.Name)) &&
-          !varsEp2.Any(val => val.Name.Equals(v.Name)))
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.tok,
+          new Duplicator().Visit(ls.Clone()) as Variable)));
+        this.InternalImplementation.Proc.Requires.Add(require);
+        Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.tok,
+          new Duplicator().Visit(ls.Clone()) as Variable)));
+        this.InternalImplementation.Proc.Ensures.Add(ensure);
+      }
+
+      foreach (var ls in this.AC.GetMemoryLocksetVariables())
+      {
+        Requires require = new Requires(false, new IdentifierExpr(ls.tok,
+          new Duplicator().Visit(ls.Clone()) as Variable));
+        this.InternalImplementation.Proc.Requires.Add(require);
+      }
+
+      foreach (var ie in initProc.Modifies)
+      {
+        if (!ie.Name.Equals("$Alloc") && !ie.Name.Equals("$CurrAddr") &&
+          !varsEp1.Any(val => val.Name.Equals(ie.Name)) &&
+          !varsEp2.Any(val => val.Name.Equals(ie.Name)))
           continue;
-        this.InternalImplementation.Proc.Modifies.Add(new Duplicator().Visit(v.Clone()) as IdentifierExpr);
+        this.InternalImplementation.Proc.Modifies.Add(new Duplicator().Visit(ie.Clone()) as IdentifierExpr);
       }
 
-      foreach (var v in this.AC.GetCurrentLocksetVariables())
+      foreach (var ls in this.AC.GetCurrentLocksetVariables())
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
-          v.tok, new Duplicator().Visit(v.Clone()) as Variable));
+          ls.tok, new Duplicator().Visit(ls.Clone()) as Variable));
       }
 
-      foreach (var v in this.AC.GetMemoryLocksetVariables())
+      foreach (var ls in this.AC.GetMemoryLocksetVariables())
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
-          v.tok, new Duplicator().Visit(v.Clone()) as Variable));
+          ls.tok, new Duplicator().Visit(ls.Clone()) as Variable));
       }
     }
 

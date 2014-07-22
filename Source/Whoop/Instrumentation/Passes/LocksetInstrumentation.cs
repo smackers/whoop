@@ -147,14 +147,6 @@ namespace Whoop.Instrumentation
         Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Ensures.Add(ensure);
       }
-
-      foreach (var ls in this.AC.Locksets)
-      {
-        if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
-          continue;
-        Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok, ls.Id));
-        region.Procedure().Requires.Add(require);
-      }
     }
 
     #endregion
