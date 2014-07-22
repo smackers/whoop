@@ -140,7 +140,7 @@ namespace Whoop.IO
       #endregion
 
       #region Write details of the exception to the dump file
-      using(TokenTextWriter writer = new TokenTextWriter(DUMP_FILE))
+      using(TokenTextWriter writer = new TokenTextWriter(DUMP_FILE, true))
       {
         writer.Write("Exception ToString:");
         writer.Write("===================");

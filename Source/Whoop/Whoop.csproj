@@ -103,9 +103,6 @@
     <Reference Include="CodeContractsExtender">
       <HintPath>..\..\BoogieBinaries\CodeContractsExtender.dll</HintPath>
     </Reference>
-    <Reference Include="Core">
-      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
-    </Reference>
     <Reference Include="Graph">
       <HintPath>..\..\BoogieBinaries\Graph.dll</HintPath>
     </Reference>
@@ -114,6 +111,9 @@
     </Reference>
     <Reference Include="VCGeneration">
       <HintPath>..\..\BoogieBinaries\VCGeneration.dll</HintPath>
+    </Reference>
+    <Reference Include="Core">
+      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
     </Reference>
     <Reference Include="ExecutionEngine">
       <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>

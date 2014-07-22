@@ -31,7 +31,7 @@ namespace Whoop.IO
       var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
                      Path.GetFileNameWithoutExtension(file);
 
-      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension))
+      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension, true))
       {
         program.Emit(writer);
       }
@@ -46,7 +46,7 @@ namespace Whoop.IO
       var fileName = directoryContainingFile + Path.DirectorySeparatorChar +
         Path.GetFileNameWithoutExtension(file) + "_" + suffix;
 
-      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension))
+      using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension, true))
       {
         program.Emit(writer);
       }

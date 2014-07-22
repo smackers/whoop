@@ -40,7 +40,7 @@ namespace Whoop
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
-        WhoopEngineCommandLineOptions.Get().Files.Count - 1], "_check_" +
+        WhoopEngineCommandLineOptions.Get().Files.Count - 1], "check_" +
         this.EP1.Name + "_" + this.EP2.Name, "wbpl");
     }
   }

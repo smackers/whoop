@@ -14,8 +14,12 @@ Global
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 		QED|Any CPU = QED|Any CPU
+		z3apidebug|Any CPU = z3apidebug|Any CPU
+		Checked|Any CPU = Checked|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Checked|Any CPU.ActiveCfg = Debug|x86
+		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Checked|Any CPU.Build.0 = Debug|x86
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Debug|Any CPU.Build.0 = Debug|x86
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Debug|x86.ActiveCfg = Debug|x86
@@ -26,6 +30,10 @@ Global
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Release|Any CPU.Build.0 = Release|x86
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Release|x86.ActiveCfg = Release|x86
 		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.Release|x86.Build.0 = Release|x86
+		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.z3apidebug|Any CPU.ActiveCfg = Debug|x86
+		{1E3094B5-94D6-4308-BADF-D2C369DDAB6F}.z3apidebug|Any CPU.Build.0 = Debug|x86
+		{502822C2-B456-424E-9980-F2535010A057}.Checked|Any CPU.ActiveCfg = Debug|x86
+		{502822C2-B456-424E-9980-F2535010A057}.Checked|Any CPU.Build.0 = Debug|x86
 		{502822C2-B456-424E-9980-F2535010A057}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{502822C2-B456-424E-9980-F2535010A057}.Debug|Any CPU.Build.0 = Debug|x86
 		{502822C2-B456-424E-9980-F2535010A057}.Debug|x86.ActiveCfg = Debug|x86
@@ -36,6 +44,10 @@ Global
 		{502822C2-B456-424E-9980-F2535010A057}.Release|Any CPU.Build.0 = Release|x86
 		{502822C2-B456-424E-9980-F2535010A057}.Release|x86.ActiveCfg = Release|x86
 		{502822C2-B456-424E-9980-F2535010A057}.Release|x86.Build.0 = Release|x86
+		{502822C2-B456-424E-9980-F2535010A057}.z3apidebug|Any CPU.ActiveCfg = Debug|x86
+		{502822C2-B456-424E-9980-F2535010A057}.z3apidebug|Any CPU.Build.0 = Debug|x86
+		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Checked|Any CPU.ActiveCfg = Debug|x86
+		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Checked|Any CPU.Build.0 = Debug|x86
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Debug|Any CPU.Build.0 = Debug|x86
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Debug|x86.ActiveCfg = Debug|x86
@@ -46,6 +58,8 @@ Global
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Release|Any CPU.Build.0 = Release|x86
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Release|x86.ActiveCfg = Release|x86
 		{FD4F2900-FF82-4282-B76A-6775A5643B87}.Release|x86.Build.0 = Release|x86
+		{FD4F2900-FF82-4282-B76A-6775A5643B87}.z3apidebug|Any CPU.ActiveCfg = Debug|x86
+		{FD4F2900-FF82-4282-B76A-6775A5643B87}.z3apidebug|Any CPU.Build.0 = Debug|x86
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Source\Driver\Driver.csproj

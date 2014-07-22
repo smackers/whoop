@@ -45,9 +45,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Core">
-      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
-    </Reference>
     <Reference Include="VCGeneration">
       <HintPath>..\..\BoogieBinaries\VCGeneration.dll</HintPath>
     </Reference>
@@ -61,6 +58,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Provers.SMTLib">
       <HintPath>..\..\BoogieBinaries\Provers.SMTLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Core">
+      <HintPath>..\..\BoogieBinaries\Core.dll</HintPath>
     </Reference>
     <Reference Include="ExecutionEngine">
       <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
