@@ -84,7 +84,7 @@ namespace Whoop.Driver
             {
               "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
               pair.Item1.Name + "_instrumented",
-//              pair.Item2.Name + "_instrumented"
+              pair.Item2.Name + "_instrumented"
             });
 
           Outcome oc = new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();

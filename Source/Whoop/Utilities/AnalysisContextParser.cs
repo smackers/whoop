@@ -37,16 +37,16 @@ namespace Whoop
       {
         foreach (var str in additional)
         {
-          this.File = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
+          string file = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
             "_" + str + "." + this.Extension;
-          filesToParse.Add(this.File);
+          filesToParse.Add(file);
         }
       }
       else
       {
-        this.File = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
+        string file = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
           "." + this.Extension;
-        filesToParse.Add(this.File);
+        filesToParse.Add(file);
       }
 
       Program program = ExecutionEngine.ParseBoogieProgram(filesToParse, false);
