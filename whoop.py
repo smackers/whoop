@@ -504,19 +504,19 @@ def startToolChain(argv):
       if filename == inputFilename: return
       try: os.remove(filename)
       except OSError: pass
-    # def DeleteFilesWithPattern(patern):
-    #   """ Delete all the files with the given pattern if they exist """
-    #   thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
-    #   path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
-    #   for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
-    #     if fnmatch.fnmatch(file, thisfile + '$*.wbpl'):
-    #       try: os.remove(path + file)
-    #       except OSError: pass
+    def DeleteFilesWithPattern(patern):
+      """ Delete all the files with the given pattern if they exist """
+      thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
+      path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
+      for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
+        if fnmatch.fnmatch(file, thisfile + '_*.wbpl'):
+          try: os.remove(path + file)
+          except OSError: pass
     cleanUpHandler.register(DeleteFile, bcFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, reFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
-    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFile, wbplFilename)
+    if not CommandLineOptions.stopAtWbpl: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
 
   if CommandLineOptions.inline:
     CommandLineOptions.chauffeurOptions.append("-inline")
