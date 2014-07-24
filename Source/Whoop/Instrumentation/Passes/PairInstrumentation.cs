@@ -24,15 +24,15 @@ namespace Whoop.Instrumentation
   internal class PairInstrumentation : IPairInstrumentation
   {
     private AnalysisContext AC;
-    private Implementation EP1;
-    private Implementation EP2;
+    private EntryPoint EP1;
+    private EntryPoint EP2;
 
     public PairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
       Contract.Requires(ac != null && ep1 != null && ep2 != null);
       this.AC = ac;
-      this.EP1 = this.AC.GetImplementation(ep1.Name);
-      this.EP2 = this.AC.GetImplementation(ep2.Name);
+      this.EP1 = ep1;
+      this.EP2 = ep2;
     }
 
     /// <summary>

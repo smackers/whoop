@@ -100,7 +100,7 @@ namespace Whoop.Refactoring
               }
 
               bool matched = false;
-              foreach (Lock l in this.AC.Locks)
+              foreach (var l in this.AC.Locks)
               {
                 if (l.IsEqual(this.AC, this.EP, lockExpr))
                 {

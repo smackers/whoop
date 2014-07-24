@@ -36,24 +36,27 @@ namespace Whoop.Regions
 
     Dictionary<int, Variable> InParamMatcher;
 
-    private string CL1;
-    private string CL2;
+    private EntryPoint EP1;
+    private EntryPoint EP2;
 
     #endregion
 
     #region constructors
 
-    public PairCheckingRegion(AnalysisContext ac, Implementation impl1, Implementation impl2)
+    public PairCheckingRegion(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
-      Contract.Requires(ac != null && impl1 != null && impl2 != null);
+      Contract.Requires(ac != null && ep1 != null && ep2 != null);
       this.AC = ac;
 
-      this.RegionName = "check$" + impl1.Name + "$" + impl2.Name;
-      this.CL1 = impl1.Name;
-      this.CL2 = impl2.Name;
+      this.RegionName = "check$" + ep1.Name + "$" + ep2.Name;
+      this.EP1 = ep1;
+      this.EP2 = ep2;
 
       this.RegionBlocks = new List<Block>();
       this.InParamMatcher = new Dictionary<int, Variable>();
+
+      Implementation impl1 = this.AC.GetImplementation(ep1.Name);
+      Implementation impl2 = this.AC.GetImplementation(ep2.Name);
 
       this.CreateInParamMatcher(impl1, impl2);
       this.CreateImplementation(impl1, impl2);
@@ -149,14 +152,14 @@ namespace Whoop.Regions
       return result;
     }
 
-    public string Callee1()
+    public EntryPoint EntryPoint1()
     {
-      return this.CL1;
+      return this.EP1;
     }
 
-    public string Callee2()
+    public EntryPoint EntryPoint2()
     {
-      return this.CL2;
+      return this.EP2;
     }
 
     #endregion
@@ -174,6 +177,13 @@ namespace Whoop.Regions
 
       check.Cmds.Add(this.CreateCallCmd(impl1, impl2));
       check.Cmds.Add(this.CreateCallCmd(impl2, impl1, true));
+
+      foreach (var mr in SharedStateAnalyser.GetPairMemoryRegions(
+        DeviceDriver.GetEntryPoint(impl1.Name), DeviceDriver.GetEntryPoint(impl2.Name)))
+      {
+        AssertCmd assert = this.CreateRaceCheckingAssertion(impl1, impl2, mr);
+        if (assert != null) check.Cmds.Add(assert);
+      }
 
       this.RegionBlocks.Add(check);
 
@@ -195,20 +205,20 @@ namespace Whoop.Regions
       List<Variable> varsEp2 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl2.Name));
       Procedure initProc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc;
 
-      foreach (var ls in this.AC.GetCurrentLocksetVariables())
+      foreach (var ls in this.AC.CurrentLocksets)
       {
-        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.tok,
-          new Duplicator().Visit(ls.Clone()) as Variable)));
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
+          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
-        Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.tok,
-          new Duplicator().Visit(ls.Clone()) as Variable)));
+        Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
+          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Ensures.Add(ensure);
       }
 
-      foreach (var ls in this.AC.GetMemoryLocksetVariables())
+      foreach (var ls in this.AC.MemoryLocksets)
       {
-        Requires require = new Requires(false, new IdentifierExpr(ls.tok,
-          new Duplicator().Visit(ls.Clone()) as Variable));
+        Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok,
+          new Duplicator().Visit(ls.Id.Clone()) as Variable));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
@@ -221,16 +231,22 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Modifies.Add(new Duplicator().Visit(ie.Clone()) as IdentifierExpr);
       }
 
-      foreach (var ls in this.AC.GetCurrentLocksetVariables())
+      foreach (var ls in this.AC.CurrentLocksets)
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
-          ls.tok, new Duplicator().Visit(ls.Clone()) as Variable));
+          ls.Id.tok, new Duplicator().Visit(ls.Id.Clone()) as Variable));
       }
 
-      foreach (var ls in this.AC.GetMemoryLocksetVariables())
+      foreach (var ls in this.AC.MemoryLocksets)
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
-          ls.tok, new Duplicator().Visit(ls.Clone()) as Variable));
+          ls.Id.tok, new Duplicator().Visit(ls.Id.Clone()) as Variable));
+      }
+
+      foreach (var acs in this.AC.GetAccessCheckingVariables())
+      {
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
+          acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
       }
     }
 
@@ -268,6 +284,124 @@ namespace Whoop.Regions
 
       return call;
     }
+
+    private AssertCmd CreateRaceCheckingAssertion(Implementation impl1, Implementation impl2, Variable mr)
+    {
+      Variable acs1 = this.AC.GetAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetAccessVariableName(this.EP1, mr.Name)));
+      Variable acs2 = this.AC.GetAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetAccessVariableName(this.EP2, mr.Name)));
+
+      if (acs1 == null || acs2 == null)
+        return null;
+
+      IdentifierExpr acsExpr1 = new IdentifierExpr(acs1.tok, acs1);
+      IdentifierExpr acsExpr2 = new IdentifierExpr(acs2.tok, acs2);
+
+      Expr acsOrExpr = Expr.Or(acsExpr1, acsExpr2);
+
+      Expr checkExpr = null;
+
+      foreach (var l in this.AC.Locks)
+      {
+        var ls1  = this.AC.MemoryLocksets.Find(val => val.Lock.Name.Equals(l.Name) &&
+          val.TargetName.Equals(mr.Name) && val.EntryPoint.Name.Equals(impl1.Name));
+        var ls2  = this.AC.MemoryLocksets.Find(val => val.Lock.Name.Equals(l.Name) &&
+          val.TargetName.Equals(mr.Name) && val.EntryPoint.Name.Equals(impl2.Name));
+
+        IdentifierExpr lsExpr1 = new IdentifierExpr(ls1.Id.tok, ls1.Id);
+        IdentifierExpr lsExpr2 = new IdentifierExpr(ls2.Id.tok, ls2.Id);
+        Expr lsAndExpr = Expr.And(lsExpr1, lsExpr2);
+
+        if (checkExpr == null)
+        {
+          checkExpr = lsAndExpr;
+        }
+        else
+        {
+          checkExpr = Expr.Or(checkExpr, lsAndExpr);
+        }
+      }
+
+      Expr acsImpExpr = Expr.Imp(acsOrExpr, checkExpr);
+
+      return new AssertCmd(Token.NoToken, acsImpExpr);
+    }
+
+//        private AssertCmd MakeCheckAssertCmd(Lockset ls)
+//        {
+//          Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
+//          Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
+//    LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",
+//        Microsoft.Boogie.Type.Bool))
+//          Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
+//            val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
+//    
+//          IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+//          IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
+//          IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
+//    
+//          AssertCmd assert = new AssertCmd(Token.NoToken,
+//            Expr.Imp(Expr.And(trackExpr,
+//              Expr.Eq(offsetExpr, ptrExpr)),
+//              MakeCheckLocksetIntersectionExpr(ls)));
+//    
+//          assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
+//    
+//          return assert;
+//        }
+//
+//        private AssertCmd MakeCheckAssertCmd(Lockset ls)
+//        {
+//          Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
+//          Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
+//    LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",
+//        Microsoft.Boogie.Type.Bool))
+//          Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
+//            val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
+//    
+//          IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+//          IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
+//          IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
+//    
+//          AssertCmd assert = new AssertCmd(Token.NoToken,
+//            Expr.Imp(Expr.And(trackExpr,
+//              Expr.Eq(offsetExpr, ptrExpr)),
+//              MakeCheckLocksetIntersectionExpr(ls)));
+//    
+//          assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
+//    
+//          return assert;
+//        }
+//    
+//        private Expr MakeCheckLocksetIntersectionExpr(Lockset ls)
+//        {
+//          if (base.AC.Locks.Count == 0)
+//            return Expr.False;
+//    
+//          Expr checkExpr = null;
+//    
+//          IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
+//    
+//          foreach (var l in base.AC.Locks)
+//          {
+//            Expr expr = Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
+//                          new List<Expr>(new Expr[] { lsExpr,
+//                new IdentifierExpr(l.Id.tok, l.Id)
+//              })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, l.Id));
+//    
+//            if (checkExpr == null)
+//            {
+//              checkExpr = expr;
+//            }
+//            else
+//            {
+//              checkExpr = Expr.Or(checkExpr, expr);
+//            }
+//          }
+//    
+//          return checkExpr;
+//        }
 
     private void CreateInParamMatcher(Implementation impl1, Implementation impl2)
     {

@@ -61,8 +61,6 @@
     <Compile Include="Instrumentation\Interfaces\ILocksetInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IPairInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IRaceInstrumentation.cs" />
-    <Compile Include="Analysis\Passes\SharedStateAnalyser.cs" />
-    <Compile Include="Analysis\Passes\PointerAliasAnalyser.cs" />
     <Compile Include="Refactoring\Interfaces\IProgramSimplifier.cs" />
     <Compile Include="Refactoring\Passes\ProgramSimplifier.cs" />
     <Compile Include="Refactoring\Factory.cs" />
@@ -75,13 +73,15 @@
     <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
     <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
     <Compile Include="Analysis\Interfaces\ISharedStateAbstraction.cs" />
-    <Compile Include="Analysis\Passes\ModelCleaner.cs" />
     <Compile Include="Refactoring\Passes\LockRefactoring.cs" />
     <Compile Include="Refactoring\Interfaces\ILockRefactoring.cs" />
     <Compile Include="Analysis\Passes\LockAbstraction.cs" />
     <Compile Include="Analysis\Interfaces\ILockAbstraction.cs" />
     <Compile Include="Instrumentation\Passes\GlobalRaceCheckingInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\GlobalRaceCheckingInstrumentation.cs" />
+    <Compile Include="Analysis\ModelCleaner.cs" />
+    <Compile Include="Analysis\PointerAliasAnalyser.cs" />
+    <Compile Include="Analysis\SharedStateAnalyser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

@@ -30,8 +30,7 @@ namespace Whoop
     internal List<InstrumentationRegion> InstrumentationRegions;
     internal List<Lock> Locks;
     internal List<Lockset> CurrentLocksets;
-    internal List<Lockset> Locksets;
-    internal Dictionary<string, List<MemoryLocation>> MemoryLocations;
+    internal List<Lockset> MemoryLocksets;
 
     internal Microsoft.Boogie.Type MemoryModelType;
 
@@ -47,8 +46,7 @@ namespace Whoop
       this.InstrumentationRegions = new List<InstrumentationRegion>();
       this.Locks = new List<Lock>();
       this.CurrentLocksets = new List<Lockset>();
-      this.Locksets = new List<Lockset>();
-      this.MemoryLocations = new Dictionary<string, List<MemoryLocation>>();
+      this.MemoryLocksets = new List<Lockset>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
     }
@@ -93,10 +91,16 @@ namespace Whoop
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lockset"));
     }
 
-    public List<Variable> GetRaceCheckingVariables()
+    public List<Variable> GetAccessCheckingVariables()
     {
       return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking"));
+    }
+
+    public List<Variable> GetAccessWatchdogConstants()
+    {
+      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "watchdog"));
     }
 
     public Implementation GetImplementation(string name)
@@ -121,7 +125,8 @@ namespace Whoop
       if (QKeyValue.FindBoolAttribute(v.Attributes, "lock") ||
           QKeyValue.FindBoolAttribute(v.Attributes, "current_lockset") ||
           QKeyValue.FindBoolAttribute(v.Attributes, "lockset") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "access_checking"))
+          QKeyValue.FindBoolAttribute(v.Attributes, "access_checking") ||
+          QKeyValue.FindBoolAttribute(v.Attributes, "watchdog"))
         return true;
       return false;
     }
@@ -181,30 +186,18 @@ namespace Whoop
       return SharedStateAnalyser.IsImplementationRacing(impl);
     }
 
-    internal Function GetOrCreateBVFunction(string functionName, string smtName, Microsoft.Boogie.Type resultType)
+    #region internal helper functions
+
+    internal string GetAccessVariableName(EntryPoint ep, string name)
     {
-      Function f = (Function)this.ResContext.LookUpProcedure(functionName);
-      if (f != null)
-        return f;
-
-      f = new Function(Token.NoToken, functionName,
-        new List<Variable>(new LocalVariable[] {
-          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "", resultType)),
-          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "", resultType))
-        }), new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "", resultType)));
-      f.AddAttribute("bvbuiltin", smtName);
-
-      this.Program.TopLevelDeclarations.Add(f);
-      this.ResContext.AddProcedure(f);
-
-      return f;
+      return "WRITTEN_" + name + "_$" + ep.Name;
     }
 
-    internal Expr MakeBVFunctionCall(string functionName, string smtName, Microsoft.Boogie.Type resultType, params Expr[] args)
+    internal string GetAccessWatchdogConstantName(string name)
     {
-      Function f = this.GetOrCreateBVFunction(functionName, smtName, resultType);
-      var e = new NAryExpr(Token.NoToken, new FunctionCall(f), new List<Expr>(args));
-      return e;
+      return "WATCHED_ACCESS_OFFSET_" + name;
     }
+
+    #endregion
   }
 }

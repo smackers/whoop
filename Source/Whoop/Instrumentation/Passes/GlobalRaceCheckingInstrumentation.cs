@@ -27,20 +27,25 @@ namespace Whoop.Instrumentation
   internal class GlobalRaceCheckingInstrumentation : IGlobalRaceCheckingInstrumentation
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
+
+    private List<Variable> MemoryRegions;
 
     public GlobalRaceCheckingInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
+
+      this.MemoryRegions = SharedStateAnalyser.GetMemoryRegions(ep);
     }
 
     public void Run()
     {
       this.AddCurrentLocksets();
       this.AddMemoryLocksets();
-      this.AddAccessOffsetGlobalVars();
+      this.AddAccessCheckingVariables();
+      this.AddAccessWatchdogConstants();
     }
 
     private void AddCurrentLocksets()
@@ -52,15 +57,13 @@ namespace Whoop.Instrumentation
                           Microsoft.Boogie.Type.Bool));
         ls.AddAttribute("current_lockset", new object[] { });
         this.AC.Program.TopLevelDeclarations.Add(ls);
-        this.AC.CurrentLocksets.Add(new Lockset(ls, l));
+        this.AC.CurrentLocksets.Add(new Lockset(ls, l, this.EP));
       }
     }
 
     private void AddMemoryLocksets()
     {
-      List<Variable> mrs = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
-
-      foreach (var mr in mrs)
+      foreach (var mr in this.MemoryRegions)
       {
         foreach (var l in this.AC.GetLockVariables())
         {
@@ -69,33 +72,35 @@ namespace Whoop.Instrumentation
                           "_$" + this.EP.Name, Microsoft.Boogie.Type.Bool));
           ls.AddAttribute("lockset", new object[] { });
           this.AC.Program.TopLevelDeclarations.Add(ls);
-          this.AC.Locksets.Add(new Lockset(ls, l, mr.Name));
+          this.AC.MemoryLocksets.Add(new Lockset(ls, l, this.EP, mr.Name));
         }
       }
     }
 
-    private void AddAccessOffsetGlobalVars()
+    private void AddAccessCheckingVariables()
     {
-      List<Variable> mrs = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
-
-      for (int i = 0; i < mrs.Count; i++)
+      for (int i = 0; i < this.MemoryRegions.Count; i++)
       {
-        TypedIdent ti = new TypedIdent(Token.NoToken,
-          this.MakeOffsetVariableName(mrs[i].Name)
-          + "_$" + this.EP.Name, this.AC.MemoryModelType);
-        Variable aoff = new Constant(Token.NoToken, ti, false);
+        Variable aoff = new GlobalVariable(Token.NoToken,
+          new TypedIdent(Token.NoToken, "WRITTEN_" +
+            this.MemoryRegions[i].Name + "_$" + this.EP.Name,
+            Microsoft.Boogie.Type.Bool));
         aoff.AddAttribute("access_checking", new object[] { });
         this.AC.Program.TopLevelDeclarations.Add(aoff);
       }
     }
 
-    #region helper functions
-
-    private string MakeOffsetVariableName(string name)
+    private void AddAccessWatchdogConstants()
     {
-      return "WATCHED_ACCESS_OFFSET_" + name;
+      for (int i = 0; i < this.MemoryRegions.Count; i++)
+      {
+        TypedIdent ti = new TypedIdent(Token.NoToken,
+          this.AC.GetAccessWatchdogConstantName(this.MemoryRegions[i].Name)
+          + "_$" + this.EP.Name, this.AC.MemoryModelType);
+        Variable watchdog = new Constant(Token.NoToken, ti, false);
+        watchdog.AddAttribute("watchdog", new object[] { });
+        this.AC.Program.TopLevelDeclarations.Add(watchdog);
+      }
     }
-
-    #endregion
   }
 }

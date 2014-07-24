@@ -26,13 +26,13 @@ namespace Whoop.Instrumentation
   internal class LocksetInstrumentation : ILocksetInstrumentation
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
 
     public LocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
     }
 
     public void Run()
@@ -128,9 +128,9 @@ namespace Whoop.Instrumentation
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
-      List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(region.Implementation().Name);
+      List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
 
-      foreach (var ls in this.AC.Locksets)
+      foreach (var ls in this.AC.MemoryLocksets)
       {
         if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
           continue;

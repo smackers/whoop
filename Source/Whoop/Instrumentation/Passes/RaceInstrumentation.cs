@@ -26,13 +26,13 @@ namespace Whoop.Instrumentation
   internal class RaceInstrumentation : IRaceInstrumentation
   {
     protected AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
 
     public RaceInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
     }
 
     public void Run()
@@ -43,6 +43,7 @@ namespace Whoop.Instrumentation
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
+        this.InstrumentProcedure(region);
       }
     }
 
@@ -50,7 +51,7 @@ namespace Whoop.Instrumentation
 
     private void AddAccessFuncs(AccessType access)
     {
-      foreach (var mr in SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name)))
+      foreach (var mr in SharedStateAnalyser.GetMemoryRegions(this.EP))
       {
         List<Variable> inParams = new List<Variable>();
         inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
@@ -61,13 +62,6 @@ namespace Whoop.Instrumentation
           new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
         proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-        foreach (var ls in this.AC.Locksets)
-        {
-          if (!ls.TargetName.Equals(mr.Name))
-            continue;
-          proc.Modifies.Add(new IdentifierExpr(Token.NoToken, ls.Id));
-        }
-
         this.AC.Program.TopLevelDeclarations.Add(proc);
         this.AC.ResContext.AddProcedure(proc);
 
@@ -77,7 +71,7 @@ namespace Whoop.Instrumentation
 
         Block block = new Block(Token.NoToken, "_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-        foreach (var ls in this.AC.Locksets)
+        foreach (var ls in this.AC.MemoryLocksets)
         {
           if (!ls.TargetName.Equals(mr.Name))
             continue;
@@ -89,14 +83,17 @@ namespace Whoop.Instrumentation
 
             Variable ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
               this.AC.MemoryModelType));
-            Variable offset = this.AC.GetRaceCheckingVariables().Find(val =>
-              val.Name.Contains(this.MakeOffsetVariableName(ls.TargetName)));
+            Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
+              val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
+            Variable offset = this.AC.GetAccessWatchdogConstants().Find(val =>
+              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(ls.TargetName)));
 
             IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
             IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+            IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
             IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
 
-            AssignCmd assign = new AssignCmd(Token.NoToken,
+            block.Cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
               new SimpleAssignLhs(Token.NoToken, lsExpr)
             }, new List<Expr> { new NAryExpr(Token.NoToken,
@@ -104,14 +101,30 @@ namespace Whoop.Instrumentation
               new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
                 new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr
               }))
-            });
+            }));
 
-            block.Cmds.Add(assign);
+            proc.Modifies.Add(lsExpr);
+
+            if (access == AccessType.WRITE)
+            {
+              block.Cmds.Add(new AssignCmd(Token.NoToken,
+                new List<AssignLhs>() {
+                  new SimpleAssignLhs(Token.NoToken, acsExpr)
+                }, new List<Expr> { new NAryExpr(Token.NoToken,
+                  new IfThenElse(Token.NoToken),
+                  new List<Expr>(new Expr[] { Expr.True,
+                    new IdentifierExpr(cls.Id.tok, cls.Id), acsExpr
+                  }))
+              }));
+
+              proc.Modifies.Add(acsExpr);
+            }
+
             break;
           }
         }
 
-        if (this.AC.GetLockVariables().Count == 0)
+        if (this.AC.Locks.Count == 0)
         {
           block.Cmds.Add(new AssumeCmd(Token.NoToken, Expr.True));
         }
@@ -165,6 +178,20 @@ namespace Whoop.Instrumentation
       }
     }
 
+    private void InstrumentProcedure(InstrumentationRegion region)
+    {
+      List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
+
+      foreach (var ls in this.AC.MemoryLocksets)
+      {
+        if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
+          continue;
+        Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
+          val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
+        region.Procedure().Modifies.Add(new IdentifierExpr(acs.tok, acs));
+      }
+    }
+
     #endregion
 
     #region helper functions
@@ -174,98 +201,6 @@ namespace Whoop.Instrumentation
       return "_" + access.ToString() + "_LS_" + name + "_$" + this.EP.Name;
     }
 
-    private string MakeOffsetVariableName(string name)
-    {
-      return "WATCHED_ACCESS_OFFSET_" + name;
-    }
-
     #endregion
-
-    //    protected void AddCheckAccessFuncs(AccessType access)
-    //    {
-    //      foreach (var ls in this.AC.Locksets)
-    //      {
-    //        List<Variable> inParams = new List<Variable>();
-    //        inParams.Add(RaceInstrumentationUtil.MakePtrLocalVariable(this.AC.MemoryModelType));
-    //
-    //        Procedure proc = new Procedure(Token.NoToken, "_CHECK_" + access.ToString() + "_LS_" + ls.TargetName,
-    //          new List<TypeVariable>(), inParams, new List<Variable>(),
-    //          new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
-    //        proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-    //
-    //        this.AC.Program.TopLevelDeclarations.Add(proc);
-    //        this.AC.ResContext.AddProcedure(proc);
-    //
-    //        Implementation impl = new Implementation(Token.NoToken, "_CHECK_" + access.ToString() + "_LS_" + ls.TargetName,
-    //          new List<TypeVariable>(), inParams, new List<Variable>(), MakeCheckLocalVars(), new List<Block>());
-    //
-    //        impl.Blocks.Add(this.MakeCheckBlock(access, ls));
-    //        impl.Proc = proc;
-    //        impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-    //
-    //        this.AC.Program.TopLevelDeclarations.Add(impl);
-    //      }
-    //    }
-
-    //    protected override Block MakeCheckBlock(AccessType access, Lockset ls)
-    //    {
-    //      Block block = new Block(Token.NoToken, "_CHECK_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
-    //
-    //      block.Cmds.Add(this.MakeCheckAssertCmd(ls));
-    //
-    //      return block;
-    //    }
-    //
-    //    private AssertCmd MakeCheckAssertCmd(Lockset ls)
-    //    {
-    //      Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
-    //      Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
-    //LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",
-    //    Microsoft.Boogie.Type.Bool))
-    //      Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
-    //        val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
-    //
-    //      IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-    //      IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
-    //      IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
-    //
-    //      AssertCmd assert = new AssertCmd(Token.NoToken,
-    //        Expr.Imp(Expr.And(trackExpr,
-    //          Expr.Eq(offsetExpr, ptrExpr)),
-    //          MakeCheckLocksetIntersectionExpr(ls)));
-    //
-    //      assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
-    //
-    //      return assert;
-    //    }
-    //
-    //    private Expr MakeCheckLocksetIntersectionExpr(Lockset ls)
-    //    {
-    //      if (base.AC.Locks.Count == 0)
-    //        return Expr.False;
-    //
-    //      Expr checkExpr = null;
-    //
-    //      IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-    //
-    //      foreach (var l in base.AC.Locks)
-    //      {
-    //        Expr expr = Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-    //                      new List<Expr>(new Expr[] { lsExpr,
-    //            new IdentifierExpr(l.Id.tok, l.Id)
-    //          })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, l.Id));
-    //
-    //        if (checkExpr == null)
-    //        {
-    //          checkExpr = expr;
-    //        }
-    //        else
-    //        {
-    //          checkExpr = Expr.Or(checkExpr, expr);
-    //        }
-    //      }
-    //
-    //      return checkExpr;
-    //    }
   }
 }

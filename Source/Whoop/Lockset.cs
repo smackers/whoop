@@ -12,6 +12,7 @@
 using System;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop
 {
@@ -19,12 +20,14 @@ namespace Whoop
   {
     public readonly Variable Id;
     public readonly Variable Lock;
-    public string TargetName;
+    public readonly EntryPoint EntryPoint;
+    public readonly string TargetName;
 
-    public Lockset(Variable id, Variable l, string target = "")
+    public Lockset(Variable id, Variable l, EntryPoint ep, string target = "")
     {
       this.Id = id;
       this.Lock = l;
+      this.EntryPoint = ep;
       this.TargetName = target;
     }
   }
