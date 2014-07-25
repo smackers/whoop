@@ -21,9 +21,7 @@ struct net_device *alloc_etherdev(int sizeof_priv)
 
 static inline bool is_valid_ether_addr(const u8 *addr)
 {
-	bool val;
-	__SMACK_code("havoc @;", val);
-	return val;
+	return true;
 }
 
 static inline int ether_crc(length, data)

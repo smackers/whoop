@@ -65,11 +65,15 @@ namespace Whoop.Refactoring
           {
             CallCmd call = cmd as CallCmd;
 
+            if (this.ShouldSkipFromAnalysis(call))
+            {
+              continue;
+            }
+
             if (call.callee.Contains("mutex_lock") ||
                 call.callee.Contains("mutex_unlock"))
             {
-              Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(impl, call.Ins[0] as IdentifierExpr);
-
+              Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(impl, call.Ins[0]);
               if (inPtrs != null && (!(lockExpr is LiteralExpr) || (lockExpr is NAryExpr)))
               {
                 if (lockExpr is IdentifierExpr)
@@ -121,8 +125,15 @@ namespace Whoop.Refactoring
 
               foreach (var inParam in call.Ins)
               {
-                Expr ptrExpr = PointerAliasAnalyser.ComputeRootPointer(impl, call.Ins[0] as IdentifierExpr);
-                computedRootPointers.Add(ptrExpr);
+                if (inParam is NAryExpr)
+                {
+                  computedRootPointers.Add(inParam);
+                }
+                else
+                {
+                  Expr ptrExpr = PointerAliasAnalyser.ComputeRootPointer(impl, inParam);
+                  computedRootPointers.Add(ptrExpr);
+                }
               }
 
               this.AnalyseAndInstrumentLocksInCall(call, computedRootPointers);
@@ -180,6 +191,23 @@ namespace Whoop.Refactoring
       if (funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock"))
         return false;
       return true;
+    }
+
+    /// <summary>
+    /// These functions should be skipped from lock alias analysis.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="call">CallCmd</param>
+    private bool ShouldSkipFromAnalysis(CallCmd call)
+    {
+      if (call.callee.Contains("$malloc") || call.callee.Contains("$alloca") ||
+          call.callee.Contains("strlcpy") ||
+          call.callee.Contains("readq") || call.callee.Contains("readb") ||
+          call.callee.Contains("readw") || call.callee.Contains("readl") ||
+          call.callee.Contains("writeq") || call.callee.Contains("writeb") ||
+          call.callee.Contains("writew") || call.callee.Contains("writel"))
+        return true;
+      return false;
     }
 
     #endregion

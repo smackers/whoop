@@ -24,15 +24,41 @@ namespace Whoop.Analysis
   /// </summary>
   internal static class PointerAliasAnalyser
   {
+    private enum ArithmeticOperation
+    {
+      Addition = 0,
+      Subtraction = 1,
+      Multiplication = 2,
+      Division = 3
+    }
+
     /// <summary>
     /// Compute $pa(p, i, s) == p + i * s);
     /// </summary>
     /// <returns>The root pointer.</returns>
     /// <param name="impl">Implementation</param>
     /// <param name="id">Identifier expression</param>
-    public static Expr ComputeRootPointer(Implementation impl, IdentifierExpr id)
+    public static Expr ComputeRootPointer(Implementation impl, Expr id)
     {
-      NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
+      if (id is LiteralExpr)
+      {
+        return id;
+      }
+
+      if (id is NAryExpr && (id as NAryExpr).Args.Count == 1 &&
+        (id as NAryExpr).Fun.FunctionName.Equals("-"))
+      {
+        return id;
+      }
+
+      NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl,
+        id as IdentifierExpr) as NAryExpr;
+
+      if (root == null)
+      {
+        return id;
+      }
+
       Expr result = root;
       Expr resolution = result;
       int ixs = 0;
@@ -43,7 +69,32 @@ namespace Whoop.Analysis
         {
           if (((result as NAryExpr).Args[0] is IdentifierExpr) &&
             ((result as NAryExpr).Args[0] as IdentifierExpr).Name.Contains("$M."))
-            return null;
+          {
+            return id;
+          }
+
+          if (PointerAliasAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
+          {
+            return id;
+          }
+
+          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
+          {
+            Expr arithmetic = PointerAliasAnalyser.DoPointerArithmetic(impl, result);
+
+            if (result.ToString().Equals(arithmetic.ToString()))
+            {
+              return arithmetic;
+            }
+
+            result = arithmetic;
+            continue;
+          }
+
+          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
+          {
+            return id;
+          }
 
           Expr p = (result as NAryExpr).Args[0];
           Expr i = (result as NAryExpr).Args[1];
@@ -55,7 +106,7 @@ namespace Whoop.Analysis
           }
           else
           {
-            return null;
+            return id;
           }
 
           result = p;
@@ -73,18 +124,18 @@ namespace Whoop.Analysis
 
     public static Expr GetPointerArithmeticExpr(Implementation impl, IdentifierExpr identifier)
     {
-      foreach (var b in impl.Blocks)
+      for (int i = impl.Blocks.Count - 1; i >= 0; i--)
       {
-        foreach (var c in b.Cmds)
+        for (int j = impl.Blocks[i].Cmds.Count - 1; j >= 0; j--)
         {
-          if (!(c is AssignCmd))
+          Cmd cmd = impl.Blocks[i].Cmds[j];
+          if (!(cmd is AssignCmd))
             continue;
-          if (!((c as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(identifier.Name)))
+          if (!((cmd as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(identifier.Name)))
             continue;
-          return (c as AssignCmd).Rhss[0];
+          return (cmd as AssignCmd).Rhss[0];
         }
       }
-
       return null;
     }
 
@@ -127,6 +178,11 @@ namespace Whoop.Analysis
 
     public static Expr ComputeLiteralsInExpr(Expr expr)
     {
+      if (!((expr as NAryExpr).Args[0] is NAryExpr))
+      {
+        return expr;
+      }
+
       int l1 = ((expr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
       int l2 = (((expr as NAryExpr).Args[0] as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
 
@@ -134,5 +190,132 @@ namespace Whoop.Analysis
 
       return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(l1 + l2)));
     }
+
+    private static Expr DoPointerArithmetic(Implementation impl, Expr expr)
+    {
+      Expr result = null;
+
+      if ((expr as NAryExpr).Fun.FunctionName == "$add" ||
+          (expr as NAryExpr).Fun.FunctionName == "+")
+      {
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Addition,
+          (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
+      }
+      else if ((expr as NAryExpr).Fun.FunctionName == "$sub" ||
+        (expr as NAryExpr).Fun.FunctionName == "-")
+      {
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Subtraction,
+          (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
+      }
+      else if ((expr as NAryExpr).Fun.FunctionName == "$mul" ||
+        (expr as NAryExpr).Fun.FunctionName == "*")
+      {
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Multiplication,
+          (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
+      }
+
+      return result;
+    }
+
+    private static Expr DoPointerArithmetic(Implementation impl, ArithmeticOperation aop, Expr left, Expr right)
+    {
+      Expr result = null;
+
+      if (left is LiteralExpr && right is LiteralExpr)
+      {
+        if (aop == ArithmeticOperation.Addition)
+        {
+          int num = (left as LiteralExpr).asBigNum.ToInt + (right as LiteralExpr).asBigNum.ToInt;
+          result = new LiteralExpr(Token.NoToken, BigNum.FromInt(num));
+        }
+        else if (aop == ArithmeticOperation.Subtraction)
+        {
+          int num = (left as LiteralExpr).asBigNum.ToInt - (right as LiteralExpr).asBigNum.ToInt;
+          result = new LiteralExpr(Token.NoToken, BigNum.FromInt(num));
+        }
+        else if (aop == ArithmeticOperation.Multiplication)
+        {
+          int num = (left as LiteralExpr).asBigNum.ToInt * (right as LiteralExpr).asBigNum.ToInt;
+          result = new LiteralExpr(Token.NoToken, BigNum.FromInt(num));
+        }
+        else if (aop == ArithmeticOperation.Division)
+        {
+          int num = (left as LiteralExpr).asBigNum.ToInt / (right as LiteralExpr).asBigNum.ToInt;
+          result = new LiteralExpr(Token.NoToken, BigNum.FromInt(num));
+        }
+      }
+      else
+      {
+        if (left is NAryExpr)
+        {
+          if (PointerAliasAnalyser.IsArithmeticExpression(left as NAryExpr))
+          {
+            left = PointerAliasAnalyser.DoPointerArithmetic(impl, left);
+          }
+        }
+        else if (!(left is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(left.ToString())))
+        {
+          left = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, left as IdentifierExpr);
+        }
+
+        if (right is NAryExpr)
+        {
+          if (PointerAliasAnalyser.IsArithmeticExpression(right as NAryExpr))
+          {
+            right = PointerAliasAnalyser.DoPointerArithmetic(impl, right);
+          }
+        }
+        else if (!(right is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(right.ToString())))
+        {
+          right = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, right as IdentifierExpr);
+        }
+
+        if (aop == ArithmeticOperation.Addition)
+        {
+          result = Expr.Add(left, right);
+        }
+        else if (aop == ArithmeticOperation.Subtraction)
+        {
+          result = Expr.Sub(left, right);
+        }
+        else if (aop == ArithmeticOperation.Multiplication)
+        {
+          result = Expr.Mul(left, right);
+        }
+        else if (aop == ArithmeticOperation.Division)
+        {
+          result = Expr.Div(left, right);
+        }
+      }
+
+      return result;
+    }
+
+    #region helper functions
+
+    private static bool IsArithmeticExpression(NAryExpr expr)
+    {
+      if (expr.Fun.FunctionName == "$add" || (expr as NAryExpr).Fun.FunctionName == "+" ||
+        expr.Fun.FunctionName == "$sub" || (expr as NAryExpr).Fun.FunctionName == "-" ||
+        expr.Fun.FunctionName == "$mul" || (expr as NAryExpr).Fun.FunctionName == "*")
+        return true;
+      return false;
+    }
+
+    /// <summary>
+    /// These functions should be skipped from pointer alias analysis.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="call">CallCmd</param>
+    private static bool ShouldSkipFromAnalysis(NAryExpr expr)
+    {
+      if (expr.Fun.FunctionName == "$and" || expr.Fun.FunctionName == "$or" ||
+          expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$trunc" ||
+          expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
+        return true;
+      return false;
+    }
+
+    #endregion
   }
 }

@@ -25,7 +25,7 @@ namespace Whoop.Instrumentation
   internal class ErrorReportingInstrumentation : IErrorReportingInstrumentation
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
 
     private int LogCounter;
     private int UpdateCounter;
@@ -34,7 +34,7 @@ namespace Whoop.Instrumentation
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
       this.LogCounter = 0;
       this.UpdateCounter = 0;
     }

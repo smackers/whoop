@@ -64,47 +64,47 @@ struct netdev_hw_addr_list {
 #define netdev_hw_addr_list_count(l) ((l)->count)
 #define netdev_hw_addr_list_for_each(ha, l) \
 	list_for_each_entry(ha, &(l)->list, list)
-		
+
 #define netdev_mc_count(dev) netdev_hw_addr_list_count(&(dev)->mc)
 #define netdev_for_each_mc_addr(ha, dev) \
 	netdev_hw_addr_list_for_each(ha, &(dev)->mc)
 
 struct net_device {
 	char name[IFNAMSIZ];
-	
+
 	struct list_head dev_list;
 	struct list_head napi_list;
 	struct list_head unreg_list;
 	struct list_head upper_dev_list;
 	struct list_head lower_dev_list;
-	
-	netdev_features_t	features;	
+
+	netdev_features_t	features;
 	netdev_features_t	hw_features;
 	netdev_features_t	wanted_features;
 	netdev_features_t	vlan_features;
 	netdev_features_t	hw_enc_features;
 	netdev_features_t	mpls_features;
-	
+
 	struct net_device_stats	stats;
-	
+
 	const struct net_device_ops *netdev_ops;
 	const struct ethtool_ops *ethtool_ops;
-	
+
 	unsigned int flags; // interface flags
 	unsigned int mtu; // interface MTU value
-	
+
 	struct netdev_hw_addr_list uc;	// Unicast mac addresses
 	struct netdev_hw_addr_list mc;	// Multicast mac addresses
 	struct netdev_hw_addr_list dev_addrs; // list of device hw addresses
-	
+
 	unsigned char perm_addr[MAX_ADDR_LEN]; // permanent hw address
 	unsigned char addr_len;	// hardware address length
 	unsigned char *dev_addr; // hw address
-	
+
 	int watchdog_timeo;
-	
+
 	struct list_head link_watch_list;
-	
+
 	struct device dev;
 };
 
@@ -154,7 +154,7 @@ struct net_device_ops {
 
 #define NETDEV_FCOE_WWNN 0
 #define NETDEV_FCOE_WWPN 1
-	
+
 	int (*ndo_fcoe_get_wwn)(struct net_device *dev, u64 *wwn, int type);
 	int (*ndo_rx_flow_steer)(struct net_device *dev, const struct sk_buff *skb, u16 rxq_index, u32 flow_id);
 	int (*ndo_add_slave)(struct net_device *dev, struct net_device *slave_dev);
@@ -196,9 +196,7 @@ static inline void *netdev_priv(const struct net_device *dev)
 
 static inline bool netif_running(const struct net_device *dev)
 {
-	bool val;
-	__SMACK_code("havoc @;", val);
-	return val;
+	return true;
 }
 
 int register_netdev(struct net_device *dev);

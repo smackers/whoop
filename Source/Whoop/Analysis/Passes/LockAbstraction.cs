@@ -57,7 +57,7 @@ namespace Whoop.Analysis
             continue;
 
           Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(initFunc,
-            ((block.Cmds[idx] as CallCmd).Ins[0] as IdentifierExpr));
+            ((block.Cmds[idx] as CallCmd).Ins[0]));
 
           Lock newLock = new Lock(new Constant(Token.NoToken,
             new TypedIdent(Token.NoToken, "lock$" + this.AC.Locks.Count,

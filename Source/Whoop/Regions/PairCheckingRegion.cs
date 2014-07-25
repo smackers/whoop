@@ -39,6 +39,8 @@ namespace Whoop.Regions
     private EntryPoint EP1;
     private EntryPoint EP2;
 
+    private int CheckCounter;
+
     #endregion
 
     #region constructors
@@ -51,6 +53,7 @@ namespace Whoop.Regions
       this.RegionName = "check$" + ep1.Name + "$" + ep2.Name;
       this.EP1 = ep1;
       this.EP2 = ep2;
+      this.CheckCounter = 0;
 
       this.RegionBlocks = new List<Block>();
       this.InParamMatcher = new Dictionary<int, Variable>();
@@ -182,7 +185,11 @@ namespace Whoop.Regions
         DeviceDriver.GetEntryPoint(impl1.Name), DeviceDriver.GetEntryPoint(impl2.Name)))
       {
         AssertCmd assert = this.CreateRaceCheckingAssertion(impl1, impl2, mr);
-        if (assert != null) check.Cmds.Add(assert);
+        if (assert == null)
+          continue;
+
+        check.Cmds.Add(this.CreateCaptureStateAssume(mr));
+        check.Cmds.Add(assert);
       }
 
       this.RegionBlocks.Add(check);
@@ -328,80 +335,15 @@ namespace Whoop.Regions
       return new AssertCmd(Token.NoToken, acsImpExpr);
     }
 
-//        private AssertCmd MakeCheckAssertCmd(Lockset ls)
-//        {
-//          Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
-//          Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
-//    LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",
-//        Microsoft.Boogie.Type.Bool))
-//          Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
-//            val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
-//    
-//          IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-//          IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
-//          IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
-//    
-//          AssertCmd assert = new AssertCmd(Token.NoToken,
-//            Expr.Imp(Expr.And(trackExpr,
-//              Expr.Eq(offsetExpr, ptrExpr)),
-//              MakeCheckLocksetIntersectionExpr(ls)));
-//    
-//          assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
-//    
-//          return assert;
-//        }
-//
-//        private AssertCmd MakeCheckAssertCmd(Lockset ls)
-//        {
-//          Variable ptr = RaceInstrumentationUtil.MakePtrLocalVariable(base.AC.MemoryModelType);
-//          Variable track = RaceInstrumentationUtil.MakeTrackLocalVariable();
-//    LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "TRACKING",
-//        Microsoft.Boogie.Type.Bool))
-//          Variable offset = base.AC.GetRaceCheckingVariables().Find(val =>
-//            val.Name.Contains(RaceInstrumentationUtil.MakeOffsetVariableName(ls.TargetName)));
-//    
-//          IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-//          IdentifierExpr trackExpr = new IdentifierExpr(track.tok, track);
-//          IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
-//    
-//          AssertCmd assert = new AssertCmd(Token.NoToken,
-//            Expr.Imp(Expr.And(trackExpr,
-//              Expr.Eq(offsetExpr, ptrExpr)),
-//              MakeCheckLocksetIntersectionExpr(ls)));
-//    
-//          assert.Attributes = new QKeyValue(Token.NoToken, "race_checking", new List<object>(), null);
-//    
-//          return assert;
-//        }
-//    
-//        private Expr MakeCheckLocksetIntersectionExpr(Lockset ls)
-//        {
-//          if (base.AC.Locks.Count == 0)
-//            return Expr.False;
-//    
-//          Expr checkExpr = null;
-//    
-//          IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-//    
-//          foreach (var l in base.AC.Locks)
-//          {
-//            Expr expr = Expr.And(new NAryExpr(Token.NoToken, new MapSelect(Token.NoToken, 1),
-//                          new List<Expr>(new Expr[] { lsExpr,
-//                new IdentifierExpr(l.Id.tok, l.Id)
-//              })), RaceInstrumentationUtil.MakeMapSelect(this.AC.CurrLockset.Id, l.Id));
-//    
-//            if (checkExpr == null)
-//            {
-//              checkExpr = expr;
-//            }
-//            else
-//            {
-//              checkExpr = Expr.Or(checkExpr, expr);
-//            }
-//          }
-//    
-//          return checkExpr;
-//        }
+    private AssumeCmd CreateCaptureStateAssume(Variable mr)
+    {
+      AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+      assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
+        new List<object>() { "check_state_" + this.CheckCounter++ }, assume.Attributes);
+      assume.Attributes = new QKeyValue(Token.NoToken, "resource",
+        new List<object>() { mr.Name }, assume.Attributes);
+      return assume;
+    }
 
     private void CreateInParamMatcher(Implementation impl1, Implementation impl2)
     {
