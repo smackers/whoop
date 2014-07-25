@@ -368,6 +368,8 @@ namespace Whoop.Regions
         {
           if (insEp2[i].ToString().Equals(insEp1[j].ToString()))
           {
+            if (this.InParamMatcher.ContainsKey(i))
+              continue;
             this.InParamMatcher.Add(i, impl1.InParams[j]);
           }
         }
