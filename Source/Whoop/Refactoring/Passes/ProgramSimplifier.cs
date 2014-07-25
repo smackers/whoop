@@ -19,12 +19,14 @@ using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
 using Whoop.Analysis;
+using System.Threading;
 
 namespace Whoop.Refactoring
 {
   internal class ProgramSimplifier : IProgramSimplifier
   {
     private AnalysisContext AC;
+    private ExecutionTimer Timer;
 
     public ProgramSimplifier(AnalysisContext ac)
     {
@@ -37,10 +39,22 @@ namespace Whoop.Refactoring
     /// </summary>
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       foreach (var impl in AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
         this.RemoveUnecesseryAssumes(impl);
         this.SimplifyImplementation(impl);
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [ProgramSimplifier] {0}", this.Timer.Result());
       }
     }
 

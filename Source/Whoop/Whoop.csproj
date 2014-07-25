@@ -82,6 +82,7 @@
     <Compile Include="Analysis\ModelCleaner.cs" />
     <Compile Include="Analysis\PointerAliasAnalyser.cs" />
     <Compile Include="Analysis\SharedStateAnalyser.cs" />
+    <Compile Include="Utilities\ExecutionTimer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

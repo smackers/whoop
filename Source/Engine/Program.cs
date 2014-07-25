@@ -71,16 +71,40 @@ namespace Whoop
         }
 
         DeviceDriver.ParseAndInitialize(fileList);
+        ExecutionTimer timer = null;
 
         if (WhoopEngineCommandLineOptions.Get().PrintPairs)
         {
           DeviceDriver.PrintEntryPointPairs();
         }
 
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine("\n[ParsingEngine] runtime");
+          Console.WriteLine(" |");
+          timer = new ExecutionTimer();
+          timer.Start();
+        }
+
         foreach (var ep in DeviceDriver.EntryPoints)
         {
           AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
           new ParsingEngine(ac, ep).Run();
+        }
+
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          timer.Stop();
+          Console.WriteLine(" |");
+          Console.WriteLine(" |--- [Total] {0}", timer.Result());
+        }
+
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine("\n[StaticLocksetAnalysisInstrumentationEngine] runtime");
+          Console.WriteLine(" |");
+          timer = new ExecutionTimer();
+          timer.Start();
         }
 
         foreach (var ep in DeviceDriver.EntryPoints)
@@ -90,10 +114,32 @@ namespace Whoop
           new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
         }
 
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          timer.Stop();
+          Console.WriteLine(" |");
+          Console.WriteLine(" |--- [Total] {0}", timer.Result());
+        }
+
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine("\n[PairWiseCheckingInstrumentationEngine] runtime");
+          Console.WriteLine(" |");
+          timer = new ExecutionTimer();
+          timer.Start();
+        }
+
         foreach (var pair in DeviceDriver.EntryPointPairs)
         {
           AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
           new PairWiseCheckingInstrumentationEngine(ac, pair.Item1, pair.Item2).Run();
+        }
+
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          timer.Stop();
+          Console.WriteLine(" |");
+          Console.WriteLine(" |--- [Total] {0}\n", timer.Result());
         }
 
         Environment.Exit((int)Outcome.Done);

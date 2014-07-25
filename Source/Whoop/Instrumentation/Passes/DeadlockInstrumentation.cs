@@ -26,6 +26,7 @@ namespace Whoop.Instrumentation
   {
     private AnalysisContext AC;
     private Implementation EP;
+    private ExecutionTimer Timer;
 
     public DeadlockInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
@@ -36,6 +37,12 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.AddCheckAllLocksHaveBeenReleasedFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
@@ -44,6 +51,12 @@ namespace Whoop.Instrumentation
           continue;
         this.InstrumentImplementation(region);
         break;
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [DeadlockInstrumentation] {0}", this.Timer.Result());
       }
     }
 

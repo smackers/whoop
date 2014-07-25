@@ -27,6 +27,7 @@ namespace Whoop.Instrumentation
   {
     protected AnalysisContext AC;
     private EntryPoint EP;
+    private ExecutionTimer Timer;
 
     public RaceInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
@@ -37,6 +38,12 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.AddAccessFuncs(AccessType.WRITE);
       this.AddAccessFuncs(AccessType.READ);
 
@@ -44,6 +51,12 @@ namespace Whoop.Instrumentation
       {
         this.InstrumentImplementation(region);
         this.InstrumentProcedure(region);
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [RaceInstrumentation] {0}", this.Timer.Result());
       }
     }
 

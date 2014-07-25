@@ -23,6 +23,7 @@ namespace Whoop.Analysis
   internal class SharedStateAbstraction : ISharedStateAbstraction
   {
     private AnalysisContext AC;
+    private ExecutionTimer Timer;
 
     public SharedStateAbstraction(AnalysisContext ac)
     {
@@ -32,11 +33,23 @@ namespace Whoop.Analysis
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.AbstractReadAccesses(region);
         this.AbstractWriteAccesses(region);
         this.CleanUpModset(region);
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [SharedStateAbstraction] {0}", this.Timer.Result());
       }
     }
 

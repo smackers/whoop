@@ -21,6 +21,7 @@ namespace Whoop
   {
     private AnalysisContext AC;
     private EntryPoint EP;
+    private ExecutionTimer Timer;
 
     public ParsingEngine(AnalysisContext ac, EntryPoint ep)
     {
@@ -31,10 +32,26 @@ namespace Whoop
 
     public void Run()
     {
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Console.WriteLine(" |------ [{0}]", this.EP.Name);
+        Console.WriteLine(" |  |");
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       Refactoring.Factory.CreateProgramSimplifier(this.AC).Run();
       Analysis.Factory.CreateLockAbstraction(this.AC).Run();
       Refactoring.Factory.CreateLockRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateEntryPointRefactoring(this.AC, this.EP).Run();
+
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |");
+        Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
+        Console.WriteLine(" |");
+      }
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[

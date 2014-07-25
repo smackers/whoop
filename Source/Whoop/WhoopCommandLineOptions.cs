@@ -24,6 +24,8 @@ namespace Whoop
     public bool InlineHelperFunctions = false;
     public bool DebugWhoop = false;
 
+    public bool MeasurePassExecutionTime = false;
+
     public WhoopCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -70,6 +72,12 @@ namespace Whoop
       if (option == "inline")
       {
         this.InlineHelperFunctions = true;
+        return true;
+      }
+
+      if (option == "timePasses")
+      {
+        this.MeasurePassExecutionTime = true;
         return true;
       }
 

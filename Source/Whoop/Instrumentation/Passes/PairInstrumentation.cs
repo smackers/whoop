@@ -26,6 +26,7 @@ namespace Whoop.Instrumentation
     private AnalysisContext AC;
     private EntryPoint EP1;
     private EntryPoint EP2;
+    private ExecutionTimer Timer;
 
     public PairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
@@ -40,6 +41,12 @@ namespace Whoop.Instrumentation
     /// </summary>
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       PairCheckingRegion region = new PairCheckingRegion(this.AC, this.EP1, this.EP2);
 
       this.AC.Program.TopLevelDeclarations.Add(region.Procedure());
@@ -47,6 +54,12 @@ namespace Whoop.Instrumentation
       this.AC.ResContext.AddProcedure(region.Procedure());
 
       this.RemoveOriginalInitFunc();
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [PairInstrumentation] {0}", this.Timer.Result());
+      }
     }
 
     #region cleanup functions

@@ -25,23 +25,41 @@ namespace Whoop.Refactoring
   {
     private AnalysisContext AC;
     private Implementation EP;
+    private ExecutionTimer Timer;
+
+    private HashSet<Implementation> FunctionsToRefactor;
+    private HashSet<Implementation> AlreadyRefactoredFunctions;
 
     public EntryPointRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = this.AC.GetImplementation(ep.Name);
+      this.FunctionsToRefactor = new HashSet<Implementation>();
+      this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
     }
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.RefactorEntryPointAttributes();
       this.RefactorGlobalVariables();
 
-      List<Implementation> nestedFunctions = this.ParseAndRenameNestedFunctions(this.EP);
+      this.ParseAndRenameNestedFunctions(this.EP);
 
-      this.RefactorNestedFunctions(nestedFunctions);
-      this.CleanUp(nestedFunctions);
+      this.RefactorNestedFunctions();
+      this.CleanUp();
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [EntryPointRefactoring] {0}", this.Timer.Result());
+      }
     }
 
     private void RefactorEntryPointAttributes()
@@ -60,9 +78,11 @@ namespace Whoop.Refactoring
       }
     }
 
-    private List<Implementation> ParseAndRenameNestedFunctions(Implementation impl)
+    private void ParseAndRenameNestedFunctions(Implementation impl)
     {
-      List<Implementation> nestedFunctions = new List<Implementation>();
+      if (this.AlreadyRefactoredFunctions.Contains(impl))
+        return;
+      this.AlreadyRefactoredFunctions.Add(impl);
 
       if (!WhoopCommandLineOptions.Get().InlineHelperFunctions)
       {
@@ -85,54 +105,30 @@ namespace Whoop.Refactoring
       {
         foreach (var cmd in block.Cmds)
         {
-          List<Implementation> functions = null;
-
           if (cmd is CallCmd)
           {
-            functions = this.ParseAndRenameFunctionsInCall(cmd as CallCmd);
+            this.ParseAndRenameFunctionsInCall(cmd as CallCmd);
           }
           else if (cmd is AssignCmd)
           {
-            functions = this.ParseAndRenameFunctionsInAssign(cmd as AssignCmd);
+            this.ParseAndRenameFunctionsInAssign(cmd as AssignCmd);
           }
-
-          if (functions == null) continue;
-          foreach (var func in functions)
+          else if (cmd is AssumeCmd)
           {
-            if (!nestedFunctions.Contains(func))
-            {
-              nestedFunctions.Add(func);
-            }
+            this.ParseAndRenameFunctionsInAssume(cmd as AssumeCmd);
           }
         }
       }
-
-      List<Implementation> nf = new List<Implementation>();
-      foreach (var func in nestedFunctions)
-      {
-        nf = this.ParseAndRenameNestedFunctions(func);
-      }
-
-      foreach (var func in nf)
-      {
-        if (!nestedFunctions.Contains(func))
-        {
-          nestedFunctions.Add(func);
-        }
-      }
-
-      return nestedFunctions;
     }
 
-    private List<Implementation> ParseAndRenameFunctionsInCall(CallCmd cmd)
+    private void ParseAndRenameFunctionsInCall(CallCmd cmd)
     {
-      List<Implementation> functions = new List<Implementation>();
-
       var impl = this.AC.GetImplementation(cmd.callee);
 
       if (impl != null && this.ShouldAccessFunction(impl.Name))
       {
-        functions.Add(impl);
+        this.FunctionsToRefactor.Add(impl);
+        this.ParseAndRenameNestedFunctions(impl);
         cmd.callee = cmd.callee + "$" + this.EP.Name;
       }
 
@@ -143,18 +139,15 @@ namespace Whoop.Refactoring
 
         if (impl != null && this.ShouldAccessFunction(impl.Name))
         {
-          functions.Add(impl);
+          this.FunctionsToRefactor.Add(impl);
+          this.ParseAndRenameNestedFunctions(impl);
           (expr as IdentifierExpr).Name = (expr as IdentifierExpr).Name + "$" + this.EP.Name;
         }
       }
-
-      return functions;
     }
 
-    private List<Implementation> ParseAndRenameFunctionsInAssign(AssignCmd cmd)
+    private void ParseAndRenameFunctionsInAssign(AssignCmd cmd)
     {
-      List<Implementation> functions = new List<Implementation>();
-
       foreach (var rhs in cmd.Rhss)
       {
         if (!(rhs is IdentifierExpr)) continue;
@@ -162,29 +155,47 @@ namespace Whoop.Refactoring
 
         if (impl != null && this.ShouldAccessFunction(impl.Name))
         {
-          functions.Add(impl);
+          this.FunctionsToRefactor.Add(impl);
+          this.ParseAndRenameNestedFunctions(impl);
           (rhs as IdentifierExpr).Name = (rhs as IdentifierExpr).Name + "$" + this.EP.Name;
         }
       }
-
-      return functions;
     }
 
-    private void RefactorNestedFunctions(List<Implementation> functions)
+    private void ParseAndRenameFunctionsInAssume(AssumeCmd cmd)
     {
-      foreach (var func in functions)
+      if (cmd.Expr is NAryExpr)
+      {
+        foreach (var expr in (cmd.Expr as NAryExpr).Args)
+        {
+          if (!(expr is IdentifierExpr)) continue;
+          var impl = this.AC.GetImplementation((expr as IdentifierExpr).Name);
+
+          if (impl != null && this.ShouldAccessFunction(impl.Name))
+          {
+            this.FunctionsToRefactor.Add(impl);
+            this.ParseAndRenameNestedFunctions(impl);
+            (expr as IdentifierExpr).Name = (expr as IdentifierExpr).Name + "$" + this.EP.Name;
+          }
+        }
+      }
+    }
+
+    private void RefactorNestedFunctions()
+    {
+      foreach (var func in this.FunctionsToRefactor)
       {
         this.RefactorFunction(func);
       }
     }
 
-    private void CleanUp(List<Implementation> functions)
+    private void CleanUp()
     {
       HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
 
       foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
-        if (functions.Contains(impl))
+        if (this.FunctionsToRefactor.Contains(impl))
           continue;
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
           continue;

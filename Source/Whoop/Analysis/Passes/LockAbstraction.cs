@@ -25,6 +25,7 @@ namespace Whoop.Analysis
   internal class LockAbstraction : ILockAbstraction
   {
     private AnalysisContext AC;
+    private ExecutionTimer Timer;
 
     public LockAbstraction(AnalysisContext ac)
     {
@@ -37,7 +38,19 @@ namespace Whoop.Analysis
     /// </summary>
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.IdentifyAndCreateUniqueLocks();
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [LockAbstraction] {0}", this.Timer.Result());
+      }
     }
 
     /// <summary>

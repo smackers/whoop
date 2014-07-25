@@ -23,6 +23,7 @@ namespace Whoop
     private AnalysisContext AC;
     private EntryPoint EP1;
     private EntryPoint EP2;
+    private ExecutionTimer Timer;
 
     public PairWiseCheckingInstrumentationEngine(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
@@ -34,6 +35,14 @@ namespace Whoop
 
     public void Run()
     {
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Console.WriteLine(" |------ [{0} :: {1}]", this.EP1.Name, this.EP2.Name);
+        Console.WriteLine(" |  |");
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       Analysis.Factory.CreateLockAbstraction(this.AC).Run();
 
       if (this.EP1.Name.Equals(this.EP2.Name))
@@ -49,6 +58,14 @@ namespace Whoop
       Instrumentation.Factory.CreatePairInstrumentation(this.AC, this.EP1, this.EP2).Run();
 
       ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
+
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |");
+        Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
+        Console.WriteLine(" |");
+      }
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[

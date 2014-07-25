@@ -153,6 +153,7 @@ class DefaultCmdLineOptions(object):
     self.debugging = False
     self.time = False
     self.timeCSVLabel = None
+    self.timePasses = None
     self.componentTimeout = 0
     self.solver = "z3"
     self.logic = "QF_ALL_SUPPORTED"
@@ -199,6 +200,7 @@ def showHelpAndExit():
     --print-pairs           Print information about the entry point pairs.
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
+    --time-passes           Show timing information for the various analysis and instrumentation passes.
 
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
@@ -298,6 +300,8 @@ def processGeneralOptions(opts, args):
     if o == "--time-as-csv":
       CommandLineOptions.time = True
       CommandLineOptions.timeCSVLabel = a
+    if o == "--time-passes":
+      CommandLineOptions.timePasses = True
     if o == "--clang-opt":
       CommandLineOptions.clangOptions += str(a).split(" ")
     if o == "--smack-opt":
@@ -472,7 +476,8 @@ def startToolChain(argv):
     opts, args = getopt.gnu_getopt(argv,'hVD:I:',
              ['help', 'version', 'debug', 'verbose', 'silent',
               'only-race-checking', 'only-deadlock-checking',
-              'time', 'time-as-csv=', 'keep-temps', 'print-pairs',
+              'time', 'time-as-csv=', 'time-passes',
+              'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline',
@@ -562,6 +567,9 @@ def startToolChain(argv):
 
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
+
+  if CommandLineOptions.timePasses:
+    CommandLineOptions.whoopEngineOptions += [ "/timePasses" ]
 
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopDriverOptions += [ bplFilename ]

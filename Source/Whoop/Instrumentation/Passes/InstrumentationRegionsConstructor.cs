@@ -24,6 +24,7 @@ namespace Whoop.Instrumentation
   internal class InstrumentationRegionsConstructor : IInstrumentationRegionsConstructor
   {
     private AnalysisContext AC;
+    private ExecutionTimer Timer;
 
     public InstrumentationRegionsConstructor(AnalysisContext ac)
     {
@@ -33,6 +34,12 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
         if (this.AC.IsAWhoopFunc(impl))
@@ -44,6 +51,12 @@ namespace Whoop.Instrumentation
 
         InstrumentationRegion region = new InstrumentationRegion(this.AC, impl);
         this.AC.InstrumentationRegions.Add(region);
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [InstrumentationRegionsConstructor] {0}", this.Timer.Result());
       }
     }
   }

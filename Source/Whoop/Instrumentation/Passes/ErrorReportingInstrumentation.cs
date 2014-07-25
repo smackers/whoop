@@ -26,6 +26,7 @@ namespace Whoop.Instrumentation
   {
     private AnalysisContext AC;
     private EntryPoint EP;
+    private ExecutionTimer Timer;
 
     private int LogCounter;
     private int UpdateCounter;
@@ -41,8 +42,20 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.InstrumentAsyncFuncs();
       this.CleanUp();
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [ErrorReportingInstrumentation] {0}", this.Timer.Result());
+      }
     }
 
     private void InstrumentAsyncFuncs()

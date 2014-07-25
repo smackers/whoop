@@ -27,6 +27,7 @@ namespace Whoop.Instrumentation
   {
     private AnalysisContext AC;
     private EntryPoint EP;
+    private ExecutionTimer Timer;
 
     public LocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
@@ -37,12 +38,24 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.AddUpdateLocksetFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
         this.InstrumentProcedure(region);
+      }
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [LocksetInstrumentation] {0}", this.Timer.Result());
       }
     }
 

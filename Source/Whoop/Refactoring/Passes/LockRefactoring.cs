@@ -27,6 +27,7 @@ namespace Whoop.Refactoring
   {
     private AnalysisContext AC;
     private Implementation EP;
+    private ExecutionTimer Timer;
 
     private HashSet<Implementation> AlreadyAnalyzedFunctions;
 
@@ -43,7 +44,19 @@ namespace Whoop.Refactoring
     /// </summary>
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.AnalyseAndInstrumentLocks(this.EP);
+
+      if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [LockRefactoring] {0}", this.Timer.Result());
+      }
     }
 
     /// <summary>
