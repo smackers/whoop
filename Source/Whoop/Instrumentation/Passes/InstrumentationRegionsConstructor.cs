@@ -42,7 +42,7 @@ namespace Whoop.Instrumentation
 
       foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
       {
-        if (this.AC.IsAWhoopFunc(impl))
+        if (this.AC.IsAWhoopFunc(impl.Name))
           continue;
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio"))
           continue;

@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 using Whoop.Domain.Drivers;
+using System.Runtime.InteropServices;
 
 namespace Whoop.Analysis
 {
@@ -23,25 +24,25 @@ namespace Whoop.Analysis
   {
     public static void RemoveGenericTopLevelDeclerations(AnalysisContext ac)
     {
-      List<Implementation> toRemove = new List<Implementation>();
+      List<string> toRemove = new List<string>();
 
-      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var proc in ac.Program.TopLevelDeclarations.OfType<Procedure>())
       {
-        if (ac.InstrumentationRegions.Exists(region => region.Implementation().Name.Equals(impl.Name)))
+        if (ac.InstrumentationRegions.Exists(region => region.Implementation().Name.Equals(proc.Name)))
           continue;
-        if (ac.IsAWhoopFunc(impl))
+        if (ac.IsAWhoopFunc(proc.Name))
           continue;
-        toRemove.Add(impl);
+        toRemove.Add(proc.Name);
       }
 
-      foreach (var impl in toRemove)
+      foreach (var str in toRemove)
       {
         ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
+          (val is Constant) && (val as Constant).Name.Equals(str));
         ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
+          (val is Procedure) && (val as Procedure).Name.Equals(str));
         ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+          (val is Implementation) && (val as Implementation).Name.Equals(str));
       }
 
       ac.Program.TopLevelDeclarations.RemoveAll(val =>
@@ -50,7 +51,9 @@ namespace Whoop.Analysis
           (val as Procedure).Name.Equals("$alloca")));
 
       ac.Program.TopLevelDeclarations.RemoveAll(val =>
-        (val is Variable) && !ac.IsAWhoopVariable(val as Variable));
+        (val is Variable) && !ac.IsAWhoopVariable(val as Variable) &&
+        !ac.InstrumentationRegions.Exists(region =>
+          region.Implementation().Name.Equals((val as Variable).Name)));
 
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Function));

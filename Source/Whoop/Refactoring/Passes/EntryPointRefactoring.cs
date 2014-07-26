@@ -48,6 +48,7 @@ namespace Whoop.Refactoring
       }
 
       this.RefactorEntryPointAttributes();
+      this.RefactorEntryPointResult();
       this.RefactorGlobalVariables();
 
       this.ParseAndRenameNestedFunctions(this.EP);
@@ -68,6 +69,18 @@ namespace Whoop.Refactoring
         "entrypoint", new List<object>(), null);
       this.EP.Attributes = new QKeyValue(Token.NoToken,
         "entrypoint", new List<object>(), null);
+    }
+
+    private void RefactorEntryPointResult()
+    {
+      this.EP.OutParams.Clear();
+      this.EP.Proc.OutParams.Clear();
+
+      foreach (var b in this.EP.Blocks)
+      {
+        b.Cmds.RemoveAll(cmd => (cmd is AssignCmd) && (cmd as AssignCmd).
+          Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"));
+      }
     }
 
     private void RefactorGlobalVariables()

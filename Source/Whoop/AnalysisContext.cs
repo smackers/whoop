@@ -131,13 +131,13 @@ namespace Whoop
       return false;
     }
 
-    public bool IsAWhoopFunc(Implementation impl)
+    public bool IsAWhoopFunc(string name)
     {
-      Contract.Requires(impl != null);
-      if (impl.Name.Contains("_UPDATE_CLS") ||
-          impl.Name.Contains("_WRITE_LS_") || impl.Name.Contains("_READ_LS_") ||
-          impl.Name.Contains("_CHECK_WRITE_LS_") || impl.Name.Contains("_CHECK_READ_LS_") ||
-          impl.Name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+      Contract.Requires(name != null);
+      if (name.Contains("_UPDATE_CLS") ||
+          name.Contains("_WRITE_LS_") || name.Contains("_READ_LS_") ||
+          name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
+          name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
         return true;
       return false;
     }
