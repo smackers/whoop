@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -27,18 +28,18 @@ namespace Whoop.Driver
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new DriverCommandLineOptions());
+      CommandLineOptions.Install(new WhoopDriverCommandLineOptions());
 
       try
       {
-        DriverCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        WhoopDriverCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!DriverCommandLineOptions.Get().Parse(args))
+        if (!WhoopDriverCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
 
-        if (DriverCommandLineOptions.Get().Files.Count == 0)
+        if (WhoopDriverCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -46,7 +47,7 @@ namespace Whoop.Driver
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in DriverCommandLineOptions.Get().Files)
+        foreach (string file in WhoopDriverCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -73,21 +74,42 @@ namespace Whoop.Driver
 
         DeviceDriver.ParseAndInitialize(fileList);
 
-        PipelineStatistics stats = new PipelineStatistics();
-        WhoopErrorReporter errorReporter = new WhoopErrorReporter();
-        Outcome outcome = Outcome.Done;
-
-        foreach (var pair in DeviceDriver.EntryPointPairs)
+        if (WhoopDriverCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
         {
+          List<Process> procs = new List<Process>();
+
+          foreach (var pair in DeviceDriver.EntryPointPairs)
+          {
+            Process proc = new Process();
+            proc.StartInfo.FileName = System.Reflection.Assembly.GetEntryAssembly().Location;
+            proc.StartInfo.Arguments = "/pairToAnalyse:" + pair.Item1.Name + "::" + pair.Item2.Name + " ";
+            proc.StartInfo.Arguments += String.Join(" ", args);
+
+            procs.Add(proc);
+            proc.Start();
+
+            while (!proc.HasExited)
+              continue;
+          }
+
+//          while (procs.Exists(val => !val.HasExited))
+//            continue;
+        }
+        else
+        {
+          EntryPoint ep1 = DeviceDriver.GetEntryPoint(WhoopDriverCommandLineOptions.
+            Get().FunctionsToAnalyse[0]);
+          EntryPoint ep2 = DeviceDriver.GetEntryPoint(WhoopDriverCommandLineOptions.
+            Get().FunctionsToAnalyse[1]);
           AnalysisContext ac = null;
 
-          if (pair.Item1.Name.Equals(pair.Item2.Name))
+          if (ep1.Name.Equals(ep2.Name))
           {
             ac = new AnalysisContextParser(fileList[fileList.Count - 1],
               "wbpl").ParseNew(new List<string>
               {
-                "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
-                pair.Item1.Name + "_instrumented"
+                "check_" + ep1.Name + "_" + ep2.Name,
+                ep1.Name + "_instrumented"
               });
           }
           else
@@ -95,21 +117,16 @@ namespace Whoop.Driver
             ac = new AnalysisContextParser(fileList[fileList.Count - 1],
               "wbpl").ParseNew(new List<string>
               {
-                "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
-                pair.Item1.Name + "_instrumented",
-                pair.Item2.Name + "_instrumented"
+                "check_" + ep1.Name + "_" + ep2.Name,
+                ep1.Name + "_instrumented",
+                ep2.Name + "_instrumented"
               });
           }
 
-          Outcome oc = new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();
-
-          if (oc != Outcome.LocksetAnalysisError)
-          {
-            outcome = oc;
-          }
+          Outcome outcome = new StaticLocksetAnalyser(ac, ep1, ep2).Run();
         }
 
-        Environment.Exit((int)outcome);
+        Environment.Exit((int)Outcome.Done);
       }
       catch (Exception e)
       {

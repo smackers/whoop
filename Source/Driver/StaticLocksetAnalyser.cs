@@ -31,24 +31,23 @@ namespace Whoop.Driver
     PipelineStatistics Stats;
     WhoopErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2,
-      PipelineStatistics stats, WhoopErrorReporter errorReporter)
+    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
       Contract.Requires(ac != null && ep1 != null && ep2 != null);
       this.AC = ac;
       this.EP1 = ep1;
       this.EP2 = ep2;
-      this.Stats = stats;
-      this.ErrorReporter = errorReporter;
+      this.Stats = new PipelineStatistics();
+      this.ErrorReporter = new WhoopErrorReporter();
     }
 
     public Outcome Run()
     {
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
-      if (DriverCommandLineOptions.Get().LoopUnrollCount != -1)
-        this.AC.Program.UnrollLoops(DriverCommandLineOptions.Get().LoopUnrollCount,
-          DriverCommandLineOptions.Get().SoundLoopUnrolling);
+      if (WhoopDriverCommandLineOptions.Get().LoopUnrollCount != -1)
+        this.AC.Program.UnrollLoops(WhoopDriverCommandLineOptions.Get().LoopUnrollCount,
+          WhoopDriverCommandLineOptions.Get().SoundLoopUnrolling);
 
       var decls = this.AC.Program.TopLevelDeclarations.ToArray();
       string checkerName = "check$" + this.EP1.Name + "$" + this.EP2.Name;
@@ -61,8 +60,8 @@ namespace Whoop.Driver
 
       try
       {
-        vcgen = new VC.VCGen(this.AC.Program, DriverCommandLineOptions.Get().SimplifyLogFilePath,
-          DriverCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
+        vcgen = new VC.VCGen(this.AC.Program, WhoopDriverCommandLineOptions.Get().SimplifyLogFilePath,
+          WhoopDriverCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
       }
       catch (ProverException e)
       {
@@ -75,10 +74,10 @@ namespace Whoop.Driver
       List<Counterexample> errors;
 
       DateTime start = new DateTime();
-      if (DriverCommandLineOptions.Get().Trace)
+      if (WhoopDriverCommandLineOptions.Get().Trace)
       {
         start = DateTime.UtcNow;
-        if (DriverCommandLineOptions.Get().Trace)
+        if (WhoopDriverCommandLineOptions.Get().Trace)
         {
           Console.WriteLine("");
           Console.WriteLine("Verifying {0} ...", checker.Name.Substring(5));
@@ -109,7 +108,7 @@ namespace Whoop.Driver
       DateTime end = DateTime.UtcNow;
       TimeSpan elapsed = end - start;
 
-      if (DriverCommandLineOptions.Get().Trace)
+      if (WhoopDriverCommandLineOptions.Get().Trace)
       {
         int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
         timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
@@ -118,10 +117,10 @@ namespace Whoop.Driver
 
       this.ProcessOutcome(checker, vcOutcome, errors, timeIndication, this.Stats);
 
-      if (vcOutcome == VC.VCGen.Outcome.Errors || DriverCommandLineOptions.Get().Trace)
+      if (vcOutcome == VC.VCGen.Outcome.Errors || WhoopDriverCommandLineOptions.Get().Trace)
         Console.Out.Flush();
 
-      cce.NonNull(DriverCommandLineOptions.Get().TheProverFactory).Close();
+      cce.NonNull(WhoopDriverCommandLineOptions.Get().TheProverFactory).Close();
       vcgen.Dispose();
 
       Whoop.IO.Reporter.WriteTrailer(this.Stats);
@@ -139,12 +138,12 @@ namespace Whoop.Driver
         case VC.VCGen.Outcome.ReachedBound:
           Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
-            DriverCommandLineOptions.Get().RecursionBound));
+            WhoopDriverCommandLineOptions.Get().RecursionBound));
           stats.VerifiedCount++;
           break;
         
         case VC.VCGen.Outcome.Correct:
-          if (DriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopDriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Reporter.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
@@ -173,7 +172,7 @@ namespace Whoop.Driver
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
-          if (DriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopDriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Reporter.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;

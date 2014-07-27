@@ -50,7 +50,7 @@ namespace Whoop.Driver
         else
         {
           errors++;
-          if (DriverCommandLineOptions.Get().DebugWhoop)
+          if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
           {
             this.PopulateModelWithStatesIfNecessary(cex);
             Write(cex.Model);
@@ -136,7 +136,7 @@ namespace Whoop.Driver
       Contract.Requires(stateName != null);
 
       Block b = cex.Trace[cex.Trace.Count - 1];
-      if (DriverCommandLineOptions.Get().DebugWhoop)
+      if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
       {
         this.Write(cex.Model);
         Console.WriteLine("label: " + b.Label);
@@ -148,7 +148,7 @@ namespace Whoop.Driver
 
       AssertCmd assert = b.Cmds[b.Cmds.Count - 1] as AssertCmd;
       Contract.Requires(assert != null);
-      if (DriverCommandLineOptions.Get().DebugWhoop)
+      if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
       {
         Console.WriteLine("assert: " + assert);
       }
@@ -168,7 +168,7 @@ namespace Whoop.Driver
       }
       Contract.Requires(aoff != null);
 
-      if (DriverCommandLineOptions.Get().DebugWhoop)
+      if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
       {
         Console.WriteLine(aoffFunc.Name + " :: " + aoff);
       }
@@ -215,7 +215,7 @@ namespace Whoop.Driver
           Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
-          if (DriverCommandLineOptions.Get().DebugWhoop)
+          if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
           {
             Console.WriteLine("*** STATE {0}", logState.Name);
             foreach (var v in logState.Variables)

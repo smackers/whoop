@@ -18,6 +18,8 @@ using System.IO;
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 
+using Whoop.IO;
+
 namespace Whoop.Domain.Drivers
 {
   public static class DeviceDriver

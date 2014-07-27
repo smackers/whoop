@@ -35,8 +35,8 @@
   <ItemGroup>
     <Compile Include="StaticLocksetAnalyser.cs" />
     <Compile Include="WhoopErrorReporter.cs" />
-    <Compile Include="DriverCommandLineOptions.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="WhoopDriverCommandLineOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">
