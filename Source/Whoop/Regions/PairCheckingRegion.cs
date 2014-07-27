@@ -356,9 +356,38 @@ namespace Whoop.Regions
         foreach (CallCmd call in block.Cmds.OfType<CallCmd>())
         {
           if (call.callee.Equals(impl1.Name))
-            insEp1.AddRange(call.Ins);
+          {
+            foreach (var inParam in call.Ins)
+            {
+              Expr resolved = PointerAliasAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+
+              if (resolved == null)
+              {
+                insEp1.Add(inParam);
+              }
+              else
+              {
+                insEp1.Add(resolved);
+              }
+            }
+          }
+
           if (call.callee.Equals(impl2.Name))
-            insEp2.AddRange(call.Ins);
+          {
+            foreach (var inParam in call.Ins)
+            {
+              Expr resolved = PointerAliasAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+
+              if (resolved == null)
+              {
+                insEp2.Add(inParam);
+              }
+              else
+              {
+                insEp2.Add(resolved);
+              }
+            }
+          }
         }
       }
 

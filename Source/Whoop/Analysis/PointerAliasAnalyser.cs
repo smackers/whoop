@@ -51,8 +51,7 @@ namespace Whoop.Analysis
         return id;
       }
 
-      NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl,
-        id as IdentifierExpr) as NAryExpr;
+      NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
 
       if (root == null)
       {
@@ -113,7 +112,7 @@ namespace Whoop.Analysis
         }
         else
         {
-          resolution = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, result as IdentifierExpr);
+          resolution = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, result);
           if (resolution != null) result = resolution;
         }
       }
@@ -122,8 +121,15 @@ namespace Whoop.Analysis
       return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(ixs)));
     }
 
-    public static Expr GetPointerArithmeticExpr(Implementation impl, IdentifierExpr identifier)
+    public static Expr GetPointerArithmeticExpr(Implementation impl, Expr expr)
     {
+      if (expr is LiteralExpr)
+      {
+        return null;
+      }
+
+      IdentifierExpr identifier = expr as IdentifierExpr;
+
       for (int i = impl.Blocks.Count - 1; i >= 0; i--)
       {
         for (int j = impl.Blocks[i].Cmds.Count - 1; j >= 0; j--)
@@ -255,7 +261,7 @@ namespace Whoop.Analysis
         }
         else if (!(left is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(left.ToString())))
         {
-          left = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, left as IdentifierExpr);
+          left = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, left);
         }
 
         if (right is NAryExpr)
@@ -267,7 +273,7 @@ namespace Whoop.Analysis
         }
         else if (!(right is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(right.ToString())))
         {
-          right = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, right as IdentifierExpr);
+          right = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, right);
         }
 
         if (aop == ArithmeticOperation.Addition)
