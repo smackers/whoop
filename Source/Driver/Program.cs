@@ -90,6 +90,7 @@ namespace Whoop.Driver
 
             while (!proc.HasExited)
               continue;
+            proc.Close();
           }
 
 //          while (procs.Exists(val => !val.HasExited))
