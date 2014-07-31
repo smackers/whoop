@@ -15,7 +15,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Boogie;
 
-namespace Whoop.Driver
+namespace Whoop
 {
   internal sealed class WhoopErrorReporter
   {

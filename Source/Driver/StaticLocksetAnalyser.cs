@@ -18,7 +18,7 @@ using System.Linq;
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
 
-namespace Whoop.Driver
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 

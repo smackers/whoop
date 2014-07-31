@@ -97,23 +97,6 @@ namespace Whoop.Refactoring
         return;
       this.AlreadyRefactoredFunctions.Add(impl);
 
-      if (!WhoopCommandLineOptions.Get().InlineHelperFunctions)
-      {
-        QKeyValue attribute = impl.Attributes;
-        while (attribute != null)
-        {
-          if (attribute.Key.Equals("inline"))
-          {
-            impl.Attributes = impl.Attributes.Next;
-            attribute = impl.Attributes;
-          }
-          else
-          {
-            attribute = impl.Attributes.Next;
-          }
-        }
-      }
-
       foreach (var block in impl.Blocks)
       {
         foreach (var cmd in block.Cmds)
@@ -199,6 +182,7 @@ namespace Whoop.Refactoring
       foreach (var func in this.FunctionsToRefactor)
       {
         this.RefactorFunction(func);
+        this.AddTag(func);
       }
     }
 
@@ -261,6 +245,14 @@ namespace Whoop.Refactoring
 
       func.Proc.Name = func.Proc.Name + "$" + this.EP.Name;
       func.Name = func.Name + "$" + this.EP.Name;
+    }
+
+    private void AddTag(Implementation func)
+    {
+      func.Attributes = new QKeyValue(Token.NoToken, "tag",
+        new List<object>() { this.EP.Name }, func.Attributes);
+      func.Proc.Attributes = new QKeyValue(Token.NoToken, "tag",
+        new List<object>() { this.EP.Name }, func.Proc.Attributes);
     }
 
     private void CreateNewConstant(Constant cons)

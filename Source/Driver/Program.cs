@@ -18,7 +18,7 @@ using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
 
-namespace Whoop.Driver
+namespace Whoop
 {
   using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
 
@@ -110,7 +110,7 @@ namespace Whoop.Driver
               "wbpl").ParseNew(new List<string>
               {
                 "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + "_instrumented"
+                ep1.Name + "_instrumented_and_crunched"
               });
           }
           else
@@ -119,12 +119,12 @@ namespace Whoop.Driver
               "wbpl").ParseNew(new List<string>
               {
                 "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + "_instrumented",
-                ep2.Name + "_instrumented"
+                ep1.Name + "_instrumented_and_crunched",
+                ep2.Name + "_instrumented_and_crunched"
               });
           }
 
-          Outcome outcome = new StaticLocksetAnalyser(ac, ep1, ep2).Run();
+          new StaticLocksetAnalyser(ac, ep1, ep2).Run();
         }
 
         Environment.Exit((int)Outcome.Done);

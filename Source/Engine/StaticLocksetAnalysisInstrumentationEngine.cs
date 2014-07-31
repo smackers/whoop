@@ -56,8 +56,6 @@ namespace Whoop
 
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
-      ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC);
-      ModelCleaner.RemoveGlobalLocksets(this.AC);
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);
 //      ModelCleaner.RemoveUnusedVars(this.AC);

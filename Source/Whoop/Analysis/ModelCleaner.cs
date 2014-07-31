@@ -13,22 +13,26 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.InteropServices;
+
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
 using Whoop.Domain.Drivers;
-using System.Runtime.InteropServices;
 
 namespace Whoop.Analysis
 {
   public class ModelCleaner
   {
-    public static void RemoveGenericTopLevelDeclerations(AnalysisContext ac)
+    public static void RemoveGenericTopLevelDeclerations(AnalysisContext ac, EntryPoint ep)
     {
       List<string> toRemove = new List<string>();
 
       foreach (var proc in ac.Program.TopLevelDeclarations.OfType<Procedure>())
       {
-        if (ac.InstrumentationRegions.Exists(region => region.Implementation().Name.Equals(proc.Name)))
+        if (QKeyValue.FindBoolAttribute(proc.Attributes, "entrypoint"))
+          continue;
+        if (QKeyValue.FindStringAttribute(proc.Attributes, "tag") != null &&
+            QKeyValue.FindStringAttribute(proc.Attributes, "tag").Equals(ep.Name))
           continue;
         if (ac.IsAWhoopFunc(proc.Name))
           continue;
@@ -113,6 +117,79 @@ namespace Whoop.Analysis
       }
     }
 
+    public static void RemoveInlineFromHelperFunctions(AnalysisContext ac, EntryPoint ep)
+    {
+      if (WhoopCommandLineOptions.Get().InlineHelperFunctions)
+        return;
+
+      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      {
+        if (QKeyValue.FindStringAttribute(impl.Attributes, "tag") == null)
+          continue;
+        if (!QKeyValue.FindStringAttribute(impl.Attributes, "tag").Equals(ep.Name))
+          continue;
+
+        List<QKeyValue> implAttributes = new List<QKeyValue>();
+        List<QKeyValue> procAttributes = new List<QKeyValue>();
+
+        while (impl.Attributes != null)
+        {
+          if (!impl.Attributes.Key.Equals("inline"))
+          {
+            implAttributes.Add(new Duplicator().VisitQKeyValue(
+              impl.Attributes.Clone() as QKeyValue));
+          }
+
+          impl.Attributes = impl.Attributes.Next;
+        }
+
+        for (int i = 0; i < implAttributes.Count; i++)
+        {
+          if (i + 1 < implAttributes.Count)
+          {
+            implAttributes[i].Next = implAttributes[i + 1];
+          }
+          else
+          {
+            implAttributes[i].Next = null;
+          }
+        }
+
+        while (impl.Proc.Attributes != null)
+        {
+          if (!impl.Proc.Attributes.Key.Equals("inline"))
+          {
+            procAttributes.Add(new Duplicator().VisitQKeyValue(
+              impl.Proc.Attributes.Clone() as QKeyValue));
+          }
+
+          impl.Proc.Attributes = impl.Proc.Attributes.Next;
+        }
+
+        for (int i = 0; i < procAttributes.Count; i++)
+        {
+          if (i + 1 < procAttributes.Count)
+          {
+            procAttributes[i].Next = procAttributes[i + 1];
+          }
+          else
+          {
+            procAttributes[i].Next = null;
+          }
+        }
+
+        if (implAttributes.Count > 0)
+        {
+          impl.Attributes = implAttributes[0];
+        }
+
+        if (procAttributes.Count > 0)
+        {
+          impl.Proc.Attributes = procAttributes[0];
+        }
+      }
+    }
+
 //    public static void RemoveEmptyBlocks(AnalysisContext ac)
 //    {
 //      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
@@ -187,17 +264,5 @@ namespace Whoop.Analysis
 //          Exists(idx => idx != Convert.ToInt32(val.Label.Split(new char[] { '$' })[3])));
 //      }
 //    }
-
-    public static void RemoveMemoryRegions(AnalysisContext wp)
-    {
-//      foreach (var v in wp.memoryRegions) {
-//        wp.program.TopLevelDeclarations.RemoveAll(val => (val is Variable) && (val as Variable).Name.Equals(v.Name));
-//      }
-    }
-
-    public static void RemoveUnusedVars(AnalysisContext wp)
-    {
-
-    }
   }
 }

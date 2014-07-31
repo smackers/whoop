@@ -19,8 +19,6 @@ using Whoop.Domain.Drivers;
 
 namespace Whoop
 {
-  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
-
   public class Program
   {
     public static void Main(string[] args)
@@ -37,6 +35,7 @@ namespace Whoop
         {
           Environment.Exit((int)Outcome.FatalError);
         }
+
         if (WhoopEngineCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: no input files were specified");
