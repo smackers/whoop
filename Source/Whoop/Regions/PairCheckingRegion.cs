@@ -39,6 +39,9 @@ namespace Whoop.Regions
     private EntryPoint EP1;
     private EntryPoint EP2;
 
+    private CallCmd CC1;
+    private CallCmd CC2;
+
     private int CheckCounter;
 
     #endregion
@@ -64,6 +67,8 @@ namespace Whoop.Regions
       this.CreateInParamMatcher(impl1, impl2);
       this.CreateImplementation(impl1, impl2);
       this.CreateProcedure(impl1, impl2);
+
+      this.CheckAndRefactorInParamsIfEquals();
 
       this.RegionHeader = this.CreateRegionHeader();
     }
@@ -178,8 +183,10 @@ namespace Whoop.Regions
       Block check = new Block(Token.NoToken, "_CHECK",
         new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      check.Cmds.Add(this.CreateCallCmd(impl1, impl2));
-      check.Cmds.Add(this.CreateCallCmd(impl2, impl1, true));
+      this.CC1 = this.CreateCallCmd(impl1, impl2);
+      this.CC2 = this.CreateCallCmd(impl2, impl1, true);
+      check.Cmds.Add(this.CC1);
+      check.Cmds.Add(this.CC2);
 
       foreach (var mr in SharedStateAnalyser.GetPairMemoryRegions(
         DeviceDriver.GetEntryPoint(impl1.Name), DeviceDriver.GetEntryPoint(impl2.Name)))
@@ -254,6 +261,60 @@ namespace Whoop.Regions
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
+      }
+    }
+
+    private void CheckAndRefactorInParamsIfEquals()
+    {
+      var inParams = this.InternalImplementation.InParams;
+      List<Tuple<int, int>> idxs = new List<Tuple<int, int>>();
+
+      for (int i = 0; i < inParams.Count; i++)
+      {
+        for (int j = 0; j < inParams.Count; j++)
+        {
+          if (i == j)
+            continue;
+          if (idxs.Any(val => val.Item2 == i))
+            continue;
+          if (inParams[i].Name.Equals(inParams[j].Name))
+          {
+            idxs.Add(new Tuple<int, int>(i, j));
+          }
+        }
+      }
+
+      if (idxs.Count == 0)
+        return;
+
+      foreach (var inParam in this.CC1.Ins)
+      {
+        foreach (var idx in idxs)
+        {
+          if (inParam.ToString().Equals(inParams[idx.Item1].Name))
+          {
+            (inParam as IdentifierExpr).Name = inParam.ToString() + "$1";
+          }
+        }
+      }
+
+      foreach (var inParam in this.CC2.Ins)
+      {
+        foreach (var idx in idxs)
+        {
+          if (inParam.ToString().Equals(inParams[idx.Item1].Name))
+          {
+            (inParam as IdentifierExpr).Name = inParam.ToString() + "$2";
+          }
+        }
+      }
+
+      foreach (var pair in idxs)
+      {
+        this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name = 
+          this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name + "$1";
+        this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name = 
+          this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name + "$2";
       }
     }
 
