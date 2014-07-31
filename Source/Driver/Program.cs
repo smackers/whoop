@@ -22,14 +22,11 @@ namespace Whoop
 {
   public class Program
   {
-    private static List<Process> Processes = new List<Process>();
-
     public static void Main(string[] args)
     {
       Contract.Requires(cce.NonNullElements(args));
 
       CommandLineOptions.Install(new WhoopDriverCommandLineOptions());
-      Console.CancelKeyPress += new ConsoleCancelEventHandler(Program.ExitHandler);
 
       try
       {
@@ -75,83 +72,59 @@ namespace Whoop
 
         DeviceDriver.ParseAndInitialize(fileList);
 
+        PipelineStatistics stats = new PipelineStatistics();
+        WhoopErrorReporter errorReporter = new WhoopErrorReporter();
+
         if (WhoopDriverCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
         {
           foreach (var pair in DeviceDriver.EntryPointPairs)
           {
-            Process proc = new Process();
-            proc.StartInfo.FileName = System.Reflection.Assembly.GetEntryAssembly().Location;
-            proc.StartInfo.Arguments = "/pairToAnalyse:" + pair.Item1.Name + "::" + pair.Item2.Name + " ";
-            proc.StartInfo.Arguments += String.Join(" ", args);
+            AnalysisContext ac = null;
 
-            Program.Processes.Add(proc);
-            proc.Start();
+            string extension = "_instrumented";
 
-            while (!proc.HasExited)
-              continue;
-            proc.Close();
+            if (!WhoopDriverCommandLineOptions.Get().SkipInference)
+            {
+              extension += "_and_crunched";
+            }
+
+            if (pair.Item1.Name.Equals(pair.Item2.Name))
+            {
+              ac = new AnalysisContextParser(fileList[fileList.Count - 1],
+                "wbpl").ParseNew(new List<string>
+                {
+                  "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
+                  pair.Item1.Name + extension
+                });
+            }
+            else
+            {
+              ac = new AnalysisContextParser(fileList[fileList.Count - 1],
+                "wbpl").ParseNew(new List<string>
+                {
+                  "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
+                  pair.Item1.Name + extension,
+                  pair.Item2.Name + extension
+                });
+            }
+
+            new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();
           }
-
-//          while (procs.Exists(val => !val.HasExited))
-//            continue;
-        }
-        else
-        {
-          EntryPoint ep1 = DeviceDriver.GetEntryPoint(WhoopDriverCommandLineOptions.
-            Get().FunctionsToAnalyse[0]);
-          EntryPoint ep2 = DeviceDriver.GetEntryPoint(WhoopDriverCommandLineOptions.
-            Get().FunctionsToAnalyse[1]);
-          AnalysisContext ac = null;
-
-          string extension = "_instrumented";
-
-          if (!WhoopDriverCommandLineOptions.Get().SkipInference)
-          {
-            extension += "_and_crunched";
-          }
-
-          if (ep1.Name.Equals(ep2.Name))
-          {
-            ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-              "wbpl").ParseNew(new List<string>
-              {
-                "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + extension
-              });
-          }
-          else
-          {
-            ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-              "wbpl").ParseNew(new List<string>
-              {
-                "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + extension,
-                ep2.Name + extension
-              });
-          }
-
-          new StaticLocksetAnalyser(ac, ep1, ep2).Run();
         }
 
-        Environment.Exit((int)Outcome.Done);
+        Whoop.IO.Reporter.WriteTrailer(stats);
+
+        Outcome oc = Outcome.Done;
+        if ((stats.ErrorCount + stats.InconclusiveCount + stats.TimeoutCount + stats.OutOfMemoryCount) > 0)
+          oc = Outcome.LocksetAnalysisError;
+
+        Environment.Exit((int)oc);
       }
       catch (Exception e)
       {
         Console.Error.Write("Exception thrown in Whoop: ");
         Console.Error.WriteLine(e);
         Environment.Exit((int)Outcome.FatalError);
-      }
-    }
-
-    private static void ExitHandler(object sender, ConsoleCancelEventArgs args)
-    {
-      Console.WriteLine("CLOSING PROC");
-      foreach (var proc in Program.Processes)
-      {
-        if (!proc.HasExited)
-        {
-          proc.Close();
-        }
       }
     }
   }

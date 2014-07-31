@@ -31,17 +31,19 @@ namespace Whoop
     PipelineStatistics Stats;
     WhoopErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2,
+      PipelineStatistics stats, WhoopErrorReporter errorReporter)
     {
-      Contract.Requires(ac != null && ep1 != null && ep2 != null);
+      Contract.Requires(ac != null && ep1 != null && ep2 != null &&
+        stats != null && errorReporter != null);
       this.AC = ac;
       this.EP1 = ep1;
       this.EP2 = ep2;
-      this.Stats = new PipelineStatistics();
-      this.ErrorReporter = new WhoopErrorReporter();
+      this.Stats = stats;
+      this.ErrorReporter = errorReporter;
     }
 
-    public Outcome Run()
+    public void Run()
     {
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
@@ -120,14 +122,9 @@ namespace Whoop
       if (vcOutcome == VC.VCGen.Outcome.Errors || WhoopDriverCommandLineOptions.Get().Trace)
         Console.Out.Flush();
 
-      cce.NonNull(WhoopDriverCommandLineOptions.Get().TheProverFactory).Close();
+      WhoopDriverCommandLineOptions.Get().TheProverFactory.Close();
+//      cce.NonNull(WhoopDriverCommandLineOptions.Get().TheProverFactory).Close();
       vcgen.Dispose();
-
-      Whoop.IO.Reporter.WriteTrailer(this.Stats);
-
-      if ((this.Stats.ErrorCount + this.Stats.InconclusiveCount + this.Stats.TimeoutCount + this.Stats.OutOfMemoryCount) > 0)
-        return Outcome.LocksetAnalysisError;
-      return Outcome.Done;
     }
 
     private void ProcessOutcome(Implementation impl, VC.VCGen.Outcome outcome, List<Counterexample> errors,

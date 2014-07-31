@@ -684,7 +684,7 @@ def startToolChain(argv):
   if CommandLineOptions.silent:
     return 0
 
-  print("Whoop static lockset analyser finished verifying: " + ", ".join(CommandLineOptions.sourceFiles))
+  print("Verified: " + ", ".join(CommandLineOptions.sourceFiles))
   print("(but absolutely no warranty provided)")
 
   return 0
