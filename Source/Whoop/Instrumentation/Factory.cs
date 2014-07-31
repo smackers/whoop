@@ -50,5 +50,10 @@ namespace Whoop.Instrumentation
     {
       return new PairInstrumentation(ac, ep1, ep2);
     }
+
+    public static ILocksetSummaryGeneration CreateLocksetSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    {
+      return new LocksetSummaryGeneration(ac, ep);
+    }
   }
 }

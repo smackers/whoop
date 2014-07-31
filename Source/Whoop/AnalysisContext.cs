@@ -126,6 +126,7 @@ namespace Whoop
           QKeyValue.FindBoolAttribute(v.Attributes, "current_lockset") ||
           QKeyValue.FindBoolAttribute(v.Attributes, "lockset") ||
           QKeyValue.FindBoolAttribute(v.Attributes, "access_checking") ||
+          QKeyValue.FindBoolAttribute(v.Attributes, "existential") ||
           QKeyValue.FindBoolAttribute(v.Attributes, "watchdog"))
         return true;
       return false;

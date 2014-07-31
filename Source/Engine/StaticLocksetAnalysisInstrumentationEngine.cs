@@ -56,6 +56,8 @@ namespace Whoop
 
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
+      Instrumentation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
+
       if (WhoopEngineCommandLineOptions.Get().SkipInference)
       {
         ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
