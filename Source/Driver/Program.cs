@@ -20,15 +20,16 @@ using Whoop.Domain.Drivers;
 
 namespace Whoop
 {
-  using FunctionPairType = Tuple<string, List<Tuple<string, List<string>>>, AnalysisContext>;
-
   public class Program
   {
+    private static List<Process> Processes = new List<Process>();
+
     public static void Main(string[] args)
     {
       Contract.Requires(cce.NonNullElements(args));
 
       CommandLineOptions.Install(new WhoopDriverCommandLineOptions());
+      Console.CancelKeyPress += new ConsoleCancelEventHandler(Program.ExitHandler);
 
       try
       {
@@ -76,8 +77,6 @@ namespace Whoop
 
         if (WhoopDriverCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
         {
-          List<Process> procs = new List<Process>();
-
           foreach (var pair in DeviceDriver.EntryPointPairs)
           {
             Process proc = new Process();
@@ -85,7 +84,7 @@ namespace Whoop
             proc.StartInfo.Arguments = "/pairToAnalyse:" + pair.Item1.Name + "::" + pair.Item2.Name + " ";
             proc.StartInfo.Arguments += String.Join(" ", args);
 
-            procs.Add(proc);
+            Program.Processes.Add(proc);
             proc.Start();
 
             while (!proc.HasExited)
@@ -141,6 +140,18 @@ namespace Whoop
         Console.Error.Write("Exception thrown in Whoop: ");
         Console.Error.WriteLine(e);
         Environment.Exit((int)Outcome.FatalError);
+      }
+    }
+
+    private static void ExitHandler(object sender, ConsoleCancelEventArgs args)
+    {
+      Console.WriteLine("CLOSING PROC");
+      foreach (var proc in Program.Processes)
+      {
+        if (!proc.HasExited)
+        {
+          proc.Close();
+        }
       }
     }
   }

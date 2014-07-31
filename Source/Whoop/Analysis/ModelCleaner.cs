@@ -26,14 +26,17 @@ namespace Whoop.Analysis
     public static void RemoveGenericTopLevelDeclerations(AnalysisContext ac, EntryPoint ep)
     {
       List<string> toRemove = new List<string>();
+      List<string> tagged = new List<string>();
 
       foreach (var proc in ac.Program.TopLevelDeclarations.OfType<Procedure>())
       {
-        if (QKeyValue.FindBoolAttribute(proc.Attributes, "entrypoint"))
+        if (QKeyValue.FindBoolAttribute(proc.Attributes, "entrypoint") ||
+            (QKeyValue.FindStringAttribute(proc.Attributes, "tag") != null &&
+            QKeyValue.FindStringAttribute(proc.Attributes, "tag").Equals(ep.Name)))
+        {
+          tagged.Add(proc.Name);
           continue;
-        if (QKeyValue.FindStringAttribute(proc.Attributes, "tag") != null &&
-            QKeyValue.FindStringAttribute(proc.Attributes, "tag").Equals(ep.Name))
-          continue;
+        }
         if (ac.IsAWhoopFunc(proc.Name))
           continue;
         toRemove.Add(proc.Name);
@@ -56,8 +59,7 @@ namespace Whoop.Analysis
 
       ac.Program.TopLevelDeclarations.RemoveAll(val =>
         (val is Variable) && !ac.IsAWhoopVariable(val as Variable) &&
-        !ac.InstrumentationRegions.Exists(region =>
-          region.Implementation().Name.Equals((val as Variable).Name)));
+        !tagged.Exists(str => str.Equals((val as Variable).Name)));
 
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
       ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Function));
