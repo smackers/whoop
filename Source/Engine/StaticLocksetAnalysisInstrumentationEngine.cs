@@ -56,6 +56,13 @@ namespace Whoop
 
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
+      if (WhoopEngineCommandLineOptions.Get().SkipInference)
+      {
+        ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
+        ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
+        ModelCleaner.RemoveGlobalLocksets(this.AC);
+      }
+
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);
 //      ModelCleaner.RemoveUnusedVars(this.AC);

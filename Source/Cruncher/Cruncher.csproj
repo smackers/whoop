@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{FD4F2900-FF82-4282-B76A-6775A5643B87}</ProjectGuid>
+    <ProjectGuid>{AD61F151-DC85-4AB9-8A0B-E3A83DB6F9FA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Whoop</RootNamespace>
     <AssemblyName>WhoopCruncher</AssemblyName>

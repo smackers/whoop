@@ -104,13 +104,20 @@ namespace Whoop
             Get().FunctionsToAnalyse[1]);
           AnalysisContext ac = null;
 
+          string extension = "_instrumented";
+
+          if (!WhoopDriverCommandLineOptions.Get().SkipInference)
+          {
+            extension += "_and_crunched";
+          }
+
           if (ep1.Name.Equals(ep2.Name))
           {
             ac = new AnalysisContextParser(fileList[fileList.Count - 1],
               "wbpl").ParseNew(new List<string>
               {
                 "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + "_instrumented_and_crunched"
+                ep1.Name + extension
               });
           }
           else
@@ -119,8 +126,8 @@ namespace Whoop
               "wbpl").ParseNew(new List<string>
               {
                 "check_" + ep1.Name + "_" + ep2.Name,
-                ep1.Name + "_instrumented_and_crunched",
-                ep2.Name + "_instrumented_and_crunched"
+                ep1.Name + extension,
+                ep2.Name + extension
               });
           }
 

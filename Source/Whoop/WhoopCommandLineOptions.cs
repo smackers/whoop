@@ -21,6 +21,7 @@ namespace Whoop
 
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
+    public bool SkipInference = false;
     public bool InlineHelperFunctions = false;
     public bool DebugWhoop = false;
 
@@ -60,6 +61,12 @@ namespace Whoop
       if (option == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;
+        return true;
+      }
+
+      if (option == "skipInference")
+      {
+        this.SkipInference = true;
         return true;
       }
 

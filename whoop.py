@@ -145,6 +145,7 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
+    self.noInfer = False
     self.inline = False
     self.verbose = False
     self.silent = False
@@ -203,6 +204,7 @@ def showHelpAndExit():
     --print-pairs           Print information about the entry point pairs.
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
+    --no-infer              Turn off invariant inference.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
 
   SOLVER OPTIONS:
@@ -296,6 +298,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
+    if o == "--no-infer":
+      CommandLineOptions.noInfer = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--inline":
@@ -504,7 +508,7 @@ def startToolChain(argv):
               'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'analyse-only=', 'inline',
+              'analyse-only=', 'inline', 'no-infer',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
               'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
@@ -605,7 +609,10 @@ def startToolChain(argv):
   if CommandLineOptions.timePasses:
     CommandLineOptions.whoopEngineOptions += [ "/timePasses" ]
 
-  CommandLineOptions.whoopCruncherOptions += [ "/noinfer" ]
+  if CommandLineOptions.noInfer:
+    CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
+    CommandLineOptions.whoopDriverOptions += [ "/skipInference" ]
+
   CommandLineOptions.whoopCruncherOptions += [ "/contractInfer" ]
 
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
@@ -654,15 +661,16 @@ def startToolChain(argv):
             CommandLineOptions.componentTimeout)
     if CommandLineOptions.stopAtEngine: return 0
 
-  """ RUN WHOOP CRUNCHER """
-  if not CommandLineOptions.skip["cruncher"]:
-    runTool("whoopCruncher",
-            (["mono"] if os.name == "posix" else []) +
-            [findtools.whoopBinDir + "/WhoopCruncher.exe"] +
-            CommandLineOptions.whoopCruncherOptions,
-            ErrorCodes.WHOOP_ERROR,
-            CommandLineOptions.componentTimeout)
-    if CommandLineOptions.stopAtCruncher: return 0
+  if not CommandLineOptions.noInfer:
+    """ RUN WHOOP CRUNCHER """
+    if not CommandLineOptions.skip["cruncher"]:
+      runTool("whoopCruncher",
+              (["mono"] if os.name == "posix" else []) +
+              [findtools.whoopBinDir + "/WhoopCruncher.exe"] +
+              CommandLineOptions.whoopCruncherOptions,
+              ErrorCodes.WHOOP_ERROR,
+              CommandLineOptions.componentTimeout)
+      if CommandLineOptions.stopAtCruncher: return 0
 
   """ RUN WHOOP DRIVER """
   runTool("whoopDriver",
