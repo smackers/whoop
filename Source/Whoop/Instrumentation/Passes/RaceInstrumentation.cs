@@ -108,12 +108,12 @@ namespace Whoop.Instrumentation
 
             block.Cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
-              new SimpleAssignLhs(Token.NoToken, lsExpr)
-            }, new List<Expr> { new NAryExpr(Token.NoToken,
-              new IfThenElse(Token.NoToken),
-              new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
-                new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr
-              }))
+                new SimpleAssignLhs(Token.NoToken, lsExpr)
+              }, new List<Expr> { new NAryExpr(Token.NoToken,
+                new IfThenElse(Token.NoToken),
+                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+                  Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr), lsExpr
+                }))
             }));
 
             proc.Modifies.Add(lsExpr);
@@ -125,8 +125,8 @@ namespace Whoop.Instrumentation
                   new SimpleAssignLhs(Token.NoToken, acsExpr)
                 }, new List<Expr> { new NAryExpr(Token.NoToken,
                   new IfThenElse(Token.NoToken),
-                  new List<Expr>(new Expr[] { Expr.True,
-                    new IdentifierExpr(cls.Id.tok, cls.Id), acsExpr
+                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+                    Expr.True, acsExpr
                   }))
               }));
 
@@ -135,11 +135,6 @@ namespace Whoop.Instrumentation
 
             break;
           }
-        }
-
-        if (this.AC.Locks.Count == 0)
-        {
-          block.Cmds.Add(new AssumeCmd(Token.NoToken, Expr.True));
         }
 
         impl.Blocks.Add(block);
