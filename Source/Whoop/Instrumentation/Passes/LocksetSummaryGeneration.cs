@@ -51,7 +51,22 @@ namespace Whoop.Instrumentation
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
-        this.InstrumentProcedure(region);
+        if (!this.EP.Name.Equals(region.Implementation().Name))
+          continue;
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables());
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables());
+      }
+
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        if (this.EP.Name.Equals(region.Implementation().Name))
+          continue;
+        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetCurrentLocksetVariables());
+        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables());
+        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetAccessCheckingVariables());
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetCurrentLocksetVariables());
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables());
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables());
       }
 
       this.InstrumentExistentialBooleans();
@@ -65,16 +80,50 @@ namespace Whoop.Instrumentation
 
     #region lockset summary generation
 
-    private void InstrumentProcedure(InstrumentationRegion region)
+    private void InstrumentRequiresLocksetCandidates(InstrumentationRegion region, List<Variable> locksets)
     {
-      foreach (var v in this.AC.GetMemoryLocksetVariables())
+      foreach (var ls in locksets)
       {
-        Constant cons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
+        Constant consTrue = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
+          this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
+        this.ExistentialBooleans.Add(consTrue);
+        this.Counter++;
+        region.Procedure().Requires.Add(
+          new Requires(false, Expr.Imp(new IdentifierExpr(consTrue.tok, consTrue),
+            new IdentifierExpr(ls.tok, ls)))
+        );
+
+        Constant consFalse = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
+          this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
+        this.ExistentialBooleans.Add(consFalse);
+        this.Counter++;
+        region.Procedure().Requires.Add(
+          new Requires(false, Expr.Imp(new IdentifierExpr(consFalse.tok, consFalse),
+            Expr.Not(new IdentifierExpr(ls.tok, ls))))
+        );
+      }
+    }
+
+    private void InstrumentEnsuresLocksetCandidates(InstrumentationRegion region, List<Variable> locksets)
+    {
+      foreach (var ls in locksets)
+      {
+        Constant consTrue = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
                         this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
-        this.ExistentialBooleans.Add(cons);
+        this.ExistentialBooleans.Add(consTrue);
         this.Counter++;
         region.Procedure().Ensures.Add(
-          new Ensures(false, Expr.Imp(new IdentifierExpr(cons.tok, cons), new IdentifierExpr(v.tok, v)))
+          new Ensures(false, Expr.Imp(new IdentifierExpr(consTrue.tok, consTrue),
+            new IdentifierExpr(ls.tok, ls)))
+        );
+
+        Constant consFalse = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
+          this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
+        this.ExistentialBooleans.Add(consFalse);
+        this.Counter++;
+        region.Procedure().Ensures.Add(
+          new Ensures(false, Expr.Imp(new IdentifierExpr(consFalse.tok, consFalse),
+            Expr.Not(new IdentifierExpr(ls.tok, ls))))
         );
       }
     }

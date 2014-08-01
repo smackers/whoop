@@ -180,13 +180,36 @@ namespace Whoop.Regions
         new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2),
         new List<Variable>(), new List<Variable>(), this.RegionBlocks);
 
-      Block check = new Block(Token.NoToken, "_CHECK",
-        new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      if (this.EP1.Name.Equals(this.EP2.Name))
+      {
+        Block call = new Block(Token.NoToken, "$logger",
+                        new List<Cmd>(), new GotoCmd(Token.NoToken,
+                        new List<string> { "$checker" }));
+        this.CC1 = this.CreateCallCmd(impl1, impl2);
+        call.Cmds.Add(this.CC1);
 
-      this.CC1 = this.CreateCallCmd(impl1, impl2);
-      this.CC2 = this.CreateCallCmd(impl2, impl1, true);
-      check.Cmds.Add(this.CC1);
-      check.Cmds.Add(this.CC2);
+        this.RegionBlocks.Add(call);
+      }
+      else
+      {
+        Block call1 = new Block(Token.NoToken, "$logger$1",
+                        new List<Cmd>(), new GotoCmd(Token.NoToken,
+                        new List<string> { "$logger$2" }));
+        this.CC1 = this.CreateCallCmd(impl1, impl2);
+        call1.Cmds.Add(this.CC1);
+
+        Block call2 = new Block(Token.NoToken, "$logger$2",
+                        new List<Cmd>(), new GotoCmd(Token.NoToken,
+                        new List<string> { "$checker" }));
+        this.CC2 = this.CreateCallCmd(impl2, impl1, true);
+        call2.Cmds.Add(this.CC2);
+
+        this.RegionBlocks.Add(call1);
+        this.RegionBlocks.Add(call2);
+      }
+
+      Block check = new Block(Token.NoToken, "$checker",
+                      new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
       foreach (var mr in SharedStateAnalyser.GetPairMemoryRegions(
         DeviceDriver.GetEntryPoint(impl1.Name), DeviceDriver.GetEntryPoint(impl2.Name)))
@@ -222,17 +245,24 @@ namespace Whoop.Regions
       foreach (var ls in this.AC.CurrentLocksets)
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
-          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
+                             new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
         Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
-          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
+                           new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Ensures.Add(ensure);
       }
 
       foreach (var ls in this.AC.MemoryLocksets)
       {
         Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok,
-          new Duplicator().Visit(ls.Id.Clone()) as Variable));
+                             new Duplicator().Visit(ls.Id.Clone()) as Variable));
+        this.InternalImplementation.Proc.Requires.Add(require);
+      }
+
+      foreach (var acv in this.AC.GetAccessCheckingVariables())
+      {
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
+                             new Duplicator().Visit(acv.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
@@ -366,10 +396,17 @@ namespace Whoop.Regions
       IdentifierExpr acsExpr1 = new IdentifierExpr(acs1.tok, acs1);
       IdentifierExpr acsExpr2 = new IdentifierExpr(acs2.tok, acs2);
 
-      Expr acsOrExpr = Expr.Or(acsExpr1, acsExpr2);
+      Expr acsOrExpr = null;
+      if (this.EP1.Name.Equals(this.EP2.Name))
+      {
+        acsOrExpr = acsExpr1;
+      }
+      else
+      {
+        acsOrExpr = Expr.Or(acsExpr1, acsExpr2);
+      }
 
       Expr checkExpr = null;
-
       foreach (var l in this.AC.Locks)
       {
         var ls1  = this.AC.MemoryLocksets.Find(val => val.Lock.Name.Equals(l.Name) &&
@@ -379,7 +416,16 @@ namespace Whoop.Regions
 
         IdentifierExpr lsExpr1 = new IdentifierExpr(ls1.Id.tok, ls1.Id);
         IdentifierExpr lsExpr2 = new IdentifierExpr(ls2.Id.tok, ls2.Id);
-        Expr lsAndExpr = Expr.And(lsExpr1, lsExpr2);
+
+        Expr lsAndExpr = null;
+        if (this.EP1.Name.Equals(this.EP2.Name))
+        {
+          lsAndExpr = lsExpr1;
+        }
+        else
+        {
+          lsAndExpr = Expr.And(lsExpr1, lsExpr2);
+        }
 
         if (checkExpr == null)
         {

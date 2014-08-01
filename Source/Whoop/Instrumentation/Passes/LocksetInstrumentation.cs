@@ -166,6 +166,12 @@ namespace Whoop.Instrumentation
         Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok, ls.Id));
         region.Procedure().Requires.Add(require);
       }
+
+      foreach (var acv in this.AC.GetAccessCheckingVariables())
+      {
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
+        region.Procedure().Requires.Add(require);
+      }
     }
 
     #endregion

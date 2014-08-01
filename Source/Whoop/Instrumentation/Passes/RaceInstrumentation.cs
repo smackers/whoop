@@ -94,40 +94,54 @@ namespace Whoop.Instrumentation
             if (!cls.Lock.Name.Equals(ls.Lock.Name))
               continue;
 
-            Variable ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-              this.AC.MemoryModelType));
+//            Variable ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+//              this.AC.MemoryModelType));
             Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
               val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
-            Variable offset = this.AC.GetAccessWatchdogConstants().Find(val =>
-              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(ls.TargetName)));
+//            Variable offset = this.AC.GetAccessWatchdogConstants().Find(val =>
+//              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(ls.TargetName)));
 
             IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-            IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+//            IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
             IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
-            IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
+//            IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
+
+//            block.Cmds.Add(new AssignCmd(Token.NoToken,
+//              new List<AssignLhs>() {
+//                new SimpleAssignLhs(Token.NoToken, lsExpr)
+//              }, new List<Expr> { new NAryExpr(Token.NoToken,
+//                new IfThenElse(Token.NoToken),
+//                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+//                  Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr), lsExpr
+//                }))
+//            }));
 
             block.Cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
                 new SimpleAssignLhs(Token.NoToken, lsExpr)
-              }, new List<Expr> { new NAryExpr(Token.NoToken,
-                new IfThenElse(Token.NoToken),
-                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
-                  Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr), lsExpr
-                }))
+              }, new List<Expr> {
+              Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr)
             }));
 
             proc.Modifies.Add(lsExpr);
 
             if (access == AccessType.WRITE)
             {
+//              block.Cmds.Add(new AssignCmd(Token.NoToken,
+//                new List<AssignLhs>() {
+//                  new SimpleAssignLhs(Token.NoToken, acsExpr)
+//                }, new List<Expr> { new NAryExpr(Token.NoToken,
+//                  new IfThenElse(Token.NoToken),
+//                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+//                    Expr.True, acsExpr
+//                  }))
+//              }));
+
               block.Cmds.Add(new AssignCmd(Token.NoToken,
                 new List<AssignLhs>() {
                   new SimpleAssignLhs(Token.NoToken, acsExpr)
-                }, new List<Expr> { new NAryExpr(Token.NoToken,
-                  new IfThenElse(Token.NoToken),
-                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
-                    Expr.True, acsExpr
-                  }))
+                }, new List<Expr> {
+                Expr.True
               }));
 
               proc.Modifies.Add(acsExpr);
