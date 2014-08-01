@@ -57,7 +57,7 @@ namespace Whoop.Instrumentation
         if (!this.EP.Name.Equals(region.Implementation().Name))
           continue;
         this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
-        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false);
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false, true);
       }
 
       foreach (var region in this.AC.InstrumentationRegions)
@@ -68,7 +68,7 @@ namespace Whoop.Instrumentation
         this.InstrumentRequiresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
 //        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetCurrentLocksetVariables(), true);
         this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
-        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false);
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false, true);
       }
 
       this.InstrumentExistentialBooleans();

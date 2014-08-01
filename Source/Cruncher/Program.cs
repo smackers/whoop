@@ -73,11 +73,13 @@ namespace Whoop
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
+          Console.WriteLine(GC.GetTotalMemory(false));
           AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
             "wbpl").ParseNew(new List<string> { ep.Name + "_instrumented" });
           AnalysisContext acPost = new AnalysisContextParser(fileList[fileList.Count - 1],
             "wbpl").ParseNew(new List<string> { ep.Name + "_instrumented" });
           new InvariantInferrer(ac, acPost, ep).Run();
+          Console.WriteLine(GC.GetTotalMemory(false));
         }
 
         Environment.Exit((int)Outcome.Done);

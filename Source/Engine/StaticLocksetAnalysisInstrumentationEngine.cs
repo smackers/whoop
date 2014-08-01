@@ -61,9 +61,10 @@ namespace Whoop
       if (WhoopEngineCommandLineOptions.Get().SkipInference)
       {
         ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
-        ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
         ModelCleaner.RemoveGlobalLocksets(this.AC);
       }
+
+      ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
 
 //      ModelCleaner.RemoveEmptyBlocks(this.AC);
 //      ModelCleaner.RemoveMemoryRegions(this.AC);

@@ -50,7 +50,6 @@ namespace Whoop
       this.ApplyInvariants();
 
       ModelCleaner.RemoveGenericTopLevelDeclerations(this.PostAC, this.EP);
-      ModelCleaner.RemoveInlineFromHelperFunctions(this.PostAC, this.EP);
       ModelCleaner.RemoveGlobalLocksets(this.PostAC);
 
       WhoopCruncherCommandLineOptions.Get().PrintUnstructured = 2;
@@ -98,6 +97,8 @@ namespace Whoop
     {
       if (this.Houdini != null) {
         this.Houdini.ApplyAssignment(this.PostAC.Program);
+        this.Houdini.Close();
+        WhoopCruncherCommandLineOptions.Get().TheProverFactory.Close();
       }
     }
 
