@@ -150,9 +150,6 @@ namespace Whoop.Instrumentation
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
-      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
-        return;
-
       foreach (var ls in this.AC.CurrentLocksets)
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
@@ -160,6 +157,9 @@ namespace Whoop.Instrumentation
         Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Ensures.Add(ensure);
       }
+
+      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
+        return;
 
       foreach (var ls in this.AC.MemoryLocksets)
       {
