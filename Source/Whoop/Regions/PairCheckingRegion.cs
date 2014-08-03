@@ -314,6 +314,14 @@ namespace Whoop.Regions
         }
       }
 
+      foreach (var inParam in this.InternalImplementation.InParams)
+      {
+        if (inParam.TypedIdent.Name.Contains("$"))
+        {
+          inParam.TypedIdent.Name = inParam.TypedIdent.Name.Split('$')[0];
+        }
+      }
+
       if (idxs.Count == 0)
         return;
 
@@ -341,15 +349,10 @@ namespace Whoop.Regions
 
       foreach (var pair in idxs)
       {
-        var v1 = this.InternalImplementation.InParams[pair.Item1];
-        v1 = new Duplicator().VisitVariable(v1.Clone() as Variable);
-        v1.TypedIdent = new Duplicator().VisitTypedIdent(v1.TypedIdent.Clone() as TypedIdent);
-        v1.TypedIdent.Name = v1.TypedIdent.Name + "$1";
-
-        var v2 = this.InternalImplementation.InParams[pair.Item2];
-        v2 = new Duplicator().VisitVariable(v2.Clone() as Variable);
-        v2.TypedIdent = new Duplicator().VisitTypedIdent(v2.TypedIdent.Clone() as TypedIdent);
-        v2.TypedIdent.Name = v2.TypedIdent.Name + "$2";
+        this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name = 
+          this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name + "$1";
+        this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name = 
+          this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name + "$2";
       }
     }
 
