@@ -77,7 +77,7 @@ namespace Whoop.Analysis
               Microsoft.Boogie.Type.Int), true), lockExpr);
 
           newLock.Id.AddAttribute("lock", new object[] { });
-          this.AC.Program.TopLevelDeclarations.Add(newLock.Id);
+          this.AC.TopLevelDeclarations.Add(newLock.Id);
           this.AC.Locks.Add(newLock);
         }
       }

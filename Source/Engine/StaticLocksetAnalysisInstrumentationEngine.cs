@@ -49,9 +49,6 @@ namespace Whoop
       Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();
       Instrumentation.Factory.CreateRaceInstrumentation(this.AC, this.EP).Run();
 
-//      if (!InstrumentationCommandLineOptions.Get().OnlyRaceChecking)
-//        Instrumentation.Factory.CreateDeadlockInstrumentation(this.AC, this.EP).Run();
-
       Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();
 
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
@@ -63,14 +60,11 @@ namespace Whoop
       }
       else
       {
-        Instrumentation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
       }
 
       ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
-
-//      ModelCleaner.RemoveEmptyBlocks(this.AC);
-//      ModelCleaner.RemoveMemoryRegions(this.AC);
-//      ModelCleaner.RemoveUnusedVars(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -81,7 +75,7 @@ namespace Whoop
       }
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
         WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
     }
   }

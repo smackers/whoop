@@ -69,7 +69,7 @@ namespace Whoop.Instrumentation
                         new TypedIdent(Token.NoToken, l.Name + "_in_CLS_$" + this.EP.Name,
                           Microsoft.Boogie.Type.Bool));
         ls.AddAttribute("current_lockset", new object[] { });
-        this.AC.Program.TopLevelDeclarations.Add(ls);
+        this.AC.TopLevelDeclarations.Add(ls);
         this.AC.CurrentLocksets.Add(new Lockset(ls, l, this.EP));
       }
     }
@@ -84,7 +84,7 @@ namespace Whoop.Instrumentation
                           new TypedIdent(Token.NoToken, l.Name + "_in_LS_" + mr.Name +
                           "_$" + this.EP.Name, Microsoft.Boogie.Type.Bool));
           ls.AddAttribute("lockset", new object[] { });
-          this.AC.Program.TopLevelDeclarations.Add(ls);
+          this.AC.TopLevelDeclarations.Add(ls);
           this.AC.MemoryLocksets.Add(new Lockset(ls, l, this.EP, mr.Name));
         }
       }
@@ -99,7 +99,7 @@ namespace Whoop.Instrumentation
             this.MemoryRegions[i].Name + "_$" + this.EP.Name,
             Microsoft.Boogie.Type.Bool));
         aoff.AddAttribute("access_checking", new object[] { });
-        this.AC.Program.TopLevelDeclarations.Add(aoff);
+        this.AC.TopLevelDeclarations.Add(aoff);
       }
     }
 
@@ -112,7 +112,7 @@ namespace Whoop.Instrumentation
           + "_$" + this.EP.Name, this.AC.MemoryModelType);
         Variable watchdog = new Constant(Token.NoToken, ti, false);
         watchdog.AddAttribute("watchdog", new object[] { });
-        this.AC.Program.TopLevelDeclarations.Add(watchdog);
+        this.AC.TopLevelDeclarations.Add(watchdog);
       }
     }
   }

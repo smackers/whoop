@@ -49,11 +49,9 @@ namespace Whoop.Instrumentation
 
       PairCheckingRegion region = new PairCheckingRegion(this.AC, this.EP1, this.EP2);
 
-      this.AC.Program.TopLevelDeclarations.Add(region.Procedure());
-      this.AC.Program.TopLevelDeclarations.Add(region.Implementation());
+      this.AC.TopLevelDeclarations.Add(region.Procedure());
+      this.AC.TopLevelDeclarations.Add(region.Implementation());
       this.AC.ResContext.AddProcedure(region.Procedure());
-
-      this.RemoveOriginalInitFunc();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -61,19 +59,5 @@ namespace Whoop.Instrumentation
         Console.WriteLine(" |  |------ [PairInstrumentation] {0}", this.Timer.Result());
       }
     }
-
-    #region cleanup functions
-
-    /// <summary>
-    /// Removes original init function.
-    /// </summary>
-    private void RemoveOriginalInitFunc()
-    {
-      this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetConstant(DeviceDriver.InitEntryPoint));
-      this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc);
-      this.AC.Program.TopLevelDeclarations.Remove(this.AC.GetImplementation(DeviceDriver.InitEntryPoint));
-    }
-
-    #endregion
   }
 }

@@ -40,7 +40,7 @@ namespace Whoop.Instrumentation
         this.Timer.Start();
       }
 
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
         if (this.AC.IsAWhoopFunc(impl.Name))
           continue;

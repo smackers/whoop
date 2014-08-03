@@ -252,7 +252,7 @@ namespace Whoop.Instrumentation
 
     private void CleanUp()
     {
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
         foreach (Block b in impl.Blocks)
         {

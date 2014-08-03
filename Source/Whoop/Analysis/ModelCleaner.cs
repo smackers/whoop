@@ -28,7 +28,7 @@ namespace Whoop.Analysis
       List<string> toRemove = new List<string>();
       List<string> tagged = new List<string>();
 
-      foreach (var proc in ac.Program.TopLevelDeclarations.OfType<Procedure>())
+      foreach (var proc in ac.TopLevelDeclarations.OfType<Procedure>())
       {
         if (QKeyValue.FindBoolAttribute(proc.Attributes, "entrypoint") ||
             (QKeyValue.FindStringAttribute(proc.Attributes, "tag") != null &&
@@ -44,34 +44,34 @@ namespace Whoop.Analysis
 
       foreach (var str in toRemove)
       {
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        ac.TopLevelDeclarations.RemoveAll(val =>
           (val is Constant) && (val as Constant).Name.Equals(str));
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        ac.TopLevelDeclarations.RemoveAll(val =>
           (val is Procedure) && (val as Procedure).Name.Equals(str));
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        ac.TopLevelDeclarations.RemoveAll(val =>
           (val is Implementation) && (val as Implementation).Name.Equals(str));
       }
 
-      ac.Program.TopLevelDeclarations.RemoveAll(val =>
+      ac.TopLevelDeclarations.RemoveAll(val =>
         (val is Procedure) && ((val as Procedure).Name.Equals("$malloc") ||
           (val as Procedure).Name.Equals("$free") ||
           (val as Procedure).Name.Equals("$alloca")));
 
-      ac.Program.TopLevelDeclarations.RemoveAll(val =>
+      ac.TopLevelDeclarations.RemoveAll(val =>
         (val is Variable) && !ac.IsAWhoopVariable(val as Variable) &&
         !tagged.Exists(str => str.Equals((val as Variable).Name)));
 
-      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
-      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is Function));
-      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is TypeCtorDecl));
-      ac.Program.TopLevelDeclarations.RemoveAll(val => (val is TypeSynonymDecl));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Axiom));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Function));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is TypeCtorDecl));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is TypeSynonymDecl));
     }
 
     public static void RemoveEntryPointSpecificTopLevelDeclerations(AnalysisContext ac)
     {
       List<Implementation> toRemove = new List<Implementation>();
 
-      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in ac.TopLevelDeclarations.OfType<Implementation>())
       {
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
           continue;
@@ -84,12 +84,12 @@ namespace Whoop.Analysis
 
       foreach (var impl in toRemove)
       {
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Constant) && (val as Constant).Name.Equals(impl.Name));
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Procedure) && (val as Procedure).Name.Equals(impl.Name));
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
-          (val is Implementation) && (val as Implementation).Name.Equals(impl.Name));
+        ac.TopLevelDeclarations.RemoveAll(val => (val is Constant) &&
+          (val as Constant).Name.Equals(impl.Name));
+        ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
+          (val as Procedure).Name.Equals(impl.Name));
+        ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+          (val as Implementation).Name.Equals(impl.Name));
       }
     }
 
@@ -97,7 +97,7 @@ namespace Whoop.Analysis
     {
       List<Variable> toRemove = new List<Variable>();
 
-      foreach (var v in ac.Program.TopLevelDeclarations.OfType<Variable>())
+      foreach (var v in ac.TopLevelDeclarations.OfType<Variable>())
       {
         if (!ac.IsAWhoopVariable(v))
           continue;
@@ -106,7 +106,7 @@ namespace Whoop.Analysis
 
       foreach (var v in toRemove)
       {
-        ac.Program.TopLevelDeclarations.RemoveAll(val =>
+        ac.TopLevelDeclarations.RemoveAll(val =>
           (val is Variable) && (val as Variable).Name.Equals(v.Name));
       }
     }
@@ -124,7 +124,7 @@ namespace Whoop.Analysis
       if (WhoopCommandLineOptions.Get().InlineHelperFunctions)
         return;
 
-      foreach (var impl in ac.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in ac.TopLevelDeclarations.OfType<Implementation>())
       {
         if (QKeyValue.FindStringAttribute(impl.Attributes, "tag") == null)
           continue;
@@ -190,6 +190,31 @@ namespace Whoop.Analysis
           impl.Proc.Attributes = procAttributes[0];
         }
       }
+    }
+
+    public static void RemoveImplementations(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.RemoveAll(val => val is Implementation);
+    }
+
+    public static void RemoveConstants(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.RemoveAll(val => val is Constant);
+    }
+
+    public static void RemoveWhoopFunctions(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        ac.IsAWhoopFunc((val as Implementation).Name));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
+        ac.IsAWhoopFunc((val as Procedure).Name));
+    }
+
+    public static void RemoveOriginalInitFunc(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.Remove(ac.GetConstant(DeviceDriver.InitEntryPoint));
+      ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint).Proc);
+      ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint));
     }
 
 //    public static void RemoveEmptyBlocks(AnalysisContext ac)

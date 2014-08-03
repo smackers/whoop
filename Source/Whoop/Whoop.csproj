@@ -83,8 +83,11 @@
     <Compile Include="Analysis\PointerAliasAnalyser.cs" />
     <Compile Include="Analysis\SharedStateAnalyser.cs" />
     <Compile Include="Utilities\ExecutionTimer.cs" />
-    <Compile Include="Instrumentation\Passes\LocksetSummaryGeneration.cs" />
-    <Compile Include="Instrumentation\Interfaces\ILocksetSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Interfaces\ILocksetSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Passes\LocksetSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Factory.cs" />
+    <Compile Include="Summarisation\Interfaces\IAccessCheckingSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
@@ -97,6 +100,9 @@
     <Folder Include="Refactoring\Interfaces\" />
     <Folder Include="Refactoring\Passes\" />
     <Folder Include="Analysis\Interfaces\" />
+    <Folder Include="Summarisation\" />
+    <Folder Include="Summarisation\Interfaces\" />
+    <Folder Include="Summarisation\Passes\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -15,62 +15,67 @@ using System.Diagnostics.Contracts;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Instrumentation;
+using System.Collections.Generic;
 
 namespace Whoop
 {
   internal sealed class PairWiseCheckingInstrumentationEngine
   {
     private AnalysisContext AC;
-    private EntryPoint EP1;
-    private EntryPoint EP2;
     private ExecutionTimer Timer;
 
-    public PairWiseCheckingInstrumentationEngine(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public PairWiseCheckingInstrumentationEngine(AnalysisContext ac)
     {
-      Contract.Requires(ac != null && ep1 != null && ep2 != null);
+      Contract.Requires(ac != null);
       this.AC = ac;
-      this.EP1 = ep1;
-      this.EP2 = ep2;
     }
 
     public void Run()
     {
-      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      foreach (var pair in DeviceDriver.EntryPointPairs)
       {
-        Console.WriteLine(" |------ [{0} :: {1}]", this.EP1.Name, this.EP2.Name);
-        Console.WriteLine(" |  |");
-        this.Timer = new ExecutionTimer();
-        this.Timer.Start();
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine(" |------ [{0} :: {1}]", pair.Item1.Name, pair.Item2.Name);
+          Console.WriteLine(" |  |");
+          this.Timer = new ExecutionTimer();
+          this.Timer.Start();
+        }
+
+        Analysis.Factory.CreateLockAbstraction(this.AC).Run();
+
+        if (pair.Item1.Name.Equals(pair.Item2.Name))
+        {
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item1).Run();
+        }
+        else
+        {
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item1).Run();
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item2).Run();
+        }
+
+        Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair.Item1, pair.Item2).Run();
+
+        ModelCleaner.RemoveOriginalInitFunc(this.AC);
+        ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
+
+        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          this.Timer.Stop();
+          Console.WriteLine(" |  |");
+          Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
+          Console.WriteLine(" |");
+        }
+
+        WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
+        Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations,
+          WhoopEngineCommandLineOptions.Get().Files[
+            WhoopEngineCommandLineOptions.Get().Files.Count - 1], "check_" +
+          pair.Item1.Name + "_" + pair.Item2.Name, "wbpl");
+
+        this.AC.ResetAnalysisContext();
+        this.AC.ResetToProgramTopLevelDeclarations();
       }
-
-      Analysis.Factory.CreateLockAbstraction(this.AC).Run();
-
-      if (this.EP1.Name.Equals(this.EP2.Name))
-      {
-        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP1).Run();
-      }
-      else
-      {
-        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP1).Run();
-        Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP2).Run();
-      }
-
-      Instrumentation.Factory.CreatePairInstrumentation(this.AC, this.EP1, this.EP2).Run();
-
-      ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
-
-      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-      {
-        this.Timer.Stop();
-        Console.WriteLine(" |  |");
-        Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
-        Console.WriteLine(" |");
-      }
-
-      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
-        WhoopEngineCommandLineOptions.Get().Files.Count - 1], "check_" +
-        this.EP1.Name + "_" + this.EP2.Name, "wbpl");
     }
   }
 }

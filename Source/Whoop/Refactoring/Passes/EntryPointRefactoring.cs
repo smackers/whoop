@@ -85,7 +85,7 @@ namespace Whoop.Refactoring
 
     private void RefactorGlobalVariables()
     {
-      foreach (var gv in this.AC.Program.TopLevelDeclarations.OfType<GlobalVariable>())
+      foreach (var gv in this.AC.TopLevelDeclarations.OfType<GlobalVariable>())
       {
         gv.Name = gv.Name + "$" + this.EP.Name;
       }
@@ -190,7 +190,7 @@ namespace Whoop.Refactoring
     {
       HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
 
-      foreach (var impl in this.AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
         if (this.FunctionsToRefactor.Contains(impl))
           continue;
@@ -208,19 +208,19 @@ namespace Whoop.Refactoring
 
       foreach (var func in uncalledFuncs)
       {
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        this.AC.TopLevelDeclarations.RemoveAll(val =>
           (val is Constant) && (val as Constant).Name.Equals(func.Name));
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        this.AC.TopLevelDeclarations.RemoveAll(val =>
           (val is Procedure) && (val as Procedure).Name.Equals(func.Name));
-        this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+        this.AC.TopLevelDeclarations.RemoveAll(val =>
           (val is Implementation) && (val as Implementation).Name.Equals(func.Name));
       }
 
-      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Constant) && (val as Constant).Name.Equals(DeviceDriver.InitEntryPoint));
-      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Procedure) && (val as Procedure).Name.Equals(DeviceDriver.InitEntryPoint));
-      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Implementation) && (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint));
     }
 
@@ -240,7 +240,7 @@ namespace Whoop.Refactoring
       Constant cons = this.AC.GetConstant(func.Name);
       this.CreateNewConstant(cons);
 
-      this.AC.Program.TopLevelDeclarations.RemoveAll(val =>
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Constant) && (val as Constant).Name.Equals(func.Name));
 
       func.Proc.Name = func.Proc.Name + "$" + this.EP.Name;
@@ -263,7 +263,7 @@ namespace Whoop.Refactoring
         new TypedIdent(cons.TypedIdent.tok, consName,
           cons.TypedIdent.Type), cons.Unique);
 
-      this.AC.Program.TopLevelDeclarations.Add(newCons);
+      this.AC.TopLevelDeclarations.Add(newCons);
     }
 
     #endregion

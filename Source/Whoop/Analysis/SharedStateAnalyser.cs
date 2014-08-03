@@ -127,7 +127,7 @@ namespace Whoop.Analysis
                 !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
                 continue;
 
-              Variable v = ac.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+              Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
                 Find(val => val.Name.Equals(lhs.DeepAssignedIdentifier.Name));
 
               if (!vars.Any(val => val.Name.Equals(v.Name)))
@@ -140,7 +140,7 @@ namespace Whoop.Analysis
                 !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
                 continue;
 
-              Variable v = ac.Program.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+              Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
                 Find(val => val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name));
 
               if (!vars.Any(val => val.Name.Equals(v.Name)))

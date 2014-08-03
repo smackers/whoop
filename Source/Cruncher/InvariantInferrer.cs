@@ -49,12 +49,17 @@ namespace Whoop
       this.PerformHoudini();
       this.ApplyInvariants();
 
+      this.AC.ResetToProgramTopLevelDeclarations();
+
       ModelCleaner.RemoveGenericTopLevelDeclerations(this.PostAC, this.EP);
       ModelCleaner.RemoveGlobalLocksets(this.PostAC);
+      ModelCleaner.RemoveWhoopFunctions(this.PostAC);
+      ModelCleaner.RemoveConstants(this.PostAC);
+      ModelCleaner.RemoveImplementations(this.PostAC);
 
       WhoopCruncherCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.PostAC.Program, WhoopCruncherCommandLineOptions.Get().Files[
-        WhoopCruncherCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented_and_crunched", "wbpl");
+      Whoop.IO.BoogieProgramEmitter.Emit(this.PostAC.TopLevelDeclarations, WhoopCruncherCommandLineOptions.Get().Files[
+        WhoopCruncherCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_summarised", "wbpl");
     }
 
     private void PerformHoudini()

@@ -67,7 +67,7 @@ namespace Whoop.Instrumentation
                          new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      this.AC.Program.TopLevelDeclarations.Add(proc);
+      this.AC.TopLevelDeclarations.Add(proc);
       this.AC.ResContext.AddProcedure(proc);
 
       List<Variable> localVars = new List<Variable>();
@@ -104,7 +104,7 @@ namespace Whoop.Instrumentation
       impl.Proc = proc;
       impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      this.AC.Program.TopLevelDeclarations.Add(impl);
+      this.AC.TopLevelDeclarations.Add(impl);
     }
 
     private void InstrumentImplementation(InstrumentationRegion region)

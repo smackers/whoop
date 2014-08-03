@@ -45,7 +45,7 @@ namespace Whoop.Refactoring
         this.Timer.Start();
       }
 
-      foreach (var impl in AC.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var impl in AC.TopLevelDeclarations.OfType<Implementation>())
       {
         this.RemoveUnecesseryAssumes(impl);
         this.SimplifyImplementation(impl);

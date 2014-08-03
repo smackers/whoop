@@ -81,11 +81,14 @@ namespace Whoop
           {
             AnalysisContext ac = null;
 
-            string extension = "_instrumented";
-
-            if (!WhoopDriverCommandLineOptions.Get().SkipInference)
+            string extension = null;
+            if (WhoopDriverCommandLineOptions.Get().SkipInference)
             {
-              extension += "_and_crunched";
+              extension = "_instrumented";
+            }
+            else
+            {
+              extension = "_summarised";
             }
 
             if (pair.Item1.Name.Equals(pair.Item2.Name))

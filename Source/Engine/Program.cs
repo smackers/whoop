@@ -128,11 +128,8 @@ namespace Whoop
           timer.Start();
         }
 
-        foreach (var pair in DeviceDriver.EntryPointPairs)
-        {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
-          new PairWiseCheckingInstrumentationEngine(ac, pair.Item1, pair.Item2).Run();
-        }
+        AnalysisContext analysisContext = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+        new PairWiseCheckingInstrumentationEngine(analysisContext).Run();
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {

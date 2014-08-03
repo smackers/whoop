@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Whoop.Instrumentation
+namespace Whoop.Summarisation
 {
   public interface ILocksetSummaryGeneration
   {

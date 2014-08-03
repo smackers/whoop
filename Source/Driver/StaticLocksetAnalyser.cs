@@ -51,9 +51,8 @@ namespace Whoop
         this.AC.Program.UnrollLoops(WhoopDriverCommandLineOptions.Get().LoopUnrollCount,
           WhoopDriverCommandLineOptions.Get().SoundLoopUnrolling);
 
-      var decls = this.AC.Program.TopLevelDeclarations.ToArray();
       string checkerName = "check$" + this.EP1.Name + "$" + this.EP2.Name;
-      Implementation checker = decls.OfType<Implementation>().ToList().
+      Implementation checker = this.AC.TopLevelDeclarations.OfType<Implementation>().ToList().
         Find(val => val.Name.Equals(checkerName));
       Contract.Assert(checker != null);
       Console.WriteLine("Analyse: " + checker.Name);

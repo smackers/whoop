@@ -27,6 +27,8 @@ namespace Whoop
     public Program Program;
     public ResolutionContext ResContext;
 
+    public List<Declaration> TopLevelDeclarations;
+
     internal List<InstrumentationRegion> InstrumentationRegions;
     internal List<Lock> Locks;
     internal List<Lockset> CurrentLocksets;
@@ -49,6 +51,8 @@ namespace Whoop
       this.MemoryLocksets = new List<Lockset>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
+
+      this.ResetToProgramTopLevelDeclarations();
     }
 
     public void EliminateDeadVariables()
@@ -63,50 +67,50 @@ namespace Whoop
 
     public List<Implementation> GetCheckerImplementations()
     {
-      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
+      return this.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "checker"));
     }
 
     public List<Implementation> GetEntryPointImplementations()
     {
-      return this.Program.TopLevelDeclarations.OfType<Implementation>().ToList().
+      return this.TopLevelDeclarations.OfType<Implementation>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entrypoint"));
     }
 
     public List<Variable> GetLockVariables()
     {
-      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lock"));
     }
 
     public List<Variable> GetCurrentLocksetVariables()
     {
-      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "current_lockset"));
     }
 
     public List<Variable> GetMemoryLocksetVariables()
     {
-      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lockset"));
     }
 
     public List<Variable> GetAccessCheckingVariables()
     {
-      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking"));
     }
 
     public List<Variable> GetAccessWatchdogConstants()
     {
-      return this.Program.TopLevelDeclarations.OfType<Variable>().ToList().
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "watchdog"));
     }
 
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
-      Implementation impl = (this.Program.TopLevelDeclarations.Find(val => (val is Implementation) &&
+      Implementation impl = (this.TopLevelDeclarations.Find(val => (val is Implementation) &&
         (val as Implementation).Name.Equals(name)) as Implementation);
       return impl;
     }
@@ -114,7 +118,7 @@ namespace Whoop
     public Constant GetConstant(string name)
     {
       Contract.Requires(name != null);
-      Constant cons = (this.Program.TopLevelDeclarations.Find(val => (val is Constant) &&
+      Constant cons = (this.TopLevelDeclarations.Find(val => (val is Constant) &&
         (val as Constant).Name.Equals(name)) as Constant);
       return cons;
     }
@@ -146,7 +150,7 @@ namespace Whoop
     public bool IsCalledByAnyFunc(string name)
     {
       Contract.Requires(name != null);
-      foreach (var ep in this.Program.TopLevelDeclarations.OfType<Implementation>())
+      foreach (var ep in this.TopLevelDeclarations.OfType<Implementation>())
       {
         foreach (var block in ep.Blocks)
         {
@@ -185,6 +189,19 @@ namespace Whoop
     {
       Contract.Requires(impl != null);
       return SharedStateAnalyser.IsImplementationRacing(impl);
+    }
+
+    public void ResetAnalysisContext()
+    {
+      this.Locks.Clear();
+      this.CurrentLocksets.Clear();
+      this.MemoryLocksets.Clear();
+      this.TopLevelDeclarations = this.Program.TopLevelDeclarations.ToArray().ToList();
+    }
+
+    public void ResetToProgramTopLevelDeclarations()
+    {
+      this.TopLevelDeclarations = this.Program.TopLevelDeclarations.ToArray().ToList();
     }
 
     #region internal helper functions

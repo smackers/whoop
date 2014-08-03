@@ -21,25 +21,27 @@ using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
 
-namespace Whoop.Instrumentation
+namespace Whoop.Summarisation
 {
-  internal class LocksetSummaryGeneration : ILocksetSummaryGeneration
+  internal class AccessCheckingSummaryGeneration : IAccessCheckingSummaryGeneration
   {
     private AnalysisContext AC;
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
-    private Dictionary<Variable, Constant> ExistentialBooleansDict;
+    private Dictionary<Variable, Constant> TrueExistentialBooleansDict;
+    private Dictionary<Variable, Constant> FalseExistentialBooleansDict;
     private HashSet<Constant> ExistentialBooleans;
     private int Counter;
 
-    public LocksetSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    public AccessCheckingSummaryGeneration(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
 
-      this.ExistentialBooleansDict = new Dictionary<Variable, Constant>();
+      this.TrueExistentialBooleansDict = new Dictionary<Variable, Constant>();
+      this.FalseExistentialBooleansDict = new Dictionary<Variable, Constant>();
       this.ExistentialBooleans = new HashSet<Constant>();
       this.Counter = 0;
     }
@@ -56,18 +58,17 @@ namespace Whoop.Instrumentation
       {
         if (!this.EP.Name.Equals(region.Implementation().Name))
           continue;
-        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
-        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false, true);
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), true);
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false);
       }
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
         if (this.EP.Name.Equals(region.Implementation().Name))
           continue;
-//        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetCurrentLocksetVariables(), true);
-        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
-//        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetCurrentLocksetVariables(), true);
-        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetMemoryLocksetVariables(), true, true);
+        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), true);
+        this.InstrumentRequiresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false);
+        this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), true, true);
         this.InstrumentEnsuresLocksetCandidates(region, this.AC.GetAccessCheckingVariables(), false, true);
       }
 
@@ -76,7 +77,7 @@ namespace Whoop.Instrumentation
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
-        Console.WriteLine(" |  |------ [LocksetSummaryGeneration] {0}", this.Timer.Result());
+        Console.WriteLine(" |  |------ [AccessCheckingSummaryGeneration] {0}", this.Timer.Result());
       }
     }
 
@@ -87,25 +88,24 @@ namespace Whoop.Instrumentation
     {
       foreach (var ls in locksets)
       {
+        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+
         Constant cons = null;
-        if (this.ExistentialBooleansDict.ContainsKey(ls))
+        if (capture && dict.ContainsKey(ls))
         {
-          cons = this.ExistentialBooleansDict[ls];
+          cons = dict[ls];
         }
         else
         {
-          cons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
-            this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
-          this.ExistentialBooleans.Add(cons);
-          this.Counter++;
+          cons = this.CreateConstant();
         }
 
         Expr expr = this.CreateImplExpr(cons, ls, value);
         region.Procedure().Requires.Add(new Requires(false, expr));
 
-        if (capture && !this.ExistentialBooleansDict.ContainsKey(ls))
+        if (capture && !dict.ContainsKey(ls))
         {
-          this.ExistentialBooleansDict.Add(ls, cons);
+          dict.Add(ls, cons);
         }
       }
     }
@@ -115,25 +115,24 @@ namespace Whoop.Instrumentation
     {
       foreach (var ls in locksets)
       {
+        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+
         Constant cons = null;
-        if (this.ExistentialBooleansDict.ContainsKey(ls))
+        if (capture && dict.ContainsKey(ls))
         {
-          cons = this.ExistentialBooleansDict[ls];
+          cons = dict[ls];
         }
         else
         {
-          cons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b" +
-                        this.Counter + "$" + this.EP.Name, Microsoft.Boogie.Type.Bool), false);
-          this.ExistentialBooleans.Add(cons);
-          this.Counter++;
+          cons = this.CreateConstant();
         }
 
         Expr expr = this.CreateImplExpr(cons, ls, value);
         region.Procedure().Ensures.Add(new Ensures(false, expr));
 
-        if (capture && !this.ExistentialBooleansDict.ContainsKey(ls))
+        if (capture && !this.TrueExistentialBooleansDict.ContainsKey(ls))
         {
-          this.ExistentialBooleansDict.Add(ls, cons);
+          this.TrueExistentialBooleansDict.Add(ls, cons);
         }
       }
     }
@@ -143,13 +142,38 @@ namespace Whoop.Instrumentation
       foreach (var b in this.ExistentialBooleans)
       {
         b.Attributes = new QKeyValue(Token.NoToken, "existential", new List<object>() { Expr.True }, null);
-        this.AC.Program.TopLevelDeclarations.Add(b);
+        this.AC.TopLevelDeclarations.Add(b);
       }
     }
 
     #endregion
 
     #region helper functions
+
+    private Dictionary<Variable, Constant> GetExistentialDictionary(bool value)
+    {
+      Dictionary<Variable, Constant> dict = null;
+
+      if (value)
+      {
+        dict = this.TrueExistentialBooleansDict;
+      }
+      else
+      {
+        dict = this.FalseExistentialBooleansDict;
+      }
+
+      return dict;
+    }
+
+    private Constant CreateConstant()
+    {
+      Constant cons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "_b$ac$" +
+        this.EP.Name + "$" + this.Counter, Microsoft.Boogie.Type.Bool), false);
+      this.ExistentialBooleans.Add(cons);
+      this.Counter++;
+      return cons;
+    }
 
     private Expr CreateImplExpr(Constant cons, Variable v, bool value)
     {

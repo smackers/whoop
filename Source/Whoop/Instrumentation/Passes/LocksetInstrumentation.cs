@@ -82,7 +82,7 @@ namespace Whoop.Instrumentation
         proc.Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
-      this.AC.Program.TopLevelDeclarations.Add(proc);
+      this.AC.TopLevelDeclarations.Add(proc);
       this.AC.ResContext.AddProcedure(proc);
 
       Block b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
@@ -110,7 +110,7 @@ namespace Whoop.Instrumentation
       impl.Proc = proc;
       impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      this.AC.Program.TopLevelDeclarations.Add(impl);
+      this.AC.TopLevelDeclarations.Add(impl);
     }
 
     #endregion
@@ -150,6 +150,9 @@ namespace Whoop.Instrumentation
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
+      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
+        return;
+
       foreach (var ls in this.AC.CurrentLocksets)
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
@@ -157,9 +160,6 @@ namespace Whoop.Instrumentation
         Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Ensures.Add(ensure);
       }
-
-      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
-        return;
 
       foreach (var ls in this.AC.MemoryLocksets)
       {

@@ -54,7 +54,7 @@ namespace Whoop
       }
 
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.Program, WhoopEngineCommandLineOptions.Get().Files[
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
         WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name, "wbpl");
     }
   }

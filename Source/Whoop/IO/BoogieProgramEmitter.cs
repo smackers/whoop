@@ -22,7 +22,7 @@ namespace Whoop.IO
   /// </summary>
   public static class BoogieProgramEmitter
   {
-    public static void Emit(Program program, string file, string extension = "bpl")
+    public static void Emit(List<Declaration> declarations, string file, string extension = "bpl")
     {
       string directoryContainingFile = Path.GetDirectoryName(file);
       if (string.IsNullOrEmpty(directoryContainingFile))
@@ -33,11 +33,11 @@ namespace Whoop.IO
 
       using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension, true))
       {
-        program.Emit(writer);
+        declarations.Emit(writer);
       }
     }
 
-    public static void Emit(Program program, string file, string suffix, string extension = "bpl")
+    public static void Emit(List<Declaration> declarations, string file, string suffix, string extension = "bpl")
     {
       string directoryContainingFile = Path.GetDirectoryName(file);
       if (string.IsNullOrEmpty(directoryContainingFile))
@@ -48,7 +48,7 @@ namespace Whoop.IO
 
       using(TokenTextWriter writer = new TokenTextWriter(fileName + "." + extension, true))
       {
-        program.Emit(writer);
+        declarations.Emit(writer);
       }
     }
   }
