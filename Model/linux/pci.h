@@ -32,14 +32,16 @@ struct pci_dev {
   unsigned int devfn;
   unsigned short vendor;
   unsigned short device;
+	unsigned short  subsystem_vendor;
+	unsigned short  subsystem_device;
 
   u64 dma_mask;
 
   struct device dev;
-  
+
   unsigned int irq;
   struct resource resource[DEVICE_COUNT_RESOURCE];
-	
+
 	unsigned int transparent:1;
 	unsigned int multifunction:1;
 	unsigned int is_added:1;

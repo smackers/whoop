@@ -88,6 +88,7 @@
     <Compile Include="Summarisation\Factory.cs" />
     <Compile Include="Summarisation\Interfaces\IAccessCheckingSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Passes\SummaryGeneration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

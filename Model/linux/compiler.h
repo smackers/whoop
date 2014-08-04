@@ -12,8 +12,8 @@
 #define __must_check
 #endif
 
-#define likely(x)	x
-#define unlikely(x)	x
+#define likely(x)	true
+#define unlikely(x)	false
 
 #define uninitialized_var(x) x
 

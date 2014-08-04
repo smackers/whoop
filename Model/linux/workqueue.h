@@ -21,15 +21,9 @@ struct work_struct {
 		(_work)->data = _data; \
 	} while (0)
 
-#define INIT_WORK(_work, _func, _data) \
-	do { \
-		PREPARE_WORK((_work), (_func), (_data)); \
-	} while (0)
+#define INIT_WORK(_work, _func, _data) true;
 
-#define INIT_WORK(_work, _func)						\
-	do {								\
-		PREPARE_WORK((_work), (_func), 0);			\
-	} while (0)
+#define INIT_WORK(_work, _func) true;
 
 bool schedule_work(struct work_struct *work);
 void flush_scheduled_work(void);

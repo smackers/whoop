@@ -77,7 +77,8 @@ namespace Whoop.Analysis
           continue;
         if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
           continue;
-        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio"))
+        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
+            impl.Name.Contains("$memset"))
           continue;
         toRemove.Add(impl);
       }
@@ -215,6 +216,21 @@ namespace Whoop.Analysis
       ac.TopLevelDeclarations.Remove(ac.GetConstant(DeviceDriver.InitEntryPoint));
       ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint).Proc);
       ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint));
+    }
+
+    public static void RemoveModSetFromSpecialFunctions(AnalysisContext ac)
+    {
+      foreach (var proc in ac.TopLevelDeclarations.OfType<Procedure>())
+      {
+        if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
+            proc.Name.Contains("$memset") ||
+            proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
+            proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
+            proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
+            proc.Name.Equals("dma_map_single")))
+          continue;
+        proc.Modifies.Clear();
+      }
     }
 
 //    public static void RemoveEmptyBlocks(AnalysisContext ac)

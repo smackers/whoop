@@ -65,6 +65,7 @@ namespace Whoop
       }
 
       ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
+      ModelCleaner.RemoveModSetFromSpecialFunctions(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {

@@ -5,6 +5,13 @@
 #include <linux/device.h>
 #include <linux/err.h>
 
+enum dma_data_direction {
+	DMA_BIDIRECTIONAL = 0,
+	DMA_TO_DEVICE = 1,
+	DMA_FROM_DEVICE = 2,
+	DMA_NONE = 3,
+ };
+
 struct device x86_dma_fallback_dev;
 
 struct dma_map_ops {
@@ -53,32 +60,21 @@ struct dma_map_ops {
 
 #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
-#define dma_alloc_coherent(d,s,h,f)	dma_alloc_attrs(d,s,h,f,NULL)
+void* dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, gfp_t gfp) { }
 
-static inline void* dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+void dma_free_coherent(struct device *dev, size_t size, void *vaddr, dma_addr_t bus) { }
+
+void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle, size_t size, enum dma_data_direction direction) { }
+
+void dma_sync_single_for_device(struct device *dev, dma_addr_t addr, size_t size, enum dma_data_direction dir) { }
+
+dma_addr_t dma_map_single(struct device *dev, void *ptr, size_t size, enum dma_data_direction direction) { }
+
+void dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size, enum dma_data_direction direction) { }
+
+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
 {
-	struct dma_map_ops *ops = get_dma_ops(dev);
-	void *memory;
-
-	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM | __GFP_DMA32);
-
-	if (dma_alloc_from_coherent(dev, size, dma_handle, &memory))
-		return memory;
-
-	if (!dev)
-		dev = &x86_dma_fallback_dev;
-
-	if (!is_device_dma_capable(dev))
-		return NULL;
-
-	if (!ops->alloc)
-		return NULL;
-
-	memory = ops->alloc(dev, size, dma_handle,
-			    dma_alloc_coherent_gfp_flags(dev, gfp), attrs);
-	debug_dma_alloc_coherent(dev, size, *dma_handle, memory);
-
-	return memory;
+	return 1;
 }
 
 #endif /* _LINUX_DMA_MAPPING_H */

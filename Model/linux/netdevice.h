@@ -108,7 +108,7 @@ struct net_device {
 	struct device dev;
 };
 
-#define SET_ETHTOOL_OPS(netdev,ops) ((netdev)->ethtool_ops = (ops))
+#define SET_ETHTOOL_OPS(netdev,ops) true;
 
 struct net_device_ops {
 	int (*ndo_init)(struct net_device *dev);

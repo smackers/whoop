@@ -199,9 +199,12 @@ namespace Whoop.Refactoring
 
     private bool ShouldAccessFunction(string funcName)
     {
-      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio"))
-        return false;
-      if (funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock"))
+      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
+          funcName.Contains("$memset") ||
+          funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
+          funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
+          funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
+          funcName.Equals("dma_map_single"))
         return false;
       return true;
     }

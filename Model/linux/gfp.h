@@ -57,4 +57,6 @@
 
 #define GFP_KERNEL (__GFP_WAIT | __GFP_IO | __GFP_FS)
 
+#define GFP_ATOMIC (__GFP_HIGH)
+
 #endif /* __LINUX_GFP_H */

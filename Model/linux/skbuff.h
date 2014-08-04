@@ -11,6 +11,8 @@
 
 #define MAX_SKB_FRAGS 16UL
 
+#define NET_IP_ALIGN 0
+
 typedef struct skb_frag_struct skb_frag_t;
 
 struct skb_frag_struct {
@@ -54,22 +56,22 @@ struct skb_shared_info {
 struct sk_buff {
 	struct sk_buff *next;
 	struct sk_buff *prev;
-	
+
 	struct net_device	*dev;
-	
+
 	unsigned int len, data_len;
-	
+
 	__u8 local_df:1, cloned:1, ip_summed:2, nohdr:1, nfctinfo:3;
-	
+
 	__be16 protocol;
-	
+
 	__u16			inner_transport_header;
 	__u16			inner_network_header;
 	__u16			inner_mac_header;
 	__u16			transport_header;
 	__u16			network_header;
 	__u16			mac_header;
-	
+
 	sk_buff_data_t tail;
 	sk_buff_data_t end;
 	unsigned char *head, *data;
@@ -105,6 +107,12 @@ static inline void *skb_frag_address(const skb_frag_t *frag)
 static inline unsigned char *skb_network_header(const struct sk_buff *skb)
 {
 	return skb->head + skb->network_header;
+}
+
+static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev, unsigned int length)
+{
+	struct sk_buff *skb = (struct sk_buff*) malloc(length);
+	return skb;
 }
 
 void skb_tx_timestamp(struct sk_buff *skb);
