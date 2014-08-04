@@ -316,6 +316,7 @@ namespace Whoop.Analysis
     private static bool ShouldSkipFromAnalysis(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$and" || expr.Fun.FunctionName == "$or" ||
+          expr.Fun.FunctionName == "$lshr" ||
           expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$trunc" ||
           expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
         return true;
