@@ -96,14 +96,11 @@ namespace Whoop.Instrumentation
 
 //            Variable ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
 //              this.AC.MemoryModelType));
-            Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
-              val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
 //            Variable watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
-//              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(ls.TargetName)));
+//              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
 
             IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
 //            IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-            IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
 //            IdentifierExpr watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
 
 //            block.Cmds.Add(new AssignCmd(Token.NoToken,
@@ -124,33 +121,40 @@ namespace Whoop.Instrumentation
             }));
 
             proc.Modifies.Add(lsExpr);
-
-            if (access == AccessType.WRITE)
-            {
-//              block.Cmds.Add(new AssignCmd(Token.NoToken,
-//                new List<AssignLhs>() {
-//                  new SimpleAssignLhs(Token.NoToken, acsExpr)
-//                }, new List<Expr> { new NAryExpr(Token.NoToken,
-//                  new IfThenElse(Token.NoToken),
-//                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
-//                    Expr.True, acsExpr
-//                  }))
-//              }));
-
-              block.Cmds.Add(new AssignCmd(Token.NoToken,
-                new List<AssignLhs>() {
-                  new SimpleAssignLhs(Token.NoToken, acsExpr)
-                }, new List<Expr> {
-                Expr.True
-              }));
-
-              if (!proc.Modifies.Any(mod => mod.Name.Equals(acsExpr.Name)))
-              {
-                proc.Modifies.Add(acsExpr);
-              }
-            }
-
             break;
+          }
+        }
+
+        if (access == AccessType.WRITE)
+        {
+          foreach (var acv in this.AC.GetAccessCheckingVariables())
+          {
+            if (!acv.Name.Split('_')[1].Equals(mr.Name))
+              continue;
+
+            Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
+              val.Name.Contains(this.AC.GetAccessVariableName(this.EP, mr.Name)));
+
+            IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
+
+            //              block.Cmds.Add(new AssignCmd(Token.NoToken,
+            //                new List<AssignLhs>() {
+            //                  new SimpleAssignLhs(Token.NoToken, acsExpr)
+            //                }, new List<Expr> { new NAryExpr(Token.NoToken,
+            //                  new IfThenElse(Token.NoToken),
+            //                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
+            //                    Expr.True, acsExpr
+            //                  }))
+            //              }));
+
+            block.Cmds.Add(new AssignCmd(Token.NoToken,
+              new List<AssignLhs>() {
+              new SimpleAssignLhs(Token.NoToken, acsExpr)
+            }, new List<Expr> {
+              Expr.True
+            }));
+
+            proc.Modifies.Add(acsExpr);
           }
         }
 
@@ -207,12 +211,14 @@ namespace Whoop.Instrumentation
     {
       List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
 
-      foreach (var ls in this.AC.MemoryLocksets)
+      foreach (var acv in this.AC.GetAccessCheckingVariables())
       {
-        if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
+        string targetName = acv.Name.Split('_')[1];
+        if (!vars.Any(val => val.Name.Equals(targetName)))
           continue;
+
         Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
-          val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
+          val.Name.Contains(this.AC.GetAccessVariableName(this.EP, targetName)));
 
         if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acs.Name)))
         {

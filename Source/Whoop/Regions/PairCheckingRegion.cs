@@ -445,6 +445,11 @@ namespace Whoop.Regions
         }
       }
 
+      if (this.AC.Locks.Count == 0)
+      {
+        checkExpr = Expr.False;
+      }
+
       Expr acsImpExpr = Expr.Imp(acsOrExpr, checkExpr);
 
       AssertCmd assert = new AssertCmd(Token.NoToken, acsImpExpr);
