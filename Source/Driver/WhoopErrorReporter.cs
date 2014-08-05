@@ -34,13 +34,17 @@ namespace Whoop
       if (error is AssertCounterexample)
       {
         AssertCounterexample cex = error as AssertCounterexample;
-        //        Console.WriteLine("Error: " + cex.FailingAssert);
-        //        Console.WriteLine("Line: " + cex.FailingAssert.Line);
-        //        Console.WriteLine();
+
         if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "race_checking"))
         {
-//          Console.WriteLine("CounterExample: Potential data race");
-          errors = this.ReportRace(cex);
+          if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
+          {
+            this.PopulateModelWithStatesIfNecessary(cex);
+            Write(cex.Model);
+          }
+          Console.WriteLine("CounterExample: Potential data race");
+          errors++;
+//          errors = this.ReportRace(cex);
         }
         else if (QKeyValue.FindBoolAttribute(cex.FailingAssert.Attributes, "deadlock_checking"))
         {

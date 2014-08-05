@@ -52,7 +52,7 @@ namespace Whoop.Instrumentation
       this.AddCurrentLocksets();
       this.AddMemoryLocksets();
       this.AddAccessCheckingVariables();
-      this.AddAccessWatchdogConstants();
+//      this.AddAccessWatchdogConstants();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -108,8 +108,8 @@ namespace Whoop.Instrumentation
       for (int i = 0; i < this.MemoryRegions.Count; i++)
       {
         TypedIdent ti = new TypedIdent(Token.NoToken,
-          this.AC.GetAccessWatchdogConstantName(this.MemoryRegions[i].Name)
-          + "_$" + this.EP.Name, this.AC.MemoryModelType);
+                          this.AC.GetAccessWatchdogConstantName(this.MemoryRegions[i].Name),
+                          this.AC.MemoryModelType);
         Variable watchdog = new Constant(Token.NoToken, ti, false);
         watchdog.AddAttribute("watchdog", new object[] { });
         this.AC.TopLevelDeclarations.Add(watchdog);

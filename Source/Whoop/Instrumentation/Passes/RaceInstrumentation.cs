@@ -98,20 +98,20 @@ namespace Whoop.Instrumentation
 //              this.AC.MemoryModelType));
             Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
               val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
-//            Variable offset = this.AC.GetAccessWatchdogConstants().Find(val =>
+//            Variable watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
 //              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(ls.TargetName)));
 
             IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
 //            IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
             IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
-//            IdentifierExpr offsetExpr = new IdentifierExpr(offset.tok, offset);
+//            IdentifierExpr watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
 
 //            block.Cmds.Add(new AssignCmd(Token.NoToken,
 //              new List<AssignLhs>() {
 //                new SimpleAssignLhs(Token.NoToken, lsExpr)
 //              }, new List<Expr> { new NAryExpr(Token.NoToken,
 //                new IfThenElse(Token.NoToken),
-//                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+//                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
 //                  Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr), lsExpr
 //                }))
 //            }));
@@ -132,7 +132,7 @@ namespace Whoop.Instrumentation
 //                  new SimpleAssignLhs(Token.NoToken, acsExpr)
 //                }, new List<Expr> { new NAryExpr(Token.NoToken,
 //                  new IfThenElse(Token.NoToken),
-//                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, offsetExpr),
+//                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
 //                    Expr.True, acsExpr
 //                  }))
 //              }));
@@ -144,7 +144,10 @@ namespace Whoop.Instrumentation
                 Expr.True
               }));
 
-              proc.Modifies.Add(acsExpr);
+              if (!proc.Modifies.Any(mod => mod.Name.Equals(acsExpr.Name)))
+              {
+                proc.Modifies.Add(acsExpr);
+              }
             }
 
             break;
@@ -210,7 +213,11 @@ namespace Whoop.Instrumentation
           continue;
         Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
           val.Name.Contains(this.AC.GetAccessVariableName(this.EP, ls.TargetName)));
-        region.Procedure().Modifies.Add(new IdentifierExpr(acs.tok, acs));
+
+        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acs.Name)))
+        {
+          region.Procedure().Modifies.Add(new IdentifierExpr(acs.tok, acs));
+        }
       }
     }
 

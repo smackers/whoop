@@ -4,6 +4,7 @@
 #include <linux/pci.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
+#include <whoop.h>
 
 struct shared {
 	struct pci_dev *pci_dev;

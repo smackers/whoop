@@ -447,7 +447,13 @@ namespace Whoop.Regions
 
       Expr acsImpExpr = Expr.Imp(acsOrExpr, checkExpr);
 
-      return new AssertCmd(Token.NoToken, acsImpExpr);
+      AssertCmd assert = new AssertCmd(Token.NoToken, acsImpExpr);
+      assert.Attributes = new QKeyValue(Token.NoToken, "resource",
+        new List<object>() { mr.Name }, assert.Attributes);
+      assert.Attributes = new QKeyValue(Token.NoToken, "race_checking",
+        new List<object>(), assert.Attributes);
+
+      return assert;
     }
 
     private AssumeCmd CreateCaptureStateAssume(Variable mr)
