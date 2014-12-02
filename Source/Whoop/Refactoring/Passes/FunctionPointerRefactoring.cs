@@ -66,62 +66,8 @@ namespace Whoop.Refactoring
 
       foreach (var block in impl.Blocks)
       {
-        if (block.Cmds.Count == 0 || !(block.TransferCmd is GotoCmd))
-          continue;
-
-        var cmds = block.Cmds.Where(v => !((v is AssumeCmd) && (v as AssumeCmd).Expr.Equals(Expr.True))).ToList();
-        if (cmds.Count == 0 || !(cmds[cmds.Count - 1] is AssignCmd))
-          continue;
-
-        var transferCmd = block.TransferCmd as GotoCmd;
-        var assign = cmds[cmds.Count - 1] as AssignCmd;
-        var lhs = assign.Lhss[0].DeepAssignedIdentifier;
-
-        bool canReplace = true;
-        foreach (var target in transferCmd.labelTargets)
-        {
-          var targetCmds = target.Cmds.Where(v => !((v is AssumeCmd) && (v as AssumeCmd).Expr.Equals(Expr.True))).ToList();
-          if (target.Cmds.Count < 2 || !(target.Cmds[0] is AssumeCmd) || !(target.Cmds[1] is CallCmd))
-          {
-            canReplace = false;
-            break;
-          }
-
-          var assume = target.Cmds[0] as AssumeCmd;
-          if (!(assume.Expr is NAryExpr))
-          {
-            canReplace = false;
-            break;
-          }
-
-          var assumeExpr = assume.Expr as NAryExpr;
-          if (assumeExpr.Args.Count != 2)
-          {
-            canReplace = false;
-            break;
-          }
-
-          if (!(assumeExpr.Args[0] is IdentifierExpr && (assumeExpr.Args[0] as IdentifierExpr).Name.Equals(lhs.Name)))
-          {
-            canReplace = false;
-            break;
-          }
-
-          Console.WriteLine(assumeExpr.Args[1] is IdentifierExpr);
-        }
-
-        if (canReplace)
-        {
-          HavocCmd havoc = new HavocCmd(Token.NoToken, new List<IdentifierExpr> { lhs });
-          for (int idx = 0; idx < block.Cmds.Count; idx++)
-          {
-            if (block.Cmds[idx].Equals(assign))
-            {
-              block.Cmds[idx] = havoc;
-              break;
-            }
-          }
-        }
+        this.RefactorFunctionPointers(block);
+        this.RefactorFunctionPointersAcrossCalls(block);
       }
 
       foreach (var block in impl.Blocks)
@@ -134,6 +80,143 @@ namespace Whoop.Refactoring
           }
 
           this.RefactorFunctionPointersInCall(call);
+        }
+      }
+    }
+
+    private void RefactorFunctionPointers(Block block)
+    {
+      if (block.Cmds.Count == 0 || !(block.TransferCmd is GotoCmd))
+        return;
+
+      var cmds = block.Cmds.Where(v => !((v is AssumeCmd) && (v as AssumeCmd).Expr.Equals(Expr.True))).ToList();
+      if (cmds.Count == 0 || !(cmds[cmds.Count - 1] is AssignCmd))
+        return;
+
+      var transferCmd = block.TransferCmd as GotoCmd;
+      var assign = cmds[cmds.Count - 1] as AssignCmd;
+      var lhs = assign.Lhss[0].DeepAssignedIdentifier;
+
+      bool canReplace = false;
+      foreach (var target in transferCmd.labelTargets)
+      {
+        if (target.Cmds.Count != 2 || !(target.Cmds[0] is AssumeCmd) || !(target.Cmds[1] is CallCmd))
+          continue;
+
+        var assume = target.Cmds[0] as AssumeCmd;
+        if (!(assume.Expr is NAryExpr))
+          continue;
+
+        var assumeExpr = assume.Expr as NAryExpr;
+        if (assumeExpr.Args.Count != 2)
+          continue;
+
+        if (!(assumeExpr.Args[0] is IdentifierExpr && (assumeExpr.Args[0] as IdentifierExpr).
+          Name.Equals(lhs.Name)))
+          continue;
+
+        var functionCall = target.Cmds[1] as CallCmd;
+        if (!(assumeExpr.Args[1] is IdentifierExpr && (assumeExpr.Args[1] as IdentifierExpr).
+          Name.Equals(functionCall.callee)))
+          continue;
+
+        canReplace = true;
+        break;
+      }
+
+      if (canReplace)
+      {
+        HavocCmd havoc = new HavocCmd(Token.NoToken, new List<IdentifierExpr> { lhs });
+        for (int bIdx = 0; bIdx < block.Cmds.Count; bIdx++)
+        {
+          if (block.Cmds[bIdx].Equals(assign))
+          {
+            block.Cmds[bIdx] = havoc;
+            break;
+          }
+        }
+      }
+    }
+
+    private void RefactorFunctionPointersAcrossCalls(Block block)
+    {
+      if (block.Cmds.Count == 0)
+        return;
+
+      var cmds = block.Cmds.Where(v => !((v is AssumeCmd) && (v as AssumeCmd).Expr.Equals(Expr.True))).ToList();
+      if (cmds.Count == 0)
+        return;
+
+      for (int idx = 0; idx < cmds.Count - 1; idx++)
+      {
+        if (!(cmds[idx] is AssignCmd && cmds[idx + 1] is CallCmd))
+          continue;
+
+        var assign = cmds[idx] as AssignCmd;
+        var call = cmds[idx + 1] as CallCmd;
+        var lhs = assign.Lhss[0].DeepAssignedIdentifier;
+
+        var inParam = call.Ins.FirstOrDefault(v => v is IdentifierExpr && (v as IdentifierExpr).Name.Equals(lhs.Name));
+        if (inParam == null)
+          continue;
+
+        int index = -1;
+        for (int i = 0; i < call.Ins.Count; i++)
+        {
+          if (call.Ins[i] is IdentifierExpr && (call.Ins[i] as IdentifierExpr).Name.Equals(lhs.Name))
+          {
+            index = i;
+            break;
+          }
+        }
+
+        if (index < 0)
+          continue;
+
+        var callImpl = this.AC.GetImplementation(call.callee);
+        if (callImpl == null)
+          continue;
+
+        var arg = callImpl.InParams[index];
+
+        bool canReplace = false;
+        foreach (var callBlock in callImpl.Blocks)
+        {
+          if (callBlock.Cmds.Count != 2 || !(callBlock.Cmds[0] is AssumeCmd) || !(callBlock.Cmds[1] is CallCmd))
+            continue;
+
+          var assume = callBlock.Cmds[0] as AssumeCmd;
+          if (!(assume.Expr is NAryExpr))
+            continue;
+
+          var assumeExpr = assume.Expr as NAryExpr;
+          if (assumeExpr.Args.Count != 2)
+            continue;
+
+          if (!(assumeExpr.Args[0] is IdentifierExpr && (assumeExpr.Args[0] as IdentifierExpr).
+            Name.Equals(arg.Name)))
+            continue;
+
+          var functionCall = callBlock.Cmds[1] as CallCmd;
+          if (!(assumeExpr.Args[1] is IdentifierExpr && (assumeExpr.Args[1] as IdentifierExpr).
+            Name.Equals(functionCall.callee)))
+            continue;
+
+          canReplace = true;
+          break;
+        }
+
+        if (canReplace)
+        {
+          HavocCmd havoc = new HavocCmd(Token.NoToken, new List<IdentifierExpr> { lhs });
+          for (int bIdx = 0; bIdx < block.Cmds.Count; bIdx++)
+          {
+            if (block.Cmds[bIdx].Equals(assign))
+            {
+              block.Cmds[bIdx] = havoc;
+              break;
+            }
+          }
         }
       }
     }

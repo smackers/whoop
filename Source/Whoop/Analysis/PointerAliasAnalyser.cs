@@ -84,7 +84,6 @@ namespace Whoop.Analysis
             return id;
           alreadyVisited.Add(new Tuple<string, Expr>(label, result));
 
-          Console.WriteLine("DoPointerArithmetic: " + label + " " + result);
 //          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
 //          {
 //            Console.WriteLine("DoPointerArithmetic");
