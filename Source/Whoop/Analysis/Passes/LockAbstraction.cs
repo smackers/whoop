@@ -69,7 +69,7 @@ namespace Whoop.Analysis
           if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
             continue;
 
-          Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(initFunc,
+          Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(initFunc, block.Label,
             ((block.Cmds[idx] as CallCmd).Ins[0]));
 
           Lock newLock = new Lock(new Constant(Token.NoToken,

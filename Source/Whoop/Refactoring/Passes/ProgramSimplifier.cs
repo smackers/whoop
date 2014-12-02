@@ -142,7 +142,7 @@ namespace Whoop.Refactoring
             AssignCmd assign = b.Cmds[ci] as AssignCmd;
 
             for (int ei = 0; ei < assign.Rhss.Count; ei++)
-              assign.Rhss[ei] = ReplaceExprInExpr(assign.Rhss[ei], remove, replace);
+              assign.Rhss[ei] = this.ReplaceExprInExpr(assign.Rhss[ei], remove, replace);
           }
           else if (b.Cmds[ci] is HavocCmd)
           {
@@ -157,23 +157,7 @@ namespace Whoop.Refactoring
           else if (b.Cmds[ci] is AssumeCmd)
           {
             AssumeCmd assume = b.Cmds[ci] as AssumeCmd;
-
-            if (assume.Expr is IdentifierExpr)
-            {
-              if ((assume.Expr as IdentifierExpr).Name.Equals(remove.Name))
-                assume.Expr = replace;
-            }
-            else if (assume.Expr is NAryExpr)
-            {
-              for (int ei = 0; ei < (assume.Expr as NAryExpr).Args.Count; ei++)
-              {
-                if ((assume.Expr as NAryExpr).Args[ei] is IdentifierExpr)
-                {
-                  if (((assume.Expr as NAryExpr).Args[ei] as IdentifierExpr).Name.Equals(remove.Name))
-                    (assume.Expr as NAryExpr).Args[ei] = replace;
-                }
-              }
-            }
+            this.ReplaceExprInExpr(assume.Expr, remove, replace);
           }
         }
       }

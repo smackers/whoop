@@ -229,7 +229,7 @@ namespace Whoop.Analysis
             proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
             proc.Name.Equals("dma_map_single")))
           continue;
-        proc.Modifies.Clear();
+        proc.Modifies.RemoveAll(val => !(val.Name.Contains("$exn") || val.Name.Contains("$exnv")));
       }
     }
 

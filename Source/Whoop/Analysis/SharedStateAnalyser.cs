@@ -167,7 +167,7 @@ namespace Whoop.Analysis
     {
       var impl = ac.GetImplementation(cmd.callee);
 
-      if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+      if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
       {
         SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
       }
@@ -177,7 +177,7 @@ namespace Whoop.Analysis
         if (!(expr is IdentifierExpr)) continue;
         impl = ac.GetImplementation((expr as IdentifierExpr).Name);
 
-        if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
         }
@@ -191,27 +191,11 @@ namespace Whoop.Analysis
         if (!(rhs is IdentifierExpr)) continue;
         var impl = ac.GetImplementation((rhs as IdentifierExpr).Name);
 
-        if (impl != null && SharedStateAnalyser.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           SharedStateAnalyser.AnalyseMemoryRegions(ac, ep, impl);
         }
       }
     }
-
-    #region helper functions
-
-    private static bool ShouldAccessFunction(string funcName)
-    {
-      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
-          funcName.Contains("$memset") ||
-          funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
-          funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
-          funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
-          funcName.Equals("dma_map_single"))
-        return false;
-      return true;
-    }
-
-    #endregion
   }
 }

@@ -121,7 +121,7 @@ namespace Whoop.Refactoring
     {
       var impl = this.AC.GetImplementation(cmd.callee);
 
-      if (impl != null && this.ShouldAccessFunction(impl.Name))
+      if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
       {
         this.FunctionsToRefactor.Add(impl);
         this.ParseAndRenameNestedFunctions(impl);
@@ -133,7 +133,7 @@ namespace Whoop.Refactoring
         if (!(expr is IdentifierExpr)) continue;
         impl = this.AC.GetImplementation((expr as IdentifierExpr).Name);
 
-        if (impl != null && this.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           this.FunctionsToRefactor.Add(impl);
           this.ParseAndRenameNestedFunctions(impl);
@@ -149,7 +149,7 @@ namespace Whoop.Refactoring
         if (!(rhs is IdentifierExpr)) continue;
         var impl = this.AC.GetImplementation((rhs as IdentifierExpr).Name);
 
-        if (impl != null && this.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           this.FunctionsToRefactor.Add(impl);
           this.ParseAndRenameNestedFunctions(impl);
@@ -167,7 +167,7 @@ namespace Whoop.Refactoring
           if (!(expr is IdentifierExpr)) continue;
           var impl = this.AC.GetImplementation((expr as IdentifierExpr).Name);
 
-          if (impl != null && this.ShouldAccessFunction(impl.Name))
+          if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
           {
             this.FunctionsToRefactor.Add(impl);
             this.ParseAndRenameNestedFunctions(impl);
@@ -228,18 +228,6 @@ namespace Whoop.Refactoring
     }
 
     #region helper functions
-
-    private bool ShouldAccessFunction(string funcName)
-    {
-      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
-          funcName.Contains("$memset") ||
-          funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
-          funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
-          funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
-          funcName.Equals("dma_map_single"))
-        return false;
-      return true;
-    }
 
     private void RefactorFunction(Implementation func)
     {

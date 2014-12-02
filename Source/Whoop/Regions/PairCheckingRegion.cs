@@ -269,6 +269,7 @@ namespace Whoop.Regions
       foreach (var ie in initProc.Modifies)
       {
         if (!ie.Name.Equals("$Alloc") && !ie.Name.Equals("$CurrAddr") &&
+          !ie.Name.Equals("$exn") && !ie.Name.Equals("$exnv") &&
           !varsEp1.Any(val => val.Name.Equals(ie.Name)) &&
           !varsEp2.Any(val => val.Name.Equals(ie.Name)))
           continue;

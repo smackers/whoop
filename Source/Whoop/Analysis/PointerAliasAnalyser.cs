@@ -37,8 +37,9 @@ namespace Whoop.Analysis
     /// </summary>
     /// <returns>The root pointer.</returns>
     /// <param name="impl">Implementation</param>
+    /// <param name="label">Root block label</param>
     /// <param name="id">Identifier expression</param>
-    public static Expr ComputeRootPointer(Implementation impl, Expr id)
+    public static Expr ComputeRootPointer(Implementation impl, string label, Expr id)
     {
       if (id is LiteralExpr)
       {
@@ -62,6 +63,8 @@ namespace Whoop.Analysis
       Expr resolution = result;
       int ixs = 0;
 
+      var alreadyVisited = new HashSet<Tuple<string, Expr>>();
+
       do
       {
         if (result is NAryExpr)
@@ -77,18 +80,24 @@ namespace Whoop.Analysis
             return id;
           }
 
-          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
-          {
-            Expr arithmetic = PointerAliasAnalyser.DoPointerArithmetic(impl, result);
+          if (alreadyVisited.Any(v => v.Item1.Equals(label) && v.Item2.Equals(result)))
+            return id;
+          alreadyVisited.Add(new Tuple<string, Expr>(label, result));
 
-            if (result.ToString().Equals(arithmetic.ToString()))
-            {
-              return arithmetic;
-            }
-
-            result = arithmetic;
-            continue;
-          }
+          Console.WriteLine("DoPointerArithmetic: " + label + " " + result);
+//          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
+//          {
+//            Console.WriteLine("DoPointerArithmetic");
+//            Expr arithmetic = PointerAliasAnalyser.DoPointerArithmetic(impl, result);
+//            Console.WriteLine(result + " " + arithmetic);
+//            if (result.ToString().Equals(arithmetic.ToString()))
+//            {
+//              return arithmetic;
+//            }
+//
+//            result = arithmetic;
+//            continue;
+//          }
 
           if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
           {
@@ -197,33 +206,34 @@ namespace Whoop.Analysis
       return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(l1 + l2)));
     }
 
-    private static Expr DoPointerArithmetic(Implementation impl, Expr expr)
+    private static Expr DoPointerArithmetic(Implementation impl, string label, Expr expr)
     {
       Expr result = null;
 
       if ((expr as NAryExpr).Fun.FunctionName == "$add" ||
           (expr as NAryExpr).Fun.FunctionName == "+")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Addition,
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Addition,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
       else if ((expr as NAryExpr).Fun.FunctionName == "$sub" ||
         (expr as NAryExpr).Fun.FunctionName == "-")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Subtraction,
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Subtraction,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
       else if ((expr as NAryExpr).Fun.FunctionName == "$mul" ||
         (expr as NAryExpr).Fun.FunctionName == "*")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, ArithmeticOperation.Multiplication,
+        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Multiplication,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
 
       return result;
     }
 
-    private static Expr DoPointerArithmetic(Implementation impl, ArithmeticOperation aop, Expr left, Expr right)
+    private static Expr DoPointerArithmetic(Implementation impl, string label,
+      ArithmeticOperation aop, Expr left, Expr right)
     {
       Expr result = null;
 
@@ -256,7 +266,7 @@ namespace Whoop.Analysis
         {
           if (PointerAliasAnalyser.IsArithmeticExpression(left as NAryExpr))
           {
-            left = PointerAliasAnalyser.DoPointerArithmetic(impl, left);
+            left = PointerAliasAnalyser.DoPointerArithmetic(impl, label, left);
           }
         }
         else if (!(left is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(left.ToString())))
@@ -268,7 +278,7 @@ namespace Whoop.Analysis
         {
           if (PointerAliasAnalyser.IsArithmeticExpression(right as NAryExpr))
           {
-            right = PointerAliasAnalyser.DoPointerArithmetic(impl, right);
+            right = PointerAliasAnalyser.DoPointerArithmetic(impl, label, right);
           }
         }
         else if (!(right is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(right.ToString())))
@@ -316,9 +326,12 @@ namespace Whoop.Analysis
     private static bool ShouldSkipFromAnalysis(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$and" || expr.Fun.FunctionName == "$or" ||
-          expr.Fun.FunctionName == "$lshr" ||
-          expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$trunc" ||
-          expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
+        expr.Fun.FunctionName == "$xor" ||
+        expr.Fun.FunctionName == "$lshr" ||
+        expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$p2i" ||
+        expr.Fun.FunctionName == "$trunc" ||
+        expr.Fun.FunctionName == "$ashr" || expr.Fun.FunctionName == "$urem" ||
+        expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
         return true;
       return false;
     }

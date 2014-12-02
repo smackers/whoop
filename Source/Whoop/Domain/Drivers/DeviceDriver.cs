@@ -154,6 +154,10 @@ namespace Whoop.Domain.Drivers
         DeviceDriver.HasKernelImposedDeviceLock(ep2))
         return false;
 
+      if (DeviceDriver.HasKernelImposedPowerLock(ep1) &&
+        DeviceDriver.HasKernelImposedPowerLock(ep2))
+        return false;
+
       if (DeviceDriver.HasKernelImposedRTNL(ep1) &&
         DeviceDriver.HasKernelImposedRTNL(ep2))
         return false;
@@ -175,7 +179,24 @@ namespace Whoop.Domain.Drivers
 
       // power management API
       if (ep.Equals("prepare") || ep.Equals("complete") ||
-        ep.Equals("resume") || ep.Equals("suspend"))
+        ep.Equals("resume") || ep.Equals("suspend") ||
+        ep.Equals("freeze") || ep.Equals("poweroff") ||
+        ep.Equals("restore") || ep.Equals("thaw"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the entry point has been serialised by the dev->power.lock lock.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    private static bool HasKernelImposedPowerLock(string ep)
+    {
+      // power management API
+      if (ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
+        ep.Equals("runtime_idle"))
         return true;
 
       return false;

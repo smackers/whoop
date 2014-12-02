@@ -69,7 +69,7 @@ namespace Whoop.Analysis
 
             Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
             HavocCmd havoc = new HavocCmd(Token.NoToken,
-                               new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
+              new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
             b.Cmds[k] = havoc;
           }
         }
@@ -104,7 +104,8 @@ namespace Whoop.Analysis
     {
       region.Procedure().Modifies.RemoveAll(val => !(val.Name.Equals("$Alloc") ||
         val.Name.Equals("$CurrAddr") || val.Name.Equals("CLS") ||
-        val.Name.Contains("LS_$") || val.Name.Contains("WRITTEN_$")));
+        val.Name.Contains("LS_$") || val.Name.Contains("WRITTEN_$") ||
+        val.Name.Contains("$exn") || val.Name.Contains("$exnv")));
     }
   }
 }

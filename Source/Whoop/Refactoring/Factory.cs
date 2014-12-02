@@ -30,5 +30,10 @@ namespace Whoop.Refactoring
     {
       return new LockRefactoring(ac, ep);
     }
+
+    public static IFunctionPointerRefactoring CreateFunctionPointerRefactoring(AnalysisContext ac, EntryPoint ep)
+    {
+      return new FunctionPointerRefactoring(ac, ep);
+    }
   }
 }

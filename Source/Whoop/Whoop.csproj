@@ -89,6 +89,9 @@
     <Compile Include="Summarisation\Interfaces\IAccessCheckingSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\SummaryGeneration.cs" />
+    <Compile Include="Refactoring\Interfaces\IFunctionPointerRefactoring.cs" />
+    <Compile Include="Refactoring\Passes\FunctionPointerRefactoring.cs" />
+    <Compile Include="Utilities\Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

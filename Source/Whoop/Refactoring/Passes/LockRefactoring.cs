@@ -29,14 +29,14 @@ namespace Whoop.Refactoring
     private Implementation EP;
     private ExecutionTimer Timer;
 
-    private HashSet<Implementation> AlreadyAnalyzedFunctions;
+    private HashSet<Implementation> AlreadyRefactoredFunctions;
 
     public LockRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = this.AC.GetImplementation(ep.Name);
-      this.AlreadyAnalyzedFunctions = new HashSet<Implementation>();
+      this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
     }
 
     /// <summary>
@@ -66,9 +66,9 @@ namespace Whoop.Refactoring
     /// <param name="ins">Optional list of expressions</param>
     private void AnalyseAndInstrumentLocks(Implementation impl, List<Expr> inPtrs = null)
     {
-      if (this.AlreadyAnalyzedFunctions.Contains(impl))
+      if (this.AlreadyRefactoredFunctions.Contains(impl))
         return;
-      this.AlreadyAnalyzedFunctions.Add(impl);
+      this.AlreadyRefactoredFunctions.Add(impl);
 
       foreach (var block in impl.Blocks)
       {
@@ -78,7 +78,7 @@ namespace Whoop.Refactoring
           {
             CallCmd call = cmd as CallCmd;
 
-            if (this.ShouldSkipFromAnalysis(call))
+            if (Utilities.ShouldSkipFromAnalysis(call))
             {
               continue;
             }
@@ -86,7 +86,7 @@ namespace Whoop.Refactoring
             if (call.callee.Contains("mutex_lock") ||
                 call.callee.Contains("mutex_unlock"))
             {
-              Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(impl, call.Ins[0]);
+              Expr lockExpr = PointerAliasAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
               if (inPtrs != null && (!(lockExpr is LiteralExpr) || (lockExpr is NAryExpr)))
               {
                 if (lockExpr is IdentifierExpr)
@@ -144,7 +144,7 @@ namespace Whoop.Refactoring
                 }
                 else
                 {
-                  Expr ptrExpr = PointerAliasAnalyser.ComputeRootPointer(impl, inParam);
+                  Expr ptrExpr = PointerAliasAnalyser.ComputeRootPointer(impl, block.Label, inParam);
                   computedRootPointers.Add(ptrExpr);
                 }
               }
@@ -164,7 +164,7 @@ namespace Whoop.Refactoring
     {
       var impl = this.AC.GetImplementation(cmd.callee);
 
-      if (impl != null && this.ShouldAccessFunction(impl.Name))
+      if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
       {
         this.AnalyseAndInstrumentLocks(impl, inPtrs);
       }
@@ -174,7 +174,7 @@ namespace Whoop.Refactoring
         if (!(expr is IdentifierExpr)) continue;
         impl = this.AC.GetImplementation((expr as IdentifierExpr).Name);
 
-        if (impl != null && this.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           this.AnalyseAndInstrumentLocks(impl);
         }
@@ -188,44 +188,11 @@ namespace Whoop.Refactoring
         if (!(rhs is IdentifierExpr)) continue;
         var impl = this.AC.GetImplementation((rhs as IdentifierExpr).Name);
 
-        if (impl != null && this.ShouldAccessFunction(impl.Name))
+        if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
         {
           this.AnalyseAndInstrumentLocks(impl);
         }
       }
     }
-
-    #region helper functions
-
-    private bool ShouldAccessFunction(string funcName)
-    {
-      if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
-          funcName.Contains("$memset") ||
-          funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
-          funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
-          funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
-          funcName.Equals("dma_map_single"))
-        return false;
-      return true;
-    }
-
-    /// <summary>
-    /// These functions should be skipped from lock alias analysis.
-    /// </summary>
-    /// <returns>Boolean value</returns>
-    /// <param name="call">CallCmd</param>
-    private bool ShouldSkipFromAnalysis(CallCmd call)
-    {
-      if (call.callee.Contains("$malloc") || call.callee.Contains("$alloca") ||
-          call.callee.Contains("strlcpy") ||
-          call.callee.Contains("readq") || call.callee.Contains("readb") ||
-          call.callee.Contains("readw") || call.callee.Contains("readl") ||
-          call.callee.Contains("writeq") || call.callee.Contains("writeb") ||
-          call.callee.Contains("writew") || call.callee.Contains("writel"))
-        return true;
-      return false;
-    }
-
-    #endregion
   }
 }
