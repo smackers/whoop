@@ -19,6 +19,8 @@ namespace Whoop
     public string OriginalFile = "";
     public string AnalyseOnly = "";
 
+    public int InliningBound = 0;
+
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
     public bool SkipInference = false;
@@ -54,6 +56,15 @@ namespace Whoop
         if (ps.ConfirmArgumentCount(1))
         {
           this.AnalyseOnly = ps.args[ps.i];
+        }
+        return true;
+      }
+
+      if (option == "inlineBound")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
+          this.InliningBound = Int32.Parse(ps.args[ps.i]);
         }
         return true;
       }

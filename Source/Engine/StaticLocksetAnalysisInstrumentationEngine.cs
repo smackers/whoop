@@ -58,14 +58,17 @@ namespace Whoop
       {
         ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
         ModelCleaner.RemoveGlobalLocksets(this.AC);
+        ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
       }
-      else
+      else if (!(WhoopEngineCommandLineOptions.Get().InliningBound > 0 &&
+        this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
+        WhoopEngineCommandLineOptions.Get().InliningBound))
       {
         Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
         Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
+        ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
       }
 
-      ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
       ModelCleaner.RemoveModSetFromSpecialFunctions(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)

@@ -87,7 +87,8 @@ namespace Whoop
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+          AnalysisContext ac = null;
+          new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
           new ParsingEngine(ac, ep).Run();
         }
 
@@ -108,8 +109,9 @@ namespace Whoop
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-            "wbpl").ParseNew(new List<string> { ep.Name });
+          AnalysisContext ac = null;
+          new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+            ref ac, new List<string> { ep.Name });
           new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
         }
 
@@ -128,7 +130,8 @@ namespace Whoop
           timer.Start();
         }
 
-        AnalysisContext analysisContext = new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").ParseNew();
+        AnalysisContext analysisContext = null;
+        new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref analysisContext);
         new PairWiseCheckingInstrumentationEngine(analysisContext).Run();
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)

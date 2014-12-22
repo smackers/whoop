@@ -147,6 +147,7 @@ class DefaultCmdLineOptions(object):
     self.onlyDeadlocks = False
     self.noInfer = False
     self.inline = False
+    self.inlineBound = 0
     self.verbose = False
     self.silent = False
     self.printPairs = False
@@ -203,6 +204,8 @@ def showHelpAndExit():
   ADVANCED OPTIONS:
     --print-pairs           Print information about the entry point pairs.
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
+    --inline-bound=X        Inline all device driver non-entry point functions during the Whoop instrumentation,
+                            for entry points with less or equal than X nested function calls.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
@@ -381,6 +384,13 @@ def processGeneralOptions(opts, args):
         CommandLineOptions.logic = a.upper()
       else:
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --logic must be 'ALL_SUPPORTED' or 'QF_ALL_SUPPORTED'")
+    if o == "--inline-bound":
+      try:
+        CommandLineOptions.inlineBound = int(a)
+        if CommandLineOptions.inlineBound < 0:
+          raise ValueError
+      except ValueError as e:
+          raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "Invalid inlining bound \"" + a + "\"")
 
 """ This class is used by run() to implement a timeout for tools. It
 uses threading.Timer to implement the timeout and provides a method
@@ -515,7 +525,7 @@ def startToolChain(argv):
               'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'analyse-only=', 'inline', 'no-infer',
+              'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
               'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
@@ -609,6 +619,9 @@ def startToolChain(argv):
 
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
+
+  CommandLineOptions.whoopEngineOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
+  CommandLineOptions.whoopCruncherOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
 
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]

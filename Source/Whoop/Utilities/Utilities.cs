@@ -39,7 +39,7 @@ namespace Whoop
     /// </summary>
     /// <returns>Boolean value</returns>
     /// <param name="call">CallCmd</param>
-    public static  bool ShouldSkipFromAnalysis(CallCmd call)
+    public static bool ShouldSkipFromAnalysis(CallCmd call)
     {
       if (call.callee.Contains("$malloc") || call.callee.Contains("$alloca") ||
         call.callee.Contains("strlcpy") ||

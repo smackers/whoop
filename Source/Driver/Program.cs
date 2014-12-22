@@ -17,6 +17,7 @@ using System.Diagnostics.Contracts;
 
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
+using System.Net;
 
 namespace Whoop
 {
@@ -81,34 +82,38 @@ namespace Whoop
           {
             AnalysisContext ac = null;
 
-            string extension = null;
-            if (WhoopDriverCommandLineOptions.Get().SkipInference)
-            {
-              extension = "_instrumented";
-            }
-            else
-            {
-              extension = "_summarised";
-            }
-
             if (pair.Item1.Name.Equals(pair.Item2.Name))
             {
-              ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-                "wbpl").ParseNew(new List<string>
-                {
-                  "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
-                  pair.Item1.Name + extension
-                });
+              if(!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                pair.Item2.Name, pair.Item1.Name + "_summarised" }))
+              {
+                new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                  ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                  pair.Item2.Name, pair.Item1.Name + "_instrumented" });
+              }
             }
             else
             {
-              ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-                "wbpl").ParseNew(new List<string>
+              if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                pair.Item2.Name, pair.Item1.Name + "_summarised", pair.Item2.Name + "_summarised" }))
+              {
+                if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                  ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                  pair.Item2.Name, pair.Item1.Name + "_summarised", pair.Item2.Name + "_instrumented" }))
                 {
-                  "check_" + pair.Item1.Name + "_" + pair.Item2.Name,
-                  pair.Item1.Name + extension,
-                  pair.Item2.Name + extension
-                });
+                  if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                    ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                    pair.Item2.Name, pair.Item1.Name + "_instrumented", pair.Item2.Name + "_summarised" }))
+                  {
+                    Console.WriteLine(pair.Item1.Name + " " + pair.Item2.Name);
+                    new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+                      ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                      pair.Item2.Name, pair.Item1.Name + "_instrumented", pair.Item2.Name + "_instrumented" });
+                  }
+                }
+              }
             }
 
             new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();

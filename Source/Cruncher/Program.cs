@@ -73,11 +73,23 @@ namespace Whoop
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
-          AnalysisContext ac = new AnalysisContextParser(fileList[fileList.Count - 1],
-            "wbpl").ParseNew(new List<string> { ep.Name + "_instrumented" });
-          AnalysisContext acPost = new AnalysisContextParser(fileList[fileList.Count - 1],
-            "wbpl").ParseNew(new List<string> { ep.Name + "_instrumented" });
-          new InvariantInferrer(ac, acPost, ep).Run();
+          AnalysisContext ac = null;
+          new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+            ref ac, new List<string> { ep.Name + "_instrumented" });
+
+          if (WhoopCruncherCommandLineOptions.Get().InliningBound > 0 &&
+            ac.GetNumOfEntryPointRelatedFunctions(ep.Name) <=
+            WhoopCruncherCommandLineOptions.Get().InliningBound)
+          {
+            new EntryPointInliner(ac, ep).Run();
+          }
+          else
+          {
+            AnalysisContext acPost = null;
+            new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
+              ref acPost, new List<string> { ep.Name + "_instrumented" });
+            new InvariantInferrer(ac, acPost, ep).Run();
+          }
         }
 
         Environment.Exit((int)Outcome.Done);

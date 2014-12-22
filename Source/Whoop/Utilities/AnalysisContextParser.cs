@@ -29,7 +29,7 @@ namespace Whoop
       this.Extension = ext;
     }
 
-    public AnalysisContext ParseNew(List<string> additional = null)
+    public bool TryParseNew(ref AnalysisContext ac, List<string> additional = null)
     {
       List<string> filesToParse = new List<string>();
 
@@ -39,6 +39,8 @@ namespace Whoop
         {
           string file = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
             "_" + str + "." + this.Extension;
+          if (!System.IO.File.Exists(file))
+            return false;
           filesToParse.Add(file);
         }
       }
@@ -46,31 +48,33 @@ namespace Whoop
       {
         string file = this.File.Substring(0, this.File.IndexOf(Path.GetExtension(this.File))) +
           "." + this.Extension;
+        if (!System.IO.File.Exists(file))
+          return false;
         filesToParse.Add(file);
       }
 
       Program program = ExecutionEngine.ParseBoogieProgram(filesToParse, false);
-      if (program == null) return null;
+      if (program == null) return false;
 
       ResolutionContext rc = new ResolutionContext(null);
       program.Resolve(rc);
       if (rc.ErrorCount != 0)
       {
         Console.WriteLine("{0} name resolution errors detected", rc.ErrorCount);
-        return null;
+        return false;
       }
 
       int errorCount = program.Typecheck();
       if (errorCount != 0)
       {
         Console.WriteLine("{0} type checking errors detected", errorCount);
-        return null;
+        return false;
       }
 
-      AnalysisContext ac = new AnalysisContext(program, rc);
+      ac = new AnalysisContext(program, rc);
       if (ac == null) Environment.Exit((int)Outcome.ParsingError);
 
-      return ac;
+      return true;
     }
   }
 }

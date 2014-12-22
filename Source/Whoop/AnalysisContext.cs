@@ -65,6 +65,18 @@ namespace Whoop
       ExecutionEngine.Inline(this.Program);
     }
 
+    public void InlineFunction(string name)
+    {
+      var impl = this.GetImplementation(name);
+
+      impl.Proc.Attributes = new QKeyValue(Token.NoToken,
+        "inline", new List<object>{ new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) },
+        impl.Proc.Attributes);
+      impl.Attributes = new QKeyValue(Token.NoToken,
+        "inline", new List<object>{ new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) },
+        impl.Attributes);
+    }
+
     public List<Implementation> GetCheckerImplementations()
     {
       return this.TopLevelDeclarations.OfType<Implementation>().ToList().
@@ -197,6 +209,23 @@ namespace Whoop
     {
       Contract.Requires(impl != null);
       return SharedStateAnalyser.IsImplementationRacing(impl);
+    }
+
+    public int GetNumOfEntryPointRelatedFunctions(string name)
+    {
+      int counter = 0;
+
+      foreach (var proc in this.TopLevelDeclarations.OfType<Procedure>())
+      {
+        if (QKeyValue.FindBoolAttribute(proc.Attributes, "entrypoint") ||
+          (QKeyValue.FindStringAttribute(proc.Attributes, "tag") != null &&
+            QKeyValue.FindStringAttribute(proc.Attributes, "tag").Equals(name)))
+        {
+          counter++;
+        }
+      }
+
+      return counter;
     }
 
     public void ResetAnalysisContext()
