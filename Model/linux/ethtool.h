@@ -130,6 +130,12 @@ struct ethtool_cmd {
 	__u32	reserved[2];
 };
 
+static inline void ethtool_cmd_speed_set(struct ethtool_cmd *ep, __u32 speed)
+{
+	ep->speed = (__u16)speed;
+	ep->speed_hi = (__u16)(speed >> 16);
+}
+
 /* CMDs currently supported */
 #define ETHTOOL_GSET		0x00000001 /* Get settings. */
 #define ETHTOOL_SSET		0x00000002 /* Set settings. */

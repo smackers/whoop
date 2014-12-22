@@ -225,7 +225,9 @@ def showHelpAndExit():
     --stop-at-bc            Stop after generating bc.
     --stop-at-bpl           Stop after generating bpl.
     --stop-at-engine        Stop after the Whoop instrumentation engine.
-    --stop-at-cruncher        Stop after the Whoop invariant inference cruncher.
+    --stop-at-cruncher      Stop after the Whoop invariant inference cruncher.
+    --skip-until-clang      Start toolchain at the CLANG compiler frontend.
+    --skip-until-model      Start toolchain at the SMACK LLVM-IR to Boogie translation tool.
     --skip-until-engine     Start toolchain at the Whoop instrumentation engine.
     --skip-until-cruncher   Start toolchain at the Whoop invariant inference cruncher.
     --skip-until-driver     Start toolchain at the Whoop static analysis driver.
@@ -331,6 +333,11 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.stopAtEngine = True
     if o == "--stop-at-cruncher":
       CommandLineOptions.stopAtCruncher = True
+    if o == "--skip-until-clang":
+      CommandLineOptions.skip["chauffeur"] = True
+    if o == "--skip-until-model":
+      CommandLineOptions.skip["chauffeur"] = True
+      CommandLineOptions.skip["clang"] = True
     if o == "--skip-until-engine":
       CommandLineOptions.skip["chauffeur"] = True
       CommandLineOptions.skip["clang"] = True
@@ -511,7 +518,7 @@ def startToolChain(argv):
               'analyse-only=', 'inline', 'no-infer',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
-              'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
+              'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
              ])
   except getopt.GetoptError as getoptError:
     ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, getoptError.msg + ".  Try --help for list of options")

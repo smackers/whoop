@@ -44,7 +44,7 @@ namespace Whoop
       Analysis.Factory.CreateLockAbstraction(this.AC).Run();
       Refactoring.Factory.CreateLockRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateEntryPointRefactoring(this.AC, this.EP).Run();
-      Refactoring.Factory.CreateFunctionPointerRefactoring(this.AC, this.EP).Run();
+//      Refactoring.Factory.CreateFunctionPointerRefactoring(this.AC, this.EP).Run();
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {

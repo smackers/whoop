@@ -52,7 +52,8 @@ namespace Whoop.Instrumentation
       this.AddCurrentLocksets();
       this.AddMemoryLocksets();
       this.AddAccessCheckingVariables();
-//      this.AddAccessWatchdogConstants();
+      this.AddDomainKnowledgeVariables();
+      this.AddAccessWatchdogConstants();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -99,8 +100,21 @@ namespace Whoop.Instrumentation
             this.MemoryRegions[i].Name + "_$" + this.EP.Name,
             Microsoft.Boogie.Type.Bool));
         aoff.AddAttribute("access_checking", new object[] { });
-        this.AC.TopLevelDeclarations.Add(aoff);
+
+        if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(aoff.Name)))
+          this.AC.TopLevelDeclarations.Add(aoff);
       }
+    }
+
+    private void AddDomainKnowledgeVariables()
+    {
+      Variable devReg = new GlobalVariable(Token.NoToken,
+        new TypedIdent(Token.NoToken, "DEVICE_IS_REGISTERED_$" + this.EP.Name,
+          Microsoft.Boogie.Type.Bool));
+      devReg.AddAttribute("domain_specific", new object[] { });
+
+      if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(devReg.Name)))
+        this.AC.TopLevelDeclarations.Add(devReg);
     }
 
     private void AddAccessWatchdogConstants()
@@ -112,7 +126,9 @@ namespace Whoop.Instrumentation
                           this.AC.MemoryModelType);
         Variable watchdog = new Constant(Token.NoToken, ti, false);
         watchdog.AddAttribute("watchdog", new object[] { });
-        this.AC.TopLevelDeclarations.Add(watchdog);
+
+        if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(watchdog.Name)))
+          this.AC.TopLevelDeclarations.Add(watchdog);
       }
     }
   }

@@ -28,7 +28,8 @@ namespace Whoop
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
         funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
         funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
-        funcName.Equals("dma_map_single"))
+        funcName.Equals("dma_map_single") ||
+        funcName.Equals("register_netdev") || funcName.Equals("unregister_netdev"))
         return false;
       return true;
     }

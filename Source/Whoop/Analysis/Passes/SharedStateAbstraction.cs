@@ -105,7 +105,7 @@ namespace Whoop.Analysis
       region.Procedure().Modifies.RemoveAll(val => !(val.Name.Equals("$Alloc") ||
         val.Name.Equals("$CurrAddr") || val.Name.Equals("CLS") ||
         val.Name.Contains("LS_$") || val.Name.Contains("WRITTEN_$") ||
-        val.Name.Contains("$exn") || val.Name.Contains("$exnv")));
+        val.Name.Contains("DEVICE_IS_REGISTERED_$")));
     }
   }
 }

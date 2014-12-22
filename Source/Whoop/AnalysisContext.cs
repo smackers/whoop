@@ -101,6 +101,12 @@ namespace Whoop
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking"));
     }
 
+    public List<Variable> GetDomainSpecificVariables()
+    {
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "domain_specific"));
+    }
+
     public List<Variable> GetAccessWatchdogConstants()
     {
       return this.TopLevelDeclarations.OfType<Variable>().ToList().
@@ -127,11 +133,12 @@ namespace Whoop
     {
       Contract.Requires(v != null);
       if (QKeyValue.FindBoolAttribute(v.Attributes, "lock") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "current_lockset") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "lockset") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "access_checking") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "existential") ||
-          QKeyValue.FindBoolAttribute(v.Attributes, "watchdog"))
+        QKeyValue.FindBoolAttribute(v.Attributes, "current_lockset") ||
+        QKeyValue.FindBoolAttribute(v.Attributes, "lockset") ||
+        QKeyValue.FindBoolAttribute(v.Attributes, "access_checking") ||
+        QKeyValue.FindBoolAttribute(v.Attributes, "existential") ||
+        QKeyValue.FindBoolAttribute(v.Attributes, "watchdog") ||
+        QKeyValue.FindBoolAttribute(v.Attributes, "domain_specific"))
         return true;
       return false;
     }
@@ -140,9 +147,10 @@ namespace Whoop
     {
       Contract.Requires(name != null);
       if (name.Contains("_UPDATE_CLS") ||
-          name.Contains("_WRITE_LS_") || name.Contains("_READ_LS_") ||
-          name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
-          name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED"))
+        name.Contains("_WRITE_LS_") || name.Contains("_READ_LS_") ||
+        name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
+        name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
+        name.Contains("_REGISTER_DEVICE"))
         return true;
       return false;
     }
@@ -213,7 +221,7 @@ namespace Whoop
 
     internal string GetAccessWatchdogConstantName(string name)
     {
-      return "WATCHED_ACCESS_OFFSET_" + name;
+      return "WATCHED_ACCESS_" + name;
     }
 
     #endregion

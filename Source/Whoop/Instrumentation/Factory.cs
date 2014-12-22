@@ -26,6 +26,11 @@ namespace Whoop.Instrumentation
       return new LocksetInstrumentation(ac, ep);
     }
 
+    public static IDomainKnowledgeInstrumentation CreateDomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
+    {
+      return new DomainKnowledgeInstrumentation(ac, ep);
+    }
+
     public static IRaceInstrumentation CreateRaceInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new RaceInstrumentation(ac, ep);

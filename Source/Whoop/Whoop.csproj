@@ -92,6 +92,8 @@
     <Compile Include="Refactoring\Interfaces\IFunctionPointerRefactoring.cs" />
     <Compile Include="Refactoring\Passes\FunctionPointerRefactoring.cs" />
     <Compile Include="Utilities\Utilities.cs" />
+    <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
+    <Compile Include="Instrumentation\Interfaces\IDomainKnowledgeInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

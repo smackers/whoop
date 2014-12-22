@@ -20,6 +20,7 @@ using Microsoft.Basetypes;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
+using System.Diagnostics.SymbolStore;
 
 namespace Whoop.Instrumentation
 {
@@ -78,11 +79,7 @@ namespace Whoop.Instrumentation
         this.AC.TopLevelDeclarations.Add(proc);
         this.AC.ResContext.AddProcedure(proc);
 
-        List<Variable> localVars = new List<Variable>();
-        Implementation impl = new Implementation(Token.NoToken, this.MakeAccessFuncName(access, mr.Name),
-          new List<TypeVariable>(), inParams, new List<Variable>(), localVars, new List<Block>());
-
-        Block block = new Block(Token.NoToken, "_" + access.ToString(), new List<Cmd>(), new ReturnCmd(Token.NoToken));
+        var cmds = new List<Cmd>();
 
         foreach (var ls in this.AC.MemoryLocksets)
         {
@@ -94,29 +91,12 @@ namespace Whoop.Instrumentation
             if (!cls.Lock.Name.Equals(ls.Lock.Name))
               continue;
 
-//            Variable ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-//              this.AC.MemoryModelType));
-//            Variable watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
-//              val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
-
             IdentifierExpr lsExpr = new IdentifierExpr(ls.Id.tok, ls.Id);
-//            IdentifierExpr ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-//            IdentifierExpr watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
 
-//            block.Cmds.Add(new AssignCmd(Token.NoToken,
-//              new List<AssignLhs>() {
-//                new SimpleAssignLhs(Token.NoToken, lsExpr)
-//              }, new List<Expr> { new NAryExpr(Token.NoToken,
-//                new IfThenElse(Token.NoToken),
-//                new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
-//                  Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr), lsExpr
-//                }))
-//            }));
-
-            block.Cmds.Add(new AssignCmd(Token.NoToken,
+            cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
-                new SimpleAssignLhs(Token.NoToken, lsExpr)
-              }, new List<Expr> {
+              new SimpleAssignLhs(Token.NoToken, lsExpr)
+            }, new List<Expr> {
               Expr.And(new IdentifierExpr(cls.Id.tok, cls.Id), lsExpr)
             }));
 
@@ -137,17 +117,7 @@ namespace Whoop.Instrumentation
 
             IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
 
-            //              block.Cmds.Add(new AssignCmd(Token.NoToken,
-            //                new List<AssignLhs>() {
-            //                  new SimpleAssignLhs(Token.NoToken, acsExpr)
-            //                }, new List<Expr> { new NAryExpr(Token.NoToken,
-            //                  new IfThenElse(Token.NoToken),
-            //                  new List<Expr>(new Expr[] { Expr.Eq(ptrExpr, watchdogExpr),
-            //                    Expr.True, acsExpr
-            //                  }))
-            //              }));
-
-            block.Cmds.Add(new AssignCmd(Token.NoToken,
+            cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
               new SimpleAssignLhs(Token.NoToken, acsExpr)
             }, new List<Expr> {
@@ -158,7 +128,30 @@ namespace Whoop.Instrumentation
           }
         }
 
-        impl.Blocks.Add(block);
+        var ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+          this.AC.MemoryModelType));
+        var watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
+          val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
+        var devReg = this.AC.GetDomainSpecificVariables().Find(val =>
+          val.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
+
+        var ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+        var watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
+        var devRegExpr = new IdentifierExpr(devReg.tok, devReg);
+
+        var guardExpr = Expr.And(Expr.Eq(watchdogExpr, ptrExpr), devRegExpr);
+
+        var ifStmts = new StmtList(new List<BigBlock> {
+          new BigBlock(Token.NoToken, null, cmds, null, null) }, Token.NoToken);
+        var ifCmd = new IfCmd(Token.NoToken, guardExpr, ifStmts, null, null);
+
+        var blocks = new List<BigBlock> {
+          new BigBlock(Token.NoToken, "_" + access.ToString(), new List<Cmd>(), ifCmd, null) };
+
+        Implementation impl = new Implementation(Token.NoToken, this.MakeAccessFuncName(access, mr.Name),
+          new List<TypeVariable>(), inParams, new List<Variable>(), new List<Variable>(),
+          new StmtList(blocks, Token.NoToken));
+
         impl.Proc = proc;
         impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 

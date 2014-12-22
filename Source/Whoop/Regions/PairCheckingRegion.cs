@@ -266,10 +266,19 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
+      foreach (var dsv in this.AC.GetDomainSpecificVariables())
+      {
+        if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
+          continue;
+
+        Requires require = new Requires(false, new IdentifierExpr(dsv.tok,
+          new Duplicator().Visit(dsv.Clone()) as Variable));
+        this.InternalImplementation.Proc.Requires.Add(require);
+      }
+
       foreach (var ie in initProc.Modifies)
       {
         if (!ie.Name.Equals("$Alloc") && !ie.Name.Equals("$CurrAddr") &&
-          !ie.Name.Equals("$exn") && !ie.Name.Equals("$exnv") &&
           !varsEp1.Any(val => val.Name.Equals(ie.Name)) &&
           !varsEp2.Any(val => val.Name.Equals(ie.Name)))
           continue;
@@ -292,6 +301,15 @@ namespace Whoop.Regions
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
+      }
+
+      foreach (var dsv in this.AC.GetDomainSpecificVariables())
+      {
+        if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
+          continue;
+
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
+          dsv.tok, new Duplicator().Visit(dsv.Clone()) as Variable));
       }
     }
 

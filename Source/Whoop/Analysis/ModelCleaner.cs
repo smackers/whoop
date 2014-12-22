@@ -69,7 +69,10 @@ namespace Whoop.Analysis
 
     public static void RemoveEntryPointSpecificTopLevelDeclerations(AnalysisContext ac)
     {
-      List<Implementation> toRemove = new List<Implementation>();
+      HashSet<string> toRemove = new HashSet<string>();
+
+      toRemove.Add("register_netdev");
+      toRemove.Add("unregister_netdev");
 
       foreach (var impl in ac.TopLevelDeclarations.OfType<Implementation>())
       {
@@ -78,19 +81,19 @@ namespace Whoop.Analysis
         if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
           continue;
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
-            impl.Name.Contains("$memset"))
+          impl.Name.Contains("$memset"))
           continue;
-        toRemove.Add(impl);
+        toRemove.Add(impl.Name);
       }
 
-      foreach (var impl in toRemove)
+      foreach (var str in toRemove)
       {
         ac.TopLevelDeclarations.RemoveAll(val => (val is Constant) &&
-          (val as Constant).Name.Equals(impl.Name));
+          (val as Constant).Name.Equals(str));
         ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
-          (val as Procedure).Name.Equals(impl.Name));
+          (val as Procedure).Name.Equals(str));
         ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
-          (val as Implementation).Name.Equals(impl.Name));
+          (val as Implementation).Name.Equals(str));
       }
     }
 
@@ -223,13 +226,14 @@ namespace Whoop.Analysis
       foreach (var proc in ac.TopLevelDeclarations.OfType<Procedure>())
       {
         if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
-            proc.Name.Contains("$memset") ||
-            proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
-            proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
-            proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
-            proc.Name.Equals("dma_map_single")))
+          proc.Name.Contains("$memset") ||
+          proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
+          proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
+          proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
+          proc.Name.Equals("dma_map_single") ||
+          proc.Name.Equals("register_netdev") || proc.Name.Equals("unregister_netdev")))
           continue;
-        proc.Modifies.RemoveAll(val => !(val.Name.Contains("$exn") || val.Name.Contains("$exnv")));
+        proc.Modifies.Clear();
       }
     }
 

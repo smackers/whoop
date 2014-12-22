@@ -47,6 +47,7 @@ namespace Whoop
       Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP).Run();
 
       Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();
+      Instrumentation.Factory.CreateDomainKnowledgeInstrumentation(this.AC, this.EP).Run();
       Instrumentation.Factory.CreateRaceInstrumentation(this.AC, this.EP).Run();
 
       Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();

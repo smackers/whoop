@@ -48,6 +48,7 @@ namespace Whoop.Refactoring
       foreach (var impl in AC.TopLevelDeclarations.OfType<Implementation>())
       {
         this.RemoveUnecesseryAssumes(impl);
+        this.RemoveUnecesseryCalls(impl);
         this.SimplifyImplementation(impl);
       }
 
@@ -72,6 +73,20 @@ namespace Whoop.Refactoring
     }
 
     /// <summary>
+    /// Removes the unecessery call commands from the implementation. This is sound
+    /// as only instrumented e.g. by SMACK calls are removed.
+    /// </summary>
+    /// <param name="impl">Implementation</param>
+    private void RemoveUnecesseryCalls(Implementation impl)
+    {
+      foreach (Block b in impl.Blocks)
+      {
+        b.Cmds.RemoveAll(val => (val is CallCmd) && (val as CallCmd).
+          callee.Equals("boogie_si_record_int"));
+      }
+    }
+
+    /// <summary>
     /// Simplifies the implementation by removing/replacing expressions
     /// of the type $p2 := $p1.
     /// </summary>
@@ -86,10 +101,18 @@ namespace Whoop.Refactoring
         {
           if (!(b.Cmds[i] is AssignCmd))
             continue;
+
           if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"))
             continue;
           if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Contains("$M."))
             continue;
+
+          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$exn"))
+          {
+            toRemove.Add(b.Cmds[i] as AssignCmd);
+            continue;
+          }
+
           if ((b.Cmds[i] as AssignCmd).Rhss.Count != 1)
             continue;
           if ((b.Cmds[i] as AssignCmd).Rhss[0] is NAryExpr)
