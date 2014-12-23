@@ -67,6 +67,5 @@
     <Compile Include="InvariantInferrer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="WhoopCruncherCommandLineOptions.cs" />
-    <Compile Include="EntryPointInliner.cs" />
   </ItemGroup>
 </Project>

@@ -547,6 +547,7 @@ def startToolChain(argv):
   bplFilename = filename + '.bpl'
   wbplFilename = filename + '.wbpl'
   infoFilename = filename + '.info'
+  summaryInfoFilename = filename + '_summaries.info'
   smt2Filename = filename + '.smt2'
   if not CommandLineOptions.keepTemps:
     inputFilename = filename + ext
@@ -568,6 +569,7 @@ def startToolChain(argv):
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
+    if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFile, summaryInfoFilename)
     if not CommandLineOptions.stopAtCruncher: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
 
   if CommandLineOptions.inline:

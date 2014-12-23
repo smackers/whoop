@@ -58,6 +58,7 @@ namespace Whoop
 
         ModelCleaner.RemoveOriginalInitFunc(this.AC);
         ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
+        ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {

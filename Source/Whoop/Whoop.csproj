@@ -94,6 +94,7 @@
     <Compile Include="Utilities\Utilities.cs" />
     <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IDomainKnowledgeInstrumentation.cs" />
+    <Compile Include="Summarisation\SummaryInformationParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

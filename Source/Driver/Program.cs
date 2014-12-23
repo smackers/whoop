@@ -72,6 +72,7 @@ namespace Whoop
         }
 
         DeviceDriver.ParseAndInitialize(fileList);
+        Summarisation.SummaryInformationParser.FromFile(fileList);
 
         PipelineStatistics stats = new PipelineStatistics();
         WhoopErrorReporter errorReporter = new WhoopErrorReporter();
@@ -82,38 +83,52 @@ namespace Whoop
           {
             AnalysisContext ac = null;
 
+            var parser = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl");
             if (pair.Item1.Name.Equals(pair.Item2.Name))
             {
-              if(!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                pair.Item2.Name, pair.Item1.Name + "_summarised" }))
+              string extension = null;
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
               {
-                new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                  ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                  pair.Item2.Name, pair.Item1.Name + "_instrumented" });
+                Console.WriteLine("EP: " + pair.Item1.Name + "_summarised");
+                extension = "_summarised";
               }
+              else
+              {
+                Console.WriteLine("EP: " + pair.Item1.Name + "_instrumented");
+                extension = "_instrumented";
+              }
+
+              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                pair.Item2.Name, pair.Item1.Name + extension });
             }
             else
             {
-              if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                pair.Item2.Name, pair.Item1.Name + "_summarised", pair.Item2.Name + "_summarised" }))
+              string extension1 = null;
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
               {
-                if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                  ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                  pair.Item2.Name, pair.Item1.Name + "_summarised", pair.Item2.Name + "_instrumented" }))
-                {
-                  if (!new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                    ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                    pair.Item2.Name, pair.Item1.Name + "_instrumented", pair.Item2.Name + "_summarised" }))
-                  {
-                    Console.WriteLine(pair.Item1.Name + " " + pair.Item2.Name);
-                    new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-                      ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                      pair.Item2.Name, pair.Item1.Name + "_instrumented", pair.Item2.Name + "_instrumented" });
-                  }
-                }
+                Console.WriteLine("EP: " + pair.Item1.Name + "_summarised");
+                extension1 = "_summarised";
               }
+              else
+              {
+                Console.WriteLine("EP: " + pair.Item1.Name + "_instrumented");
+                extension1 = "_instrumented";
+              }
+
+              string extension2 = null;
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item2.Name))
+              {
+                Console.WriteLine("EP: " + pair.Item2.Name + "_summarised");
+                extension2 = "_summarised";
+              }
+              else
+              {
+                Console.WriteLine("EP: " + pair.Item2.Name + "_instrumented");
+                extension2 = "_instrumented";
+              }
+
+              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
+                pair.Item2.Name, pair.Item1.Name + extension1, pair.Item2.Name + extension2 });
             }
 
             new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();

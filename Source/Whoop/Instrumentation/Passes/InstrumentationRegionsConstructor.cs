@@ -47,9 +47,9 @@ namespace Whoop.Instrumentation
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
           impl.Name.Contains("$memset") ||
           impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock") ||
-          impl.Name.Equals("dma_alloc_coherent") || impl.Name.Equals("dma_free_coherent") ||
-          impl.Name.Equals("dma_sync_single_for_cpu") || impl.Name.Equals("dma_sync_single_for_device") ||
-          impl.Name.Equals("dma_map_single") ||
+//          impl.Name.Equals("dma_alloc_coherent") || impl.Name.Equals("dma_free_coherent") ||
+//          impl.Name.Equals("dma_sync_single_for_cpu") || impl.Name.Equals("dma_sync_single_for_device") ||
+//          impl.Name.Equals("dma_map_single") ||
           impl.Name.Equals("register_netdev") || impl.Name.Equals("unregister_netdev"))
           continue;
 

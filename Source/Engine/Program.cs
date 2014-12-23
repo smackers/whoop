@@ -16,6 +16,7 @@ using System.Diagnostics.Contracts;
 
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
+using Whoop.Summarisation;
 
 namespace Whoop
 {
@@ -114,6 +115,8 @@ namespace Whoop
             ref ac, new List<string> { ep.Name });
           new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
         }
+
+        SummaryInformationParser.ToFile(fileList);
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {

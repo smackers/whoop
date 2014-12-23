@@ -15,6 +15,7 @@ using System.Diagnostics.Contracts;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Instrumentation;
+using Whoop.Summarisation;
 
 namespace Whoop
 {
@@ -60,16 +61,25 @@ namespace Whoop
         ModelCleaner.RemoveGlobalLocksets(this.AC);
         ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
       }
-      else if (!(WhoopEngineCommandLineOptions.Get().InliningBound > 0 &&
+      else if (WhoopEngineCommandLineOptions.Get().InliningBound > 0 &&
         this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
-        WhoopEngineCommandLineOptions.Get().InliningBound))
+        WhoopEngineCommandLineOptions.Get().InliningBound)
+      {
+        this.AC.InlineFunction(this.EP.Name);
+
+        ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
+        ModelCleaner.RemoveGlobalLocksets(this.AC);
+      }
+      else
       {
         Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
         Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
+
         ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
       }
 
-      ModelCleaner.RemoveModSetFromSpecialFunctions(this.AC);
+      ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {

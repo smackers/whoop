@@ -81,8 +81,9 @@ namespace Whoop.Analysis
         if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
           continue;
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
-          impl.Name.Contains("$memset"))
+            impl.Name.Contains("$memset"))
           continue;
+
         toRemove.Add(impl.Name);
       }
 
@@ -221,19 +222,30 @@ namespace Whoop.Analysis
       ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint));
     }
 
-    public static void RemoveModSetFromSpecialFunctions(AnalysisContext ac)
+    public static void RemoveUnecesseryInfoFromSpecialFunctions(AnalysisContext ac)
     {
+      var toRemove = new List<string>();
+
       foreach (var proc in ac.TopLevelDeclarations.OfType<Procedure>())
       {
         if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
           proc.Name.Contains("$memset") ||
           proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
-          proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
-          proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
-          proc.Name.Equals("dma_map_single") ||
+//          proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
+//          proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
+//          proc.Name.Equals("dma_map_single") ||
           proc.Name.Equals("register_netdev") || proc.Name.Equals("unregister_netdev")))
           continue;
         proc.Modifies.Clear();
+        proc.Requires.Clear();
+        proc.Ensures.Clear();
+        toRemove.Add(proc.Name);
+      }
+
+      foreach (var str in toRemove)
+      {
+        ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+          (val as Implementation).Name.Equals(str));
       }
     }
 
