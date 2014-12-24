@@ -29,6 +29,7 @@ namespace Whoop
     private AnalysisContext AC;
     private AnalysisContext PostAC;
     private EntryPoint EP;
+    private ExecutionTimer Timer;
 
     private Houdini Houdini;
 
@@ -46,6 +47,14 @@ namespace Whoop
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
 
+      if (WhoopCruncherCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Console.WriteLine(" |------ [{0}]", this.EP.Name);
+        Console.WriteLine(" |  |");
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.PerformHoudini();
       this.ApplyInvariants();
 
@@ -56,6 +65,14 @@ namespace Whoop
       ModelCleaner.RemoveWhoopFunctions(this.PostAC);
       ModelCleaner.RemoveConstants(this.PostAC);
       ModelCleaner.RemoveImplementations(this.PostAC);
+
+      if (WhoopCruncherCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |");
+        Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
+        Console.WriteLine(" |");
+      }
 
       WhoopCruncherCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.PostAC.TopLevelDeclarations, WhoopCruncherCommandLineOptions.Get().Files[

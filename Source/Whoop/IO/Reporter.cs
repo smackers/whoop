@@ -13,7 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.IO
 {
@@ -88,8 +90,8 @@ namespace Whoop.IO
       }
       else
       {
-        Console.Write("{0} finished with {1} verified, {2} error{3}",
-          CommandLineOptions.Clo.DescriptiveToolName, stats.VerifiedCount,
+        Console.Write("{0} finished with {1} (out of {2}) entry point pairs verified, {3} error{4}",
+          CommandLineOptions.Clo.DescriptiveToolName, stats.VerifiedCount, DeviceDriver.EntryPointPairs.Count,
           stats.ErrorCount, stats.ErrorCount == 1 ? "" : "s");
       }
 

@@ -88,15 +88,9 @@ namespace Whoop
             {
               string extension = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
-              {
-                Console.WriteLine("EP: " + pair.Item1.Name + "_summarised");
                 extension = "_summarised";
-              }
               else
-              {
-                Console.WriteLine("EP: " + pair.Item1.Name + "_instrumented");
                 extension = "_instrumented";
-              }
 
               parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
                 pair.Item2.Name, pair.Item1.Name + extension });
@@ -105,27 +99,15 @@ namespace Whoop
             {
               string extension1 = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
-              {
-                Console.WriteLine("EP: " + pair.Item1.Name + "_summarised");
                 extension1 = "_summarised";
-              }
               else
-              {
-                Console.WriteLine("EP: " + pair.Item1.Name + "_instrumented");
                 extension1 = "_instrumented";
-              }
 
               string extension2 = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item2.Name))
-              {
-                Console.WriteLine("EP: " + pair.Item2.Name + "_summarised");
                 extension2 = "_summarised";
-              }
               else
-              {
-                Console.WriteLine("EP: " + pair.Item2.Name + "_instrumented");
                 extension2 = "_instrumented";
-              }
 
               parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
                 pair.Item2.Name, pair.Item1.Name + extension1, pair.Item2.Name + extension2 });

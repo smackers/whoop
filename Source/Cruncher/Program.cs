@@ -71,10 +71,22 @@ namespace Whoop
 
         DeviceDriver.ParseAndInitialize(fileList);
         Summarisation.SummaryInformationParser.FromFile(fileList);
+        ExecutionTimer timer = null;
 
+        if (WhoopCruncherCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine("\n[Cruncher] runtime");
+          Console.WriteLine(" |");
+          timer = new ExecutionTimer();
+          timer.Start();
+        }
+
+        var alreadyCrunched = new HashSet<string>();
         foreach (var ep in DeviceDriver.EntryPoints)
         {
           if (!Summarisation.SummaryInformationParser.AvailableSummaries.Contains(ep.Name))
+            continue;
+          if (alreadyCrunched.Contains(ep.Name))
             continue;
 
           AnalysisContext ac = null;
@@ -84,6 +96,15 @@ namespace Whoop
           new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
             ref acPost, new List<string> { ep.Name + "_instrumented" });
           new InvariantInferrer(ac, acPost, ep).Run();
+
+          alreadyCrunched.Add(ep.Name);
+        }
+
+        if (WhoopCruncherCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          timer.Stop();
+          Console.WriteLine(" |");
+          Console.WriteLine(" |--- [Total] {0}", timer.Result());
         }
 
         Environment.Exit((int)Outcome.Done);

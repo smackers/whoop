@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
 using Whoop.Analysis;
@@ -25,6 +26,8 @@ namespace Whoop
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
+    private static HashSet<string> AlreadyInstrumented = new HashSet<string>();
+
     public StaticLocksetAnalysisInstrumentationEngine(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
@@ -34,6 +37,9 @@ namespace Whoop
 
     public void Run()
     {
+      if (StaticLocksetAnalysisInstrumentationEngine.AlreadyInstrumented.Contains(this.EP.Name))
+        return;
+
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         Console.WriteLine(" |------ [{0}]", this.EP.Name);
@@ -92,6 +98,8 @@ namespace Whoop
       WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
         WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
+
+      StaticLocksetAnalysisInstrumentationEngine.AlreadyInstrumented.Add(this.EP.Name);
     }
   }
 }

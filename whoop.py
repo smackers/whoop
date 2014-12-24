@@ -630,6 +630,7 @@ def startToolChain(argv):
 
   if CommandLineOptions.timePasses:
     CommandLineOptions.whoopEngineOptions += [ "/timePasses" ]
+    CommandLineOptions.whoopCruncherOptions += [ "/timePasses" ]
 
   if CommandLineOptions.noInfer:
     CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
