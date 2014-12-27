@@ -78,6 +78,7 @@ namespace Whoop
       }
       else
       {
+        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
         Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
         Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
         Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);

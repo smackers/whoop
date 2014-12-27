@@ -80,7 +80,6 @@
     <Compile Include="Instrumentation\Passes\GlobalRaceCheckingInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\GlobalRaceCheckingInstrumentation.cs" />
     <Compile Include="Analysis\ModelCleaner.cs" />
-    <Compile Include="Analysis\PointerAliasAnalyser.cs" />
     <Compile Include="Analysis\SharedStateAnalyser.cs" />
     <Compile Include="Utilities\ExecutionTimer.cs" />
     <Compile Include="Summarisation\Interfaces\ILocksetSummaryGeneration.cs" />
@@ -95,6 +94,9 @@
     <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IDomainKnowledgeInstrumentation.cs" />
     <Compile Include="Summarisation\SummaryInformationParser.cs" />
+    <Compile Include="Analysis\DataFlowAnalyser.cs" />
+    <Compile Include="Analysis\Passes\WatchdogInformationAnalysis.cs" />
+    <Compile Include="Analysis\Interfaces\IWatchdogInformationAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

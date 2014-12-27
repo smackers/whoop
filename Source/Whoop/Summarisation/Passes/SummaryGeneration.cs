@@ -46,58 +46,114 @@ namespace Whoop.Summarisation
       this.Counter = 0;
     }
 
-    #region lockset summary generation
+    #region summary instrumentation functions
 
-    protected void InstrumentRequiresLocksetCandidates(InstrumentationRegion region,
-      List<Variable> locksets, bool value, bool capture = false)
+    protected void InstrumentRequiresCandidates(InstrumentationRegion region,
+      List<Variable> variables, bool value, bool capture = false)
     {
-      foreach (var ls in locksets)
+      foreach (var v in variables)
       {
         Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(ls))
+        if (capture && dict.ContainsKey(v))
         {
-          cons = dict[ls];
+          cons = dict[v];
         }
         else
         {
           cons = this.CreateConstant();
         }
 
-        Expr expr = this.CreateImplExpr(cons, ls, value);
+        Expr expr = this.CreateImplExpr(cons, v, value);
         region.Procedure().Requires.Add(new Requires(false, expr));
 
-        if (capture && !dict.ContainsKey(ls))
+        if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(ls, cons);
+          dict.Add(v, cons);
         }
       }
     }
 
-    protected void InstrumentEnsuresLocksetCandidates(InstrumentationRegion region,
-      List<Variable> locksets, bool value, bool capture = false)
+    protected void InstrumentEnsuresCandidates(InstrumentationRegion region,
+      List<Variable> variables, bool value, bool capture = false)
     {
-      foreach (var ls in locksets)
+      foreach (var v in variables)
       {
         Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(ls))
+        if (capture && dict.ContainsKey(v))
         {
-          cons = dict[ls];
+          cons = dict[v];
         }
         else
         {
           cons = this.CreateConstant();
         }
 
-        Expr expr = this.CreateImplExpr(cons, ls, value);
+        Expr expr = this.CreateImplExpr(cons, v, value);
         region.Procedure().Ensures.Add(new Ensures(false, expr));
 
-        if (capture && !dict.ContainsKey(ls))
+        if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(ls, cons);
+          dict.Add(v, cons);
+        }
+      }
+    }
+
+    protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
+      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
+    {
+      foreach (var v in variables)
+      {
+        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+
+        Constant cons = null;
+        if (capture && dict.ContainsKey(v))
+        {
+          cons = dict[v];
+        }
+        else
+        {
+          cons = this.CreateConstant();
+        }
+
+        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
+        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
+        region.Procedure().Requires.Add(new Requires(false, lExpr));
+
+        if (capture && !dict.ContainsKey(v))
+        {
+          dict.Add(v, cons);
+        }
+      }
+    }
+
+    protected void InstrumentImpliesEnsuresCandidates(InstrumentationRegion region,
+      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
+    {
+      foreach (var v in variables)
+      {
+        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+
+        Constant cons = null;
+        if (capture && dict.ContainsKey(v))
+        {
+          cons = dict[v];
+        }
+        else
+        {
+          cons = this.CreateConstant();
+        }
+
+        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
+        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
+        region.Procedure().Ensures.Add(new Ensures(false, lExpr));
+
+        if (capture && !dict.ContainsKey(v))
+        {
+          dict.Add(v, cons);
         }
       }
     }
@@ -146,6 +202,22 @@ namespace Whoop.Summarisation
       {
         expr = Expr.Imp(new IdentifierExpr(cons.tok, cons),
           Expr.Not(new IdentifierExpr(v.tok, v)));
+      }
+
+      return expr;
+    }
+
+    private Expr CreateImplExpr(Expr consExpr, Variable v, bool value)
+    {
+      Expr expr = null;
+
+      if (value)
+      {
+        expr = Expr.Imp(consExpr, new IdentifierExpr(v.tok, v));
+      }
+      else
+      {
+        expr = Expr.Imp(consExpr, Expr.Not(new IdentifierExpr(v.tok, v)));
       }
 
       return expr;

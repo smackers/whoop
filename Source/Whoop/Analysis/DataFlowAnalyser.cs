@@ -20,9 +20,9 @@ using System.Linq.Expressions;
 namespace Whoop.Analysis
 {
   /// <summary>
-  /// Static class implementing methods for pointer alias analysis.
+  /// Static class implementing methods for data flow analysis.
   /// </summary>
-  internal static class PointerAliasAnalyser
+  internal static class DataFlowAnalyser
   {
     private enum ArithmeticOperation
     {
@@ -52,7 +52,7 @@ namespace Whoop.Analysis
         return id;
       }
 
-      NAryExpr root = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
+      NAryExpr root = DataFlowAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
 
       if (root == null)
       {
@@ -75,7 +75,7 @@ namespace Whoop.Analysis
             return id;
           }
 
-          if (PointerAliasAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
+          if (DataFlowAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
           {
             return id;
           }
@@ -98,7 +98,7 @@ namespace Whoop.Analysis
 //            continue;
 //          }
 
-          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
+          if (DataFlowAnalyser.IsArithmeticExpression(result as NAryExpr))
           {
             return id;
           }
@@ -120,7 +120,7 @@ namespace Whoop.Analysis
         }
         else
         {
-          resolution = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, result);
+          resolution = DataFlowAnalyser.GetPointerArithmeticExpr(impl, result);
           if (resolution != null) result = resolution;
         }
       }
@@ -162,7 +162,7 @@ namespace Whoop.Analysis
         if (arg is LiteralExpr)
           continue;
         else if (arg is NAryExpr)
-          result.AddRange(PointerAliasAnalyser.GetSubExprs(arg as NAryExpr));
+          result.AddRange(DataFlowAnalyser.GetSubExprs(arg as NAryExpr));
         else if (arg is IdentifierExpr)
           result.Add(arg as IdentifierExpr);
       }
@@ -205,6 +205,8 @@ namespace Whoop.Analysis
       return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(l1 + l2)));
     }
 
+    #region helper functions
+
     private static Expr DoPointerArithmetic(Implementation impl, string label, Expr expr)
     {
       Expr result = null;
@@ -212,19 +214,19 @@ namespace Whoop.Analysis
       if ((expr as NAryExpr).Fun.FunctionName == "$add" ||
           (expr as NAryExpr).Fun.FunctionName == "+")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Addition,
+        result = DataFlowAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Addition,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
       else if ((expr as NAryExpr).Fun.FunctionName == "$sub" ||
         (expr as NAryExpr).Fun.FunctionName == "-")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Subtraction,
+        result = DataFlowAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Subtraction,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
       else if ((expr as NAryExpr).Fun.FunctionName == "$mul" ||
         (expr as NAryExpr).Fun.FunctionName == "*")
       {
-        result = PointerAliasAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Multiplication,
+        result = DataFlowAnalyser.DoPointerArithmetic(impl, label, ArithmeticOperation.Multiplication,
           (expr as NAryExpr).Args[0], (expr as NAryExpr).Args[1]);
       }
 
@@ -263,26 +265,26 @@ namespace Whoop.Analysis
       {
         if (left is NAryExpr)
         {
-          if (PointerAliasAnalyser.IsArithmeticExpression(left as NAryExpr))
+          if (DataFlowAnalyser.IsArithmeticExpression(left as NAryExpr))
           {
-            left = PointerAliasAnalyser.DoPointerArithmetic(impl, label, left);
+            left = DataFlowAnalyser.DoPointerArithmetic(impl, label, left);
           }
         }
         else if (!(left is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(left.ToString())))
         {
-          left = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, left);
+          left = DataFlowAnalyser.GetPointerArithmeticExpr(impl, left);
         }
 
         if (right is NAryExpr)
         {
-          if (PointerAliasAnalyser.IsArithmeticExpression(right as NAryExpr))
+          if (DataFlowAnalyser.IsArithmeticExpression(right as NAryExpr))
           {
-            right = PointerAliasAnalyser.DoPointerArithmetic(impl, label, right);
+            right = DataFlowAnalyser.DoPointerArithmetic(impl, label, right);
           }
         }
         else if (!(right is LiteralExpr) && !impl.InParams.Any(val => val.Name.Equals(right.ToString())))
         {
-          right = PointerAliasAnalyser.GetPointerArithmeticExpr(impl, right);
+          right = DataFlowAnalyser.GetPointerArithmeticExpr(impl, right);
         }
 
         if (aop == ArithmeticOperation.Addition)
@@ -305,8 +307,6 @@ namespace Whoop.Analysis
 
       return result;
     }
-
-    #region helper functions
 
     private static bool IsArithmeticExpression(NAryExpr expr)
     {

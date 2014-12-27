@@ -95,14 +95,22 @@ namespace Whoop.Instrumentation
     {
       for (int i = 0; i < this.MemoryRegions.Count; i++)
       {
-        Variable aoff = new GlobalVariable(Token.NoToken,
+        Variable wavar = new GlobalVariable(Token.NoToken,
           new TypedIdent(Token.NoToken, "WRITTEN_" +
             this.MemoryRegions[i].Name + "_$" + this.EP.Name,
             Microsoft.Boogie.Type.Bool));
-        aoff.AddAttribute("access_checking", new object[] { });
+        Variable ravar = new GlobalVariable(Token.NoToken,
+          new TypedIdent(Token.NoToken, "READ_" +
+            this.MemoryRegions[i].Name + "_$" + this.EP.Name,
+            Microsoft.Boogie.Type.Bool));
 
-        if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(aoff.Name)))
-          this.AC.TopLevelDeclarations.Add(aoff);
+        wavar.AddAttribute("access_checking", new object[] { });
+        ravar.AddAttribute("access_checking", new object[] { });
+
+        if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(wavar.Name)))
+          this.AC.TopLevelDeclarations.Add(wavar);
+        if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(ravar.Name)))
+          this.AC.TopLevelDeclarations.Add(ravar);
       }
     }
 

@@ -27,6 +27,7 @@ namespace Whoop.Regions
     private Implementation InternalImplementation;
     protected Block RegionHeader;
     protected List<Block> RegionBlocks;
+    protected Dictionary<string, List<Expr>> ResourceAccesses;
 
     #endregion
 
@@ -127,6 +128,38 @@ namespace Whoop.Regions
       this.RegionHeader.Cmds = newCmds;
 
       return result;
+    }
+
+    public bool TryAddResourceAccess(string resource, Expr access)
+    {
+      if (this.ResourceAccesses == null)
+        this.ResourceAccesses = new Dictionary<string, List<Expr>>();
+
+      if (!this.ResourceAccesses.ContainsKey(resource))
+      {
+        this.ResourceAccesses.Add(resource, new List<Expr> { access });
+        return true;
+      }
+      else if (this.ResourceAccesses[resource].Any(val =>
+        val.ToString().Equals(access.ToString())))
+      {
+        return false;
+      }
+      else
+      {
+        this.ResourceAccesses[resource].Add(access);
+        return true;
+      }
+    }
+
+    public Dictionary<string, List<Expr>> GetResourceAccesses()
+    {
+      return this.ResourceAccesses;
+    }
+
+    public void ClearResourceAccesses()
+    {
+      this.ResourceAccesses = null;
     }
 
     #endregion

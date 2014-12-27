@@ -107,10 +107,18 @@ namespace Whoop
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "lockset"));
     }
 
-    public List<Variable> GetAccessCheckingVariables()
+    public List<Variable> GetWriteAccessCheckingVariables()
     {
       return this.TopLevelDeclarations.OfType<Variable>().ToList().
-        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking"));
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking") &&
+          val.Name.Contains("WRITTEN_"));
+    }
+
+    public List<Variable> GetReadAccessCheckingVariables()
+    {
+      return this.TopLevelDeclarations.OfType<Variable>().ToList().
+        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "access_checking") &&
+          val.Name.Contains("READ_"));
     }
 
     public List<Variable> GetDomainSpecificVariables()
@@ -243,9 +251,14 @@ namespace Whoop
 
     #region internal helper functions
 
-    internal string GetAccessVariableName(EntryPoint ep, string name)
+    internal string GetWriteAccessVariableName(EntryPoint ep, string name)
     {
       return "WRITTEN_" + name + "_$" + ep.Name;
+    }
+
+    internal string GetReadAccessVariableName(EntryPoint ep, string name)
+    {
+      return "READ_" + name + "_$" + ep.Name;
     }
 
     internal string GetAccessWatchdogConstantName(string name)

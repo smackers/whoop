@@ -167,7 +167,13 @@ namespace Whoop.Instrumentation
         region.Procedure().Requires.Add(require);
       }
 
-      foreach (var acv in this.AC.GetAccessCheckingVariables())
+      foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
+      {
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
+        region.Procedure().Requires.Add(require);
+      }
+
+      foreach (var acv in this.AC.GetReadAccessCheckingVariables())
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
         region.Procedure().Requires.Add(require);

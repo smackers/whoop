@@ -107,24 +107,44 @@ namespace Whoop.Instrumentation
 
         if (access == AccessType.WRITE)
         {
-          foreach (var acv in this.AC.GetAccessCheckingVariables())
+          foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
           {
             if (!acv.Name.Split('_')[1].Equals(mr.Name))
               continue;
 
-            Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
-              val.Name.Contains(this.AC.GetAccessVariableName(this.EP, mr.Name)));
-
-            IdentifierExpr acsExpr = new IdentifierExpr(acs.tok, acs);
+            var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
+              val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, mr.Name)));
+            var wacsExpr = new IdentifierExpr(wacs.tok, wacs);
 
             cmds.Add(new AssignCmd(Token.NoToken,
               new List<AssignLhs>() {
-              new SimpleAssignLhs(Token.NoToken, acsExpr)
+              new SimpleAssignLhs(Token.NoToken, wacsExpr)
             }, new List<Expr> {
               Expr.True
             }));
 
-            proc.Modifies.Add(acsExpr);
+            proc.Modifies.Add(wacsExpr);
+          }
+        }
+        else if (access == AccessType.READ)
+        {
+          foreach (var acv in this.AC.GetReadAccessCheckingVariables())
+          {
+            if (!acv.Name.Split('_')[1].Equals(mr.Name))
+              continue;
+
+            var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
+              val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, mr.Name)));
+            var racsExpr = new IdentifierExpr(racs.tok, racs);
+
+            cmds.Add(new AssignCmd(Token.NoToken,
+              new List<AssignLhs>() {
+              new SimpleAssignLhs(Token.NoToken, racsExpr)
+            }, new List<Expr> {
+              Expr.True
+            }));
+
+            proc.Modifies.Add(racsExpr);
           }
         }
 
@@ -204,19 +224,30 @@ namespace Whoop.Instrumentation
     {
       List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
 
-      foreach (var acv in this.AC.GetAccessCheckingVariables())
+      foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
       {
         string targetName = acv.Name.Split('_')[1];
         if (!vars.Any(val => val.Name.Equals(targetName)))
           continue;
 
-        Variable acs = this.AC.GetAccessCheckingVariables().Find(val =>
-          val.Name.Contains(this.AC.GetAccessVariableName(this.EP, targetName)));
+        var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
+          val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
 
-        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acs.Name)))
-        {
-          region.Procedure().Modifies.Add(new IdentifierExpr(acs.tok, acs));
-        }
+        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(wacs.Name)))
+          region.Procedure().Modifies.Add(new IdentifierExpr(wacs.tok, wacs));
+      }
+
+      foreach (var acv in this.AC.GetReadAccessCheckingVariables())
+      {
+        string targetName = acv.Name.Split('_')[1];
+        if (!vars.Any(val => val.Name.Equals(targetName)))
+          continue;
+
+        var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
+          val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, targetName)));
+
+        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(racs.Name)))
+          region.Procedure().Modifies.Add(new IdentifierExpr(racs.tok, racs));
       }
     }
 

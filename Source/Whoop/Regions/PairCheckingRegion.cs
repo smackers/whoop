@@ -259,10 +259,17 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
-      foreach (var acv in this.AC.GetAccessCheckingVariables())
+      foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
                              new Duplicator().Visit(acv.Clone()) as Variable)));
+        this.InternalImplementation.Proc.Requires.Add(require);
+      }
+
+      foreach (var acv in this.AC.GetReadAccessCheckingVariables())
+      {
+        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
+          new Duplicator().Visit(acv.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
@@ -297,7 +304,13 @@ namespace Whoop.Regions
           ls.Id.tok, new Duplicator().Visit(ls.Id.Clone()) as Variable));
       }
 
-      foreach (var acs in this.AC.GetAccessCheckingVariables())
+      foreach (var acs in this.AC.GetWriteAccessCheckingVariables())
+      {
+        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
+          acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
+      }
+
+      foreach (var acs in this.AC.GetReadAccessCheckingVariables())
       {
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
@@ -412,25 +425,34 @@ namespace Whoop.Regions
 
     private AssertCmd CreateRaceCheckingAssertion(Implementation impl1, Implementation impl2, Variable mr)
     {
-      Variable acs1 = this.AC.GetAccessCheckingVariables().Find(val =>
-        val.Name.Contains(this.AC.GetAccessVariableName(this.EP1, mr.Name)));
-      Variable acs2 = this.AC.GetAccessCheckingVariables().Find(val =>
-        val.Name.Contains(this.AC.GetAccessVariableName(this.EP2, mr.Name)));
+      Variable wacs1 = this.AC.GetWriteAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP1, mr.Name)));
+      Variable wacs2 = this.AC.GetWriteAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP2, mr.Name)));
+      Variable racs1 = this.AC.GetReadAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP1, mr.Name)));
+      Variable racs2 = this.AC.GetReadAccessCheckingVariables().Find(val =>
+        val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP2, mr.Name)));
 
-      if (acs1 == null || acs2 == null)
+      if (wacs1 == null || wacs2 == null || racs1 == null || racs2 == null)
         return null;
 
-      IdentifierExpr acsExpr1 = new IdentifierExpr(acs1.tok, acs1);
-      IdentifierExpr acsExpr2 = new IdentifierExpr(acs2.tok, acs2);
+      IdentifierExpr wacsExpr1 = new IdentifierExpr(wacs1.tok, wacs1);
+      IdentifierExpr wacsExpr2 = new IdentifierExpr(wacs2.tok, wacs2);
+      IdentifierExpr racsExpr1 = new IdentifierExpr(racs1.tok, racs1);
+      IdentifierExpr racsExpr2 = new IdentifierExpr(racs2.tok, racs2);
 
-      Expr acsOrExpr = null;
+      Expr accessesExpr = null;
       if (this.EP1.Name.Equals(this.EP2.Name))
       {
-        acsOrExpr = acsExpr1;
+        accessesExpr = wacsExpr1;
       }
       else
       {
-        acsOrExpr = Expr.Or(acsExpr1, acsExpr2);
+//        accessesExpr = Expr.Or(wacsExpr1, wacsExpr2);
+
+        accessesExpr = Expr.Or(Expr.Or(Expr.And(wacsExpr1, wacsExpr2),
+          Expr.And(wacsExpr1, racsExpr2)), Expr.And(racsExpr1, wacsExpr2));
       }
 
       Expr checkExpr = null;
@@ -469,7 +491,7 @@ namespace Whoop.Regions
         checkExpr = Expr.False;
       }
 
-      Expr acsImpExpr = Expr.Imp(acsOrExpr, checkExpr);
+      Expr acsImpExpr = Expr.Imp(accessesExpr, checkExpr);
 
       AssertCmd assert = new AssertCmd(Token.NoToken, acsImpExpr);
       assert.Attributes = new QKeyValue(Token.NoToken, "resource",
@@ -504,7 +526,7 @@ namespace Whoop.Regions
           {
             foreach (var inParam in call.Ins)
             {
-              Expr resolved = PointerAliasAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+              Expr resolved = DataFlowAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
               {
@@ -521,7 +543,7 @@ namespace Whoop.Regions
           {
             foreach (var inParam in call.Ins)
             {
-              Expr resolved = PointerAliasAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+              Expr resolved = DataFlowAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
               {

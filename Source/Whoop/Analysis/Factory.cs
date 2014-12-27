@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using Whoop.Domain.Drivers;
 
 namespace Whoop.Analysis
 {
@@ -23,6 +24,11 @@ namespace Whoop.Analysis
     public static ILockAbstraction CreateLockAbstraction(AnalysisContext ac)
     {
       return new LockAbstraction(ac);
+    }
+
+    public static IWatchdogInformationAnalysis CreateWatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
+    {
+      return new WatchdogInformationAnalysis(ac, ep);
     }
   }
 }
