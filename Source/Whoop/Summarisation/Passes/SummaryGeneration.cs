@@ -25,9 +25,17 @@ namespace Whoop.Summarisation
 {
   internal abstract class SummaryGeneration
   {
-    protected AnalysisContext AC;
+    private AnalysisContext AC;
     protected EntryPoint EP;
     protected ExecutionTimer Timer;
+
+    protected List<InstrumentationRegion> InstrumentationRegions;
+    protected List<Variable> CurrentLocksetVariables;
+    protected List<Variable> MemoryLocksetVariables;
+    protected List<Variable> WriteAccessCheckingVariables;
+    protected List<Variable> ReadAccessCheckingVariables;
+    protected List<Variable> AccessWatchdogConstants;
+    protected List<Variable> DomainSpecificVariables;
 
     protected HashSet<Constant> ExistentialBooleans;
     private Dictionary<Variable, Constant> TrueExistentialBooleansDict;
@@ -39,6 +47,34 @@ namespace Whoop.Summarisation
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
+
+      this.InstrumentationRegions = this.AC.InstrumentationRegions;
+      this.WriteAccessCheckingVariables = this.AC.GetWriteAccessCheckingVariables();
+      this.ReadAccessCheckingVariables = this.AC.GetReadAccessCheckingVariables();
+      this.AccessWatchdogConstants = this.AC.GetAccessWatchdogConstants();
+      this.DomainSpecificVariables = this.AC.GetDomainSpecificVariables();
+
+      this.CurrentLocksetVariables = new List<Variable>();
+      foreach (var ls in this.AC.GetCurrentLocksetVariables())
+      {
+        if (ls.Name.StartsWith("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Name.StartsWith("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
+        this.CurrentLocksetVariables.Add(ls);
+      }
+
+      this.MemoryLocksetVariables = new List<Variable>();
+      foreach (var ls in this.AC.GetMemoryLocksetVariables())
+      {
+        if (ls.Name.StartsWith("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Name.StartsWith("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
+        this.MemoryLocksetVariables.Add(ls);
+      }
 
       this.ExistentialBooleans = new HashSet<Constant>();
       this.TrueExistentialBooleansDict = new Dictionary<Variable, Constant>();

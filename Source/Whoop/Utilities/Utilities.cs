@@ -26,6 +26,7 @@ namespace Whoop
       if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
         funcName.Contains("$memset") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
+        funcName.Equals("ASSERT_RTNL") ||
 //        funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||
 //        funcName.Equals("dma_sync_single_for_cpu") || funcName.Equals("dma_sync_single_for_device") ||
 //        funcName.Equals("dma_map_single") ||

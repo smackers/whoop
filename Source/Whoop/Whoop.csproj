@@ -97,6 +97,8 @@
     <Compile Include="Analysis\DataFlowAnalyser.cs" />
     <Compile Include="Analysis\Passes\WatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Interfaces\IWatchdogInformationAnalysis.cs" />
+    <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />
+    <Compile Include="Summarisation\Interfaces\IDomainKnowledgeSummaryGeneration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

@@ -231,6 +231,7 @@ namespace Whoop.Analysis
         if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
           proc.Name.Contains("$memset") ||
           proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
+          proc.Name.Equals("ASSERT_RTNL") ||
 //          proc.Name.Equals("dma_alloc_coherent") || proc.Name.Equals("dma_free_coherent") ||
 //          proc.Name.Equals("dma_sync_single_for_cpu") || proc.Name.Equals("dma_sync_single_for_device") ||
 //          proc.Name.Equals("dma_map_single") ||

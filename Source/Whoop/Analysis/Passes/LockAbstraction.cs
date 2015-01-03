@@ -46,6 +46,13 @@ namespace Whoop.Analysis
 
       this.IdentifyAndCreateUniqueLocks();
 
+//      if (WhoopCommandLineOptions.Get().ModelKernelLocks)
+//      {
+//        this.CreateKernelLocks();
+//      }
+
+      this.CreateKernelLocks();
+
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
@@ -69,8 +76,8 @@ namespace Whoop.Analysis
           if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
             continue;
 
-          Expr lockExpr = DataFlowAnalyser.ComputeRootPointer(initFunc, block.Label,
-            ((block.Cmds[idx] as CallCmd).Ins[0]));
+          Expr lockExpr = DataFlowAnalyser.ComputeRootPointer(initFunc,
+            block.Label, ((block.Cmds[idx] as CallCmd).Ins[0]));
 
           Lock newLock = new Lock(new Constant(Token.NoToken,
             new TypedIdent(Token.NoToken, "lock$" + this.AC.Locks.Count,
@@ -81,6 +88,28 @@ namespace Whoop.Analysis
           this.AC.Locks.Add(newLock);
         }
       }
+    }
+
+    /// <summary>
+    /// Creates kernel-specific locks.
+    /// </summary>
+    private void CreateKernelLocks()
+    {
+      Lock powerLock = new Lock(new Constant(Token.NoToken,
+        new TypedIdent(Token.NoToken, "lock$power",
+          Microsoft.Boogie.Type.Int), true));
+      Lock rtnlLock = new Lock(new Constant(Token.NoToken,
+        new TypedIdent(Token.NoToken, "lock$rtnl",
+          Microsoft.Boogie.Type.Int), true));
+
+      powerLock.Id.AddAttribute("lock", new object[] { });
+      rtnlLock.Id.AddAttribute("lock", new object[] { });
+
+      this.AC.TopLevelDeclarations.Add(powerLock.Id);
+      this.AC.TopLevelDeclarations.Add(rtnlLock.Id);
+
+      this.AC.Locks.Add(powerLock);
+      this.AC.Locks.Add(rtnlLock);
     }
   }
 }

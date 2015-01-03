@@ -39,7 +39,7 @@ namespace Whoop.Summarisation
         base.Timer.Start();
       }
 
-      foreach (var region in base.AC.InstrumentationRegions)
+      foreach (var region in base.InstrumentationRegions)
       {
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
@@ -52,7 +52,7 @@ namespace Whoop.Summarisation
 //        base.InstrumentEnsuresCandidates(region, base.AC.GetReadAccessCheckingVariables(), false, true);
       }
 
-      foreach (var region in base.AC.InstrumentationRegions)
+      foreach (var region in base.InstrumentationRegions)
       {
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
@@ -83,16 +83,13 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInEntryPointRegion(InstrumentationRegion region)
     {
-      if (region.GetResourceAccesses() == null)
-        return;
-
       foreach (var pair in region.GetResourceAccesses())
       {
-        var waVars = base.AC.GetWriteAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
-        var raVars = base.AC.GetReadAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
+        var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
+        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;
 
-        foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+        foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
             continue;
@@ -122,16 +119,13 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInRegion(InstrumentationRegion region)
     {
-      if (region.GetResourceAccesses() == null)
-        return;
-
       foreach (var pair in region.GetResourceAccesses())
       {
-        var waVars = base.AC.GetWriteAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
-        var raVars = base.AC.GetReadAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
+        var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
+        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;
 
-        foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+        foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
             continue;
@@ -161,6 +155,55 @@ namespace Whoop.Summarisation
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false);
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false);
       }
+
+//      if (region.GetResourceAccesses().Count == 0)
+//      {
+//        var epRegion = base.AC.InstrumentationRegions.Find(val =>
+//          val.Implementation().Name.Equals(base.EP.Name));
+//
+//        foreach (var pair in epRegion.GetResourceAccesses())
+//        {
+//          var waVars = base.AC.GetWriteAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
+//          var raVars = base.AC.GetReadAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
+//          Expr nonWatchedExpr = null;
+//
+//          foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+//          {
+//            if (!watchedVar.Name.Contains(pair.Key))
+//              continue;
+//
+//            foreach (var inParam in region.Implementation().InParams)
+//            {
+//              if (!inParam.TypedIdent.Type.IsInt)
+//                continue;
+//
+//              var access = Expr.Add(new IdentifierExpr(inParam.tok, inParam),
+//                new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
+//
+//              var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+//              base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false);
+//              base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false);
+//              base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false);
+//              base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false);
+//
+//              if (nonWatchedExpr == null)
+//              {
+//                nonWatchedExpr = Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+//              }
+//              else
+//              {
+//                nonWatchedExpr = Expr.And(nonWatchedExpr,
+//                  Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access));
+//              }
+//            }
+//          }
+//
+//          base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false);
+//          base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false);
+//          base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false);
+//          base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false);
+//        }
+//      }
     }
 
     #endregion

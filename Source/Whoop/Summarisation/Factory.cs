@@ -25,5 +25,10 @@ namespace Whoop.Summarisation
     {
       return new AccessCheckingSummaryGeneration(ac, ep);
     }
+
+    public static IDomainKnowledgeSummaryGeneration CreateDomainKnowledgeSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    {
+      return new DomainKnowledgeSummaryGeneration(ac, ep);
+    }
   }
 }

@@ -86,6 +86,11 @@ namespace Whoop.Instrumentation
           if (!ls.TargetName.Equals(mr.Name))
             continue;
 
+          if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+            continue;
+          else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+            continue;
+
           foreach (var cls in this.AC.CurrentLocksets)
           {
             if (!cls.Lock.Name.Equals(ls.Lock.Name))

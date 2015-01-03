@@ -24,16 +24,29 @@ namespace Whoop
     public readonly Constant Id;
     public readonly string Name;
 
+    public readonly bool IsKernelSpecific;
+
+    public Lock(Constant id)
+    {
+      this.Id = id;
+      this.Name = id.Name;
+      this.IsKernelSpecific = true;
+    }
+
     public Lock(Constant id, Expr lockExpr)
     {
       this.Id = id;
       this.Name = id.Name;
       this.Ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
       this.Ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+      this.IsKernelSpecific = false;
     }
 
     public bool IsEqual(AnalysisContext ac, Implementation impl, Expr lockExpr)
     {
+      if (this.IsKernelSpecific)
+        return false;
+
       IdentifierExpr ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
       int ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
 

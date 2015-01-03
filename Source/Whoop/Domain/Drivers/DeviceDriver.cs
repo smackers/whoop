@@ -170,7 +170,7 @@ namespace Whoop.Domain.Drivers
     /// </summary>
     /// <returns>Boolean value</returns>
     /// <param name="ep">Name of entry point</param>
-    private static bool HasKernelImposedDeviceLock(string ep)
+    internal static bool HasKernelImposedDeviceLock(string ep)
     {
       // pci driver API
       if (ep.Equals("probe") || ep.Equals("remove") ||
@@ -181,18 +181,20 @@ namespace Whoop.Domain.Drivers
       if (ep.Equals("prepare") || ep.Equals("complete") ||
         ep.Equals("resume") || ep.Equals("suspend") ||
         ep.Equals("freeze") || ep.Equals("poweroff") ||
-        ep.Equals("restore") || ep.Equals("thaw"))
+        ep.Equals("restore") || ep.Equals("thaw") ||
+        ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
+        ep.Equals("runtime_idle"))
         return true;
 
       return false;
     }
 
     /// <summary>
-    /// Checks if the entry point has been serialised by the dev->power.lock lock.
+    /// Checks if the entry point has been serialised by dev->power.lock.
     /// </summary>
     /// <returns>Boolean value</returns>
     /// <param name="ep">Name of entry point</param>
-    private static bool HasKernelImposedPowerLock(string ep)
+    internal static bool HasKernelImposedPowerLock(string ep)
     {
       // power management API
       if (ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
@@ -207,10 +209,13 @@ namespace Whoop.Domain.Drivers
     /// </summary>
     /// <returns>Boolean value</returns>
     /// <param name="ep">Name of entry point</param>
-    private static bool HasKernelImposedRTNL(string ep)
+    internal static bool HasKernelImposedRTNL(string ep)
     {
       // network device management API
-      if (ep.Equals("ndo_open") || ep.Equals("ndo_stop"))
+      if (ep.Equals("ndo_init") || ep.Equals("ndo_uninit") ||
+        ep.Equals("ndo_open") || ep.Equals("ndo_stop") ||
+        ep.Equals("ndo_validate_addr") ||
+        ep.Equals("ndo_fix_features") || ep.Equals("ndo_set_features"))
         return true;
 
       // ethernet device management API

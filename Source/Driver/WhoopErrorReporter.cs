@@ -64,12 +64,16 @@ namespace Whoop
       }
       else if (error is CallCounterexample)
       {
+        Console.WriteLine((error as CallCounterexample).FailingRequires.Condition);
+        Console.WriteLine((error as CallCounterexample).FailingRequires.Line);
         errors++;
         this.ReportRequiresFailure(error as CallCounterexample);
         Console.WriteLine("Error: CallCounterexample");
       }
       else if (error is ReturnCounterexample)
       {
+        Console.WriteLine((error as ReturnCounterexample).FailingEnsures.Condition);
+        Console.WriteLine((error as ReturnCounterexample).FailingEnsures.Line);
         errors++;
         Console.WriteLine("Error: ReturnCounterexample");
       }

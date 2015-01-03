@@ -17,8 +17,17 @@ namespace Whoop.Domain.Drivers
   {
     public readonly string Name;
     public readonly string KernelFunc;
+
     public readonly Module Module;
+
     public readonly bool IsInit;
+
+    public readonly bool IsDeviceLocked;
+    public readonly bool IsPowerLocked;
+    public readonly bool IsRtnlLocked;
+
+    public bool IsCallingPowerLock;
+    public bool IsCallingRtnlLock;
 
     public EntryPoint(string name, string kernelFunc, Module module)
     {
@@ -35,6 +44,24 @@ namespace Whoop.Domain.Drivers
       {
         this.IsInit = false;
       }
+
+      if (DeviceDriver.HasKernelImposedDeviceLock(kernelFunc))
+        this.IsDeviceLocked = true;
+      else
+        this.IsDeviceLocked = false;
+
+      if (DeviceDriver.HasKernelImposedPowerLock(kernelFunc))
+        this.IsPowerLocked = true;
+      else
+        this.IsPowerLocked = false;
+
+      if (DeviceDriver.HasKernelImposedRTNL(kernelFunc))
+        this.IsRtnlLocked = true;
+      else
+        this.IsRtnlLocked = false;
+
+      this.IsCallingPowerLock = false;
+      this.IsCallingRtnlLock = false;
     }
   }
 }

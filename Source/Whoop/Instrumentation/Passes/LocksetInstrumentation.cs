@@ -79,6 +79,11 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
         proc.Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
@@ -89,6 +94,11 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
         List<AssignLhs> newLhss = new List<AssignLhs>();
         List<Expr> newRhss = new List<Expr>();
 
@@ -131,6 +141,28 @@ namespace Whoop.Instrumentation
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.False);
         }
+        else if (c.callee.Equals("ASSERT_RTNL"))
+        {
+          if (!WhoopCommandLineOptions.Get().ModelKernelLocks)
+            continue;
+
+          var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
+
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+          c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
+          c.Ins.Add(Expr.True);
+        }
+        else if (c.callee.Equals("ASSERT_RTNL"))
+        {
+          if (!WhoopCommandLineOptions.Get().ModelKernelLocks)
+            continue;
+
+          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
+
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+          c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
+          c.Ins.Add(Expr.True);
+        }
       }
     }
 
@@ -138,6 +170,11 @@ namespace Whoop.Instrumentation
     {
       foreach (var ls in this.AC.CurrentLocksets)
       {
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
@@ -147,6 +184,12 @@ namespace Whoop.Instrumentation
       {
         if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
           continue;
+
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
 
@@ -155,14 +198,25 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
+        var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Requires.Add(require);
-        Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
-        region.Procedure().Ensures.Add(ensure);
+
+//        var ensures = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
+//        region.Procedure().Ensures.Add(ensures);
       }
 
       foreach (var ls in this.AC.MemoryLocksets)
       {
+        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+          continue;
+        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+
         Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok, ls.Id));
         region.Procedure().Requires.Add(require);
       }

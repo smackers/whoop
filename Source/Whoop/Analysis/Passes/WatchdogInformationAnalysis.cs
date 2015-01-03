@@ -71,9 +71,11 @@ namespace Whoop.Analysis
 
     private bool AnalyseAccessesInRegion(InstrumentationRegion region)
     {
-      if (region.GetResourceAccesses() != null)
-        return true;
-
+      int preCount = 0;
+      foreach (var r in region.GetResourceAccesses())
+      {
+        preCount = preCount + r.Value.Count;
+      }
       foreach (var block in region.Implementation().Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
@@ -101,33 +103,41 @@ namespace Whoop.Analysis
             var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
             if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
               continue;
+
             region.TryAddResourceAccess(resource, ptrExpr);
           }
           else if (!isInstrumentedCall)
           {
             var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
               val.Implementation().Name.Equals(call.callee));
+            if (calleeRegion == null)
+              continue;
+
             var calleeResourceAccesses = calleeRegion.GetResourceAccesses();
             if (calleeResourceAccesses == null)
-            {
-              region.ClearResourceAccesses();
-              return false;
-            }
+              continue;
 
             foreach (var r in calleeResourceAccesses)
             {
               foreach (var a in r.Value)
               {
-                var calleeAccess = a as NAryExpr;
-                var index = this.TryGetArgumentIndex(call, calleeRegion, calleeAccess.Args[0]);
+                int index;
+                if (a is NAryExpr)
+                  index = this.TryGetArgumentIndex(call, calleeRegion, (a as NAryExpr).Args[0]);
+                else
+                  index = this.TryGetArgumentIndex(call, calleeRegion, a);
                 if (index < 0)
                   continue;
 
                 var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[index]);
-                if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
+                if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
                   continue;
 
-                var computedExpr = this.MergeExpr(ptrExpr, calleeAccess.Args[1], calleeAccess.Fun);
+                Expr computedExpr;
+                if (a is NAryExpr)
+                  computedExpr = this.MergeExpr(ptrExpr, (a as NAryExpr).Args[1], (a as NAryExpr).Fun);
+                else
+                  computedExpr = ptrExpr;
                 if (computedExpr == null)
                   continue;
 
@@ -138,7 +148,14 @@ namespace Whoop.Analysis
         }
       }
 
-      return true;
+      int afterCount = 0;
+      foreach (var r in region.GetResourceAccesses())
+      {
+        afterCount = afterCount + r.Value.Count;
+      }
+
+      if (preCount != afterCount) return false;
+      else return true;
     }
 
     #endregion

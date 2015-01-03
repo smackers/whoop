@@ -26,7 +26,8 @@ namespace Whoop.Refactoring
   internal class LockRefactoring : ILockRefactoring
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
+    private Implementation Implementation;
     private ExecutionTimer Timer;
 
     private HashSet<Implementation> AlreadyRefactoredFunctions;
@@ -35,7 +36,8 @@ namespace Whoop.Refactoring
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
+      this.Implementation = this.AC.GetImplementation(ep.Name);
       this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
     }
 
@@ -50,7 +52,7 @@ namespace Whoop.Refactoring
         this.Timer.Start();
       }
 
-      this.AnalyseAndInstrumentLocks(this.EP);
+      this.AnalyseAndInstrumentLocks(this.Implementation);
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -79,7 +81,17 @@ namespace Whoop.Refactoring
             CallCmd call = cmd as CallCmd;
 
             if (Utilities.ShouldSkipFromAnalysis(call))
+              continue;
+
+            if (call.callee.Contains("pm_runtime_get_sync") ||
+              call.callee.Contains("pm_runtime_put_sync"))
             {
+              this.EP.IsCallingPowerLock = true;
+              continue;
+            }
+            else if (call.callee.Contains("ASSERT_RTNL"))
+            {
+              this.EP.IsCallingRtnlLock = true;
               continue;
             }
 
@@ -119,7 +131,7 @@ namespace Whoop.Refactoring
               bool matched = false;
               foreach (var l in this.AC.Locks)
               {
-                if (l.IsEqual(this.AC, this.EP, lockExpr))
+                if (l.IsEqual(this.AC, this.Implementation, lockExpr))
                 {
                   call.Ins[0] = new IdentifierExpr(l.Id.tok, l.Id);
                   matched = true;

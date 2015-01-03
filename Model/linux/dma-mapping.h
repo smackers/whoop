@@ -60,9 +60,9 @@ struct dma_map_ops {
 
 #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
-void* dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, gfp_t gfp) { }
+void* dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, gfp_t gfp);
 
-void dma_free_coherent(struct device *dev, size_t size, void *vaddr, dma_addr_t bus) { }
+void dma_free_coherent(struct device *dev, size_t size, void *vaddr, dma_addr_t bus);
 
 void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle, size_t size, enum dma_data_direction direction) { }
 
@@ -70,7 +70,7 @@ void dma_sync_single_for_device(struct device *dev, dma_addr_t addr, size_t size
 
 dma_addr_t dma_map_single(struct device *dev, void *ptr, size_t size, enum dma_data_direction direction) { }
 
-void dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size, enum dma_data_direction direction) { }
+void dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size, enum dma_data_direction direction);
 
 static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
 {

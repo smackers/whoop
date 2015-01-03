@@ -20,6 +20,7 @@ using Microsoft.Basetypes;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
+using System.Net;
 
 namespace Whoop.Summarisation
 {
@@ -39,7 +40,7 @@ namespace Whoop.Summarisation
         base.Timer.Start();
       }
 
-      foreach (var region in base.AC.InstrumentationRegions)
+      foreach (var region in base.InstrumentationRegions)
       {
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
@@ -50,7 +51,7 @@ namespace Whoop.Summarisation
 //        base.InstrumentEnsuresCandidates(region, base.AC.GetMemoryLocksetVariables(), false, true);
       }
 
-      foreach (var region in base.AC.InstrumentationRegions)
+      foreach (var region in base.InstrumentationRegions)
       {
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
@@ -80,15 +81,15 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInEntryPointRegion(InstrumentationRegion region)
     {
-      if (region.GetResourceAccesses() == null)
-        return;
+      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
 
       foreach (var pair in region.GetResourceAccesses())
       {
-        var memLsVars = base.AC.GetMemoryLocksetVariables().FindAll(val => val.Name.Contains(pair.Key));
+        var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;
 
-        foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+        foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
             continue;
@@ -116,20 +117,17 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInRegion(InstrumentationRegion region)
     {
-      if (region.GetResourceAccesses() == null)
-        return;
-
-      base.InstrumentRequiresCandidates(region, base.AC.GetCurrentLocksetVariables(), true);
-      base.InstrumentRequiresCandidates(region, base.AC.GetCurrentLocksetVariables(), false);
-      base.InstrumentEnsuresCandidates(region, base.AC.GetCurrentLocksetVariables(), true);
-      base.InstrumentEnsuresCandidates(region, base.AC.GetCurrentLocksetVariables(), false);
+      base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
+      base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, false);
+      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
 
       foreach (var pair in region.GetResourceAccesses())
       {
-        var memLsVars = base.AC.GetMemoryLocksetVariables().FindAll(val => val.Name.Contains(pair.Key));
+        var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;
 
-        foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+        foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
             continue;
@@ -155,6 +153,50 @@ namespace Whoop.Summarisation
         base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, memLsVars, true);
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true);
       }
+
+//      if (region.GetResourceAccesses().Count == 0)
+//      {
+//        var epRegion = base.AC.InstrumentationRegions.Find(val =>
+//          val.Implementation().Name.Equals(base.EP.Name));
+//
+//        foreach (var pair in epRegion.GetResourceAccesses())
+//        {
+//          var memLsVars = base.AC.GetMemoryLocksetVariables().FindAll(val => val.Name.Contains(pair.Key));
+//          Expr nonWatchedExpr = null;
+//
+//          foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
+//          {
+//            if (!watchedVar.Name.Contains(pair.Key))
+//              continue;
+//
+//            foreach (var inParam in region.Implementation().InParams)
+//            {
+//              if (!inParam.TypedIdent.Type.IsInt)
+//                continue;
+//
+//              var access = Expr.Add(new IdentifierExpr(inParam.tok, inParam),
+//                new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
+//
+//              var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+//              base.InstrumentImpliesRequiresCandidates(region, watchedExpr, memLsVars, true);
+//              base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, memLsVars, true);
+//
+//              if (nonWatchedExpr == null)
+//              {
+//                nonWatchedExpr = Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+//              }
+//              else
+//              {
+//                nonWatchedExpr = Expr.And(nonWatchedExpr,
+//                  Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access));
+//              }
+//            }
+//          }
+//
+//          base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, memLsVars, true);
+//          base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true);
+//        }
+//      }
     }
 
     #endregion

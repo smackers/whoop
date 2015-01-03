@@ -41,6 +41,7 @@ namespace Whoop.Regions
       this.ProcessRegionBlocks(impl);
       this.ProcessWrapperImplementation(impl);
       this.ProcessWrapperProcedure(impl);
+      this.ResourceAccesses = new Dictionary<string, List<Expr>>();
     }
 
     #endregion
@@ -132,9 +133,6 @@ namespace Whoop.Regions
 
     public bool TryAddResourceAccess(string resource, Expr access)
     {
-      if (this.ResourceAccesses == null)
-        this.ResourceAccesses = new Dictionary<string, List<Expr>>();
-
       if (!this.ResourceAccesses.ContainsKey(resource))
       {
         this.ResourceAccesses.Add(resource, new List<Expr> { access });
@@ -155,11 +153,6 @@ namespace Whoop.Regions
     public Dictionary<string, List<Expr>> GetResourceAccesses()
     {
       return this.ResourceAccesses;
-    }
-
-    public void ClearResourceAccesses()
-    {
-      this.ResourceAccesses = null;
     }
 
     #endregion
