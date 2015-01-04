@@ -83,7 +83,7 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInEntryPointRegion(InstrumentationRegion region)
     {
-      foreach (var pair in region.GetResourceAccesses())
+      foreach (var pair in region.ResourceAccesses)
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
         var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
@@ -119,7 +119,7 @@ namespace Whoop.Summarisation
 
     private void InstrumentAccessCallsInRegion(InstrumentationRegion region)
     {
-      foreach (var pair in region.GetResourceAccesses())
+      foreach (var pair in region.ResourceAccesses)
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
         var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));

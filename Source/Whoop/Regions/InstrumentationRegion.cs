@@ -15,6 +15,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 
 using Microsoft.Boogie;
+using System.Security.Policy;
 
 namespace Whoop.Regions
 {
@@ -23,11 +24,17 @@ namespace Whoop.Regions
     #region fields
 
     protected AnalysisContext AC;
+
     protected string RegionName;
+
     private Implementation InternalImplementation;
+
     protected Block RegionHeader;
     protected List<Block> RegionBlocks;
-    protected Dictionary<string, List<Expr>> ResourceAccesses;
+
+    internal Dictionary<string, List<Expr>> ResourceAccesses;
+    internal HashSet<string> ResourcesWithUnidentifiedAccesses;
+    internal bool IsResourceAnalysisDone;
 
     #endregion
 
@@ -42,6 +49,8 @@ namespace Whoop.Regions
       this.ProcessWrapperImplementation(impl);
       this.ProcessWrapperProcedure(impl);
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
+      this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
+      this.IsResourceAnalysisDone = false;
     }
 
     #endregion
@@ -131,11 +140,25 @@ namespace Whoop.Regions
       return result;
     }
 
+    #endregion
+
+    #region resource analysis related methods
+
     public bool TryAddResourceAccess(string resource, Expr access)
     {
+      if (access == null)
+      {
+        this.ResourcesWithUnidentifiedAccesses.Add(resource);
+        return false;
+      }
+
       if (!this.ResourceAccesses.ContainsKey(resource))
       {
         this.ResourceAccesses.Add(resource, new List<Expr> { access });
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
         return true;
       }
       else if (this.ResourceAccesses[resource].Any(val =>
@@ -146,13 +169,12 @@ namespace Whoop.Regions
       else
       {
         this.ResourceAccesses[resource].Add(access);
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
         return true;
       }
-    }
-
-    public Dictionary<string, List<Expr>> GetResourceAccesses()
-    {
-      return this.ResourceAccesses;
     }
 
     #endregion

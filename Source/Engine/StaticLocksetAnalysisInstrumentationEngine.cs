@@ -48,7 +48,7 @@ namespace Whoop
         this.Timer.Start();
       }
 
-      SharedStateAnalyser.AnalyseMemoryRegions(this.AC, this.EP);
+      SharedStateAnalyser.AnalyseMemoryRegionsWithPairInformation(this.AC, this.EP);
 
       Instrumentation.Factory.CreateInstrumentationRegionsConstructor(this.AC).Run();
       Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP).Run();

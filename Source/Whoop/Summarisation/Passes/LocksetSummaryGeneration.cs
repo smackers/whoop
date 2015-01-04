@@ -84,7 +84,7 @@ namespace Whoop.Summarisation
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
 
-      foreach (var pair in region.GetResourceAccesses())
+      foreach (var pair in region.ResourceAccesses)
       {
         var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;
@@ -122,7 +122,7 @@ namespace Whoop.Summarisation
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
 
-      foreach (var pair in region.GetResourceAccesses())
+      foreach (var pair in region.ResourceAccesses)
       {
         var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
         Expr nonWatchedExpr = null;

@@ -47,6 +47,7 @@ namespace Whoop.Instrumentation
 
       this.AddAccessFuncs(AccessType.WRITE);
       this.AddAccessFuncs(AccessType.READ);
+      this.AddNonCheckedAccessFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -184,6 +185,17 @@ namespace Whoop.Instrumentation
       }
     }
 
+    private void AddNonCheckedAccessFunc()
+    {
+      Procedure proc = new Procedure(Token.NoToken, this.MakeNonCheckedAccessFuncName(),
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
+        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      this.AC.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
+    }
+
     #endregion
 
     #region race checking instrumentation
@@ -203,10 +215,22 @@ namespace Whoop.Instrumentation
               !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
               continue;
 
-            var ind = lhs.Indexes[0];
-            CallCmd call = new CallCmd(Token.NoToken,
-              this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
-              new List<Expr> { ind }, new List<IdentifierExpr>());
+            CallCmd call = null;
+            if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+              val.Name.Equals(lhs.DeepAssignedIdentifier.Name)))
+            {
+              var ind = lhs.Indexes[0];
+              call = new CallCmd(Token.NoToken,
+                this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
+                new List<Expr> { ind }, new List<IdentifierExpr>());
+            }
+            else
+            {
+              call = new CallCmd(Token.NoToken,
+                this.MakeNonCheckedAccessFuncName(),
+                new List<Expr>(), new List<IdentifierExpr>());
+            }
+
             block.Cmds.Insert(idx + 1, call);
           }
 
@@ -216,9 +240,21 @@ namespace Whoop.Instrumentation
               !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
               continue;
 
-            CallCmd call = new CallCmd(Token.NoToken,
-              this.MakeAccessFuncName(AccessType.READ, (rhs.Args[0] as IdentifierExpr).Name),
-              new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
+            CallCmd call = null;
+            if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+              val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name)))
+            {
+              call = new CallCmd(Token.NoToken,
+                this.MakeAccessFuncName(AccessType.READ, (rhs.Args[0] as IdentifierExpr).Name),
+                new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
+            }
+            else
+            {
+              call = new CallCmd(Token.NoToken,
+                this.MakeNonCheckedAccessFuncName(),
+                new List<Expr>(), new List<IdentifierExpr>());
+            }
+
             block.Cmds.Insert(idx + 1, call);
           }
         }
@@ -263,6 +299,11 @@ namespace Whoop.Instrumentation
     private string MakeAccessFuncName(AccessType access, string name)
     {
       return "_" + access.ToString() + "_LS_" + name + "_$" + this.EP.Name;
+    }
+
+    private string MakeNonCheckedAccessFuncName()
+    {
+      return "_NON_CHECKED_ACCESS_$" + this.EP.Name;
     }
 
     #endregion

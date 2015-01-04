@@ -84,20 +84,6 @@ namespace Whoop.Analysis
             return id;
           alreadyVisited.Add(new Tuple<string, Expr>(label, result));
 
-//          if (PointerAliasAnalyser.IsArithmeticExpression(result as NAryExpr))
-//          {
-//            Console.WriteLine("DoPointerArithmetic");
-//            Expr arithmetic = PointerAliasAnalyser.DoPointerArithmetic(impl, result);
-//            Console.WriteLine(result + " " + arithmetic);
-//            if (result.ToString().Equals(arithmetic.ToString()))
-//            {
-//              return arithmetic;
-//            }
-//
-//            result = arithmetic;
-//            continue;
-//          }
-
           if (DataFlowAnalyser.IsArithmeticExpression(result as NAryExpr))
           {
             return id;

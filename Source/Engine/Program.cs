@@ -108,11 +108,20 @@ namespace Whoop
           timer.Start();
         }
 
+        var analysisContexts = new Dictionary<EntryPoint, AnalysisContext>();
         foreach (var ep in DeviceDriver.EntryPoints)
         {
           AnalysisContext ac = null;
           new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
             ref ac, new List<string> { ep.Name });
+
+          Analysis.SharedStateAnalyser.AnalyseMemoryRegions(ac, ep);
+          analysisContexts.Add(ep, ac);
+        }
+
+        foreach (var ep in DeviceDriver.EntryPoints)
+        {
+          var ac = analysisContexts[ep];
           new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
         }
 

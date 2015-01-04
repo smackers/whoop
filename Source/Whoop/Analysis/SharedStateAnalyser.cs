@@ -95,6 +95,32 @@ namespace Whoop.Analysis
       return false;
     }
 
+    public static void AnalyseMemoryRegionsWithPairInformation(AnalysisContext ac, EntryPoint ep)
+    {
+      var memRegions = new List<Variable>();
+      var epVars = SharedStateAnalyser.GetMemoryRegions(ep);
+      List<Variable> otherEpVars;
+
+      foreach (var pair in DeviceDriver.EntryPointPairs.FindAll(val =>
+        val.Item1.Name.Equals(ep.Name) || val.Item2.Name.Equals(ep.Name)))
+      {
+        if (!pair.Item1.Name.Equals(ep.Name))
+          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item1);
+        else if (!pair.Item2.Name.Equals(ep.Name))
+          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item2);
+        else
+          otherEpVars = epVars;
+
+        foreach (var v in epVars)
+        {
+          if (otherEpVars.Any(val => val.Name.Equals(v.Name)) && !memRegions.Contains(v))
+            memRegions.Add(v);
+        }
+      }
+
+      SharedStateAnalyser.EntryPointMemoryRegions[ep] = memRegions;
+    }
+
     public static void AnalyseMemoryRegions(AnalysisContext ac, EntryPoint ep)
     {
       if (SharedStateAnalyser.EntryPointMemoryRegions.ContainsKey(ep))

@@ -84,7 +84,9 @@ namespace Whoop.Refactoring
               continue;
 
             if (call.callee.Contains("pm_runtime_get_sync") ||
-              call.callee.Contains("pm_runtime_put_sync"))
+              call.callee.Contains("pm_runtime_get_noresume") ||
+              call.callee.Contains("pm_runtime_put_sync") ||
+              call.callee.Contains("pm_runtime_put_noidle"))
             {
               this.EP.IsCallingPowerLock = true;
               continue;

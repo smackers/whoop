@@ -152,16 +152,31 @@ namespace Whoop.Instrumentation
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
           c.Ins.Add(Expr.True);
         }
-        else if (c.callee.Equals("ASSERT_RTNL"))
+        else if (c.callee.Equals("pm_runtime_get_sync") ||
+          c.callee.Equals("pm_runtime_get_noresume"))
         {
-          if (!WhoopCommandLineOptions.Get().ModelKernelLocks)
-            continue;
-
           var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
 
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+
+          c.Ins.Clear();
+          c.Outs.Clear();
+
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.True);
+        }
+        else if (c.callee.Equals("pm_runtime_put_sync") ||
+          c.callee.Equals("pm_runtime_put_noidle"))
+        {
+          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
+
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+
+          c.Ins.Clear();
+          c.Outs.Clear();
+
+          c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
+          c.Ins.Add(Expr.False);
         }
       }
     }

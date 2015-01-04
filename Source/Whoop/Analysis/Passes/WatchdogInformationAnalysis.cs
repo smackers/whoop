@@ -45,6 +45,7 @@ namespace Whoop.Analysis
       }
 
       this.AnalyseInstrumentationRegions();
+      this.CleanUpInstrumentationRegions();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -71,11 +72,17 @@ namespace Whoop.Analysis
 
     private bool AnalyseAccessesInRegion(InstrumentationRegion region)
     {
+      if (region.IsResourceAnalysisDone)
+        return true;
+
       int preCount = 0;
-      foreach (var r in region.GetResourceAccesses())
+      foreach (var r in region.ResourceAccesses)
       {
         preCount = preCount + r.Value.Count;
       }
+
+      int numberOfCalls = 0;
+      int numberOfNonCheckedCalls = 0;
       foreach (var block in region.Implementation().Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
@@ -102,22 +109,32 @@ namespace Whoop.Analysis
           {
             var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
             if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-              continue;
+              ptrExpr = null;
 
             region.TryAddResourceAccess(resource, ptrExpr);
           }
           else if (!isInstrumentedCall)
           {
+            numberOfCalls++;
+
             var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
               val.Implementation().Name.Equals(call.callee));
             if (calleeRegion == null)
+            {
+              numberOfNonCheckedCalls++;
               continue;
+            }
 
-            var calleeResourceAccesses = calleeRegion.GetResourceAccesses();
-            if (calleeResourceAccesses == null)
+            if (calleeRegion.ResourceAccesses == null)
               continue;
+            if (calleeRegion.ResourceAccesses.Count == 0 &&
+                calleeRegion.IsResourceAnalysisDone)
+            {
+              numberOfNonCheckedCalls++;
+              continue;
+            }
 
-            foreach (var r in calleeResourceAccesses)
+            foreach (var r in calleeRegion.ResourceAccesses)
             {
               foreach (var a in r.Value)
               {
@@ -131,15 +148,13 @@ namespace Whoop.Analysis
 
                 var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[index]);
                 if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-                  continue;
+                  ptrExpr = null;
 
                 Expr computedExpr;
                 if (a is NAryExpr)
                   computedExpr = this.MergeExpr(ptrExpr, (a as NAryExpr).Args[1], (a as NAryExpr).Fun);
                 else
                   computedExpr = ptrExpr;
-                if (computedExpr == null)
-                  continue;
 
                 region.TryAddResourceAccess(r.Key, computedExpr);
               }
@@ -148,14 +163,39 @@ namespace Whoop.Analysis
         }
       }
 
+      if (region.ResourceAccesses.Count == 0 &&
+        numberOfCalls == numberOfNonCheckedCalls)
+      {
+        this.CleanUpInstrumentationRegion(region);
+        region.IsResourceAnalysisDone = true;
+        return false;
+      }
+
       int afterCount = 0;
-      foreach (var r in region.GetResourceAccesses())
+      foreach (var r in region.ResourceAccesses)
       {
         afterCount = afterCount + r.Value.Count;
       }
 
       if (preCount != afterCount) return false;
       else return true;
+    }
+
+    private void CleanUpInstrumentationRegions()
+    {
+//      foreach (var region in this.AC.InstrumentationRegions)
+//      {
+//        if (region.GetResourceAccesses().Count > 0)
+//          continue;
+//        Console.WriteLine("region: " + region.Name() + " " + region.GetResourcesWithUnidentifiedAccesses().Count);
+//        if (region.GetResourcesWithUnidentifiedAccesses().Count > 0)
+//          continue;
+//
+//        region.Implementation().Proc.Modifies.RemoveAll(val =>
+//          val.Name.Contains("_in_LS_$M.") ||
+//          val.Name.StartsWith("WRITTEN_$M.") ||
+//          val.Name.StartsWith("READ_$M."));
+//      }
     }
 
     #endregion
@@ -179,27 +219,46 @@ namespace Whoop.Analysis
 
     private Expr MergeExpr(Expr ptr, Expr access, IAppliable fun)
     {
-      if (!(ptr is NAryExpr))
-        return null;
-
-      var ptrExpr = ptr as NAryExpr;
-      if (!(ptrExpr.Args[1] is LiteralExpr) || !(access is LiteralExpr))
-        return null;
-
       Expr result = null;
 
-      int l = (ptrExpr.Args[1] as LiteralExpr).asBigNum.ToInt;
-      int r = (access as LiteralExpr).asBigNum.ToInt;
-
-      if (ptrExpr.Fun.FunctionName == "$add" || ptrExpr.Fun.FunctionName == "+")
+      if (ptr is NAryExpr)
       {
-        if (fun.FunctionName == "$add" || fun.FunctionName == "+")
+        var ptrExpr = ptr as NAryExpr;
+        if (!(ptrExpr.Args[1] is LiteralExpr) || !(access is LiteralExpr))
+          return result;
+
+        int l = (ptrExpr.Args[1] as LiteralExpr).asBigNum.ToInt;
+        int r = (access as LiteralExpr).asBigNum.ToInt;
+
+        if (ptrExpr.Fun.FunctionName == "$add" || ptrExpr.Fun.FunctionName == "+")
         {
-          result = Expr.Add(ptrExpr.Args[0], new LiteralExpr(Token.NoToken, BigNum.FromInt(l + r)));
+          if (fun.FunctionName == "$add" || fun.FunctionName == "+")
+          {
+            result = Expr.Add(ptrExpr.Args[0], new LiteralExpr(Token.NoToken, BigNum.FromInt(l + r)));
+          }
         }
+      }
+      else if (ptr is IdentifierExpr)
+      {
+//        var ptrExpr = ptr as IdentifierExpr;
+//        if (!ptrExpr.Type.IsInt)
+//          return result;
+//
+//        if (fun.FunctionName == "$add" || fun.FunctionName == "+")
+//        {
+//          result = Expr.Add(ptrExpr, new LiteralExpr(Token.NoToken, (access as LiteralExpr).asBigNum));
+//        }
       }
 
       return result;
+    }
+
+    private void CleanUpInstrumentationRegion(InstrumentationRegion region)
+    {
+      region.Implementation().Proc.Modifies.RemoveAll(val =>
+        val.Name.Contains("_in_LS_$M.") ||
+        val.Name.StartsWith("WRITTEN_$M.") ||
+        val.Name.StartsWith("READ_$M."));
     }
 
     #endregion
