@@ -38,8 +38,8 @@ namespace Whoop.Summarisation
     protected List<Variable> DomainSpecificVariables;
 
     protected HashSet<Constant> ExistentialBooleans;
-    private Dictionary<Variable, Constant> TrueExistentialBooleansDict;
-    private Dictionary<Variable, Constant> FalseExistentialBooleansDict;
+    private Dictionary<Variable, Dictionary<string, Constant>> TrueExistentialBooleansDict;
+    private Dictionary<Variable, Dictionary<string, Constant>> FalseExistentialBooleansDict;
     protected int Counter;
 
     public SummaryGeneration(AnalysisContext ac, EntryPoint ep)
@@ -77,8 +77,8 @@ namespace Whoop.Summarisation
       }
 
       this.ExistentialBooleans = new HashSet<Constant>();
-      this.TrueExistentialBooleansDict = new Dictionary<Variable, Constant>();
-      this.FalseExistentialBooleansDict = new Dictionary<Variable, Constant>();
+      this.TrueExistentialBooleansDict = new Dictionary<Variable, Dictionary<string, Constant>>();
+      this.FalseExistentialBooleansDict = new Dictionary<Variable, Dictionary<string, Constant>>();
       this.Counter = 0;
     }
 
@@ -89,12 +89,12 @@ namespace Whoop.Summarisation
     {
       foreach (var v in variables)
       {
-        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+        var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v))
+        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey("$whoop$"))
         {
-          cons = dict[v];
+          cons = dict[v]["$whoop$"];
         }
         else
         {
@@ -106,7 +106,12 @@ namespace Whoop.Summarisation
 
         if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(v, cons);
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add("$whoop$", cons);
+        }
+        else if (capture && !dict[v].ContainsKey("$whoop$"))
+        {
+          dict[v].Add("$whoop$", cons);
         }
       }
     }
@@ -116,12 +121,12 @@ namespace Whoop.Summarisation
     {
       foreach (var v in variables)
       {
-        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+        var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v))
+        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey("$whoop$"))
         {
-          cons = dict[v];
+          cons = dict[v]["$whoop$"];
         }
         else
         {
@@ -133,7 +138,12 @@ namespace Whoop.Summarisation
 
         if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(v, cons);
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add("$whoop$", cons);
+        }
+        else if (capture && !dict[v].ContainsKey("$whoop$"))
+        {
+          dict[v].Add("$whoop$", cons);
         }
       }
     }
@@ -143,12 +153,12 @@ namespace Whoop.Summarisation
     {
       foreach (var v in variables)
       {
-        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+        var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v))
+        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
         {
-          cons = dict[v];
+          cons = dict[v][implExpr.ToString()];
         }
         else
         {
@@ -161,7 +171,12 @@ namespace Whoop.Summarisation
 
         if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(v, cons);
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add(implExpr.ToString(), cons);
+        }
+        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+        {
+          dict[v].Add(implExpr.ToString(), cons);
         }
       }
     }
@@ -171,12 +186,12 @@ namespace Whoop.Summarisation
     {
       foreach (var v in variables)
       {
-        Dictionary<Variable, Constant> dict = this.GetExistentialDictionary(value);
+        var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v))
+        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
         {
-          cons = dict[v];
+          cons = dict[v][implExpr.ToString()];
         }
         else
         {
@@ -189,7 +204,12 @@ namespace Whoop.Summarisation
 
         if (capture && !dict.ContainsKey(v))
         {
-          dict.Add(v, cons);
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add(implExpr.ToString(), cons);
+        }
+        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+        {
+          dict[v].Add(implExpr.ToString(), cons);
         }
       }
     }
@@ -209,9 +229,9 @@ namespace Whoop.Summarisation
 
     protected abstract Constant CreateConstant();
 
-    private Dictionary<Variable, Constant> GetExistentialDictionary(bool value)
+    private Dictionary<Variable, Dictionary<string, Constant>> GetExistentialDictionary(bool value)
     {
-      Dictionary<Variable, Constant> dict = null;
+      Dictionary<Variable, Dictionary<string, Constant>> dict = null;
 
       if (value)
       {

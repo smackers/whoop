@@ -45,7 +45,13 @@ namespace Whoop.Analysis
       }
 
       this.AnalyseInstrumentationRegions();
-      this.CleanUpInstrumentationRegions();
+
+//      foreach (var region in this.AC.InstrumentationRegions)
+//      {
+//        this.AnalyseRegionWithPairInformation(region);
+//      }
+
+      this.CleanUpRegions();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -169,7 +175,7 @@ namespace Whoop.Analysis
       if (region.ResourceAccesses.Count == 0 &&
         numberOfCalls == numberOfNonCheckedCalls)
       {
-        this.CleanUpInstrumentationRegion(region);
+        this.CleanUpRegion(region);
         region.IsResourceAnalysisDone = true;
         return false;
       }
@@ -184,7 +190,52 @@ namespace Whoop.Analysis
       else return true;
     }
 
-    private void CleanUpInstrumentationRegions()
+    private void AnalyseRegionWithPairInformation(InstrumentationRegion region)
+    {
+//      var memRegions = new List<Variable>();
+//      var epVars = SharedStateAnalyser.GetMemoryRegions(this.EP);
+//      List<Variable> otherEpVars;
+
+      foreach (var pair in DeviceDriver.EntryPointPairs.FindAll(val =>
+        val.Item1.Name.Equals(this.EP.Name) || val.Item2.Name.Equals(this.EP.Name)))
+      {
+        Console.WriteLine(pair.Item1.Name + " " + pair.Item2.Name);
+        foreach (var res in region.ResourceAccesses)
+        {
+          foreach (var access in res.Value)
+          {
+            Console.WriteLine("ep1: " + res.Key + " " + access);
+          }
+        }
+
+        var otherAc = AnalysisContext.GetAnalysisContext(DeviceDriver.GetEntryPoint(pair.Item2.Name)).InstrumentationRegions;
+
+        foreach (var res in region.ResourceAccesses)
+        {
+          foreach (var access in res.Value)
+          {
+            Console.WriteLine("ep2: " + res.Key + " " + access);
+          }
+        }
+
+//        if (!pair.Item1.Name.Equals(this.EP.Name))
+//          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item1);
+//        else if (!pair.Item2.Name.Equals(this.EP.Name))
+//          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item2);
+//        else
+//          otherEpVars = epVars;
+//
+//        foreach (var v in epVars)
+//        {
+//          if (otherEpVars.Any(val => val.Name.Equals(v.Name)) && !memRegions.Contains(v))
+//            memRegions.Add(v);
+//        }
+      }
+
+//      SharedStateAnalyser.EntryPointMemoryRegions[this.EP] = memRegions;
+    }
+
+    private void CleanUpRegions()
     {
 //      foreach (var region in this.AC.InstrumentationRegions)
 //      {
@@ -257,7 +308,7 @@ namespace Whoop.Analysis
       return result;
     }
 
-    private void CleanUpInstrumentationRegion(InstrumentationRegion region)
+    private void CleanUpRegion(InstrumentationRegion region)
     {
       region.Implementation().Proc.Modifies.RemoveAll(val =>
         val.Name.Contains("_in_LS_$M.") ||

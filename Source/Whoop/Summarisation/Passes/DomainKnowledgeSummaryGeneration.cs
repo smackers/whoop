@@ -71,7 +71,6 @@ namespace Whoop.Summarisation
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-//      base.InstrumentEnsuresCandidates(region, devRegVars, true);
       base.InstrumentEnsuresCandidates(region, devRegVars, false);
     }
 
@@ -80,10 +79,8 @@ namespace Whoop.Summarisation
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-//      base.InstrumentRequiresCandidates(region, devRegVars, true);
-      base.InstrumentRequiresCandidates(region, devRegVars, false);
-//      base.InstrumentEnsuresCandidates(region, devRegVars, true);
-      base.InstrumentEnsuresCandidates(region, devRegVars, false);
+      base.InstrumentRequiresCandidates(region, devRegVars, false, true);
+      base.InstrumentEnsuresCandidates(region, devRegVars, false, true);
     }
 
     #endregion

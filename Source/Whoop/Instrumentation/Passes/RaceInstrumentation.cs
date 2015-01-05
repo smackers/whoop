@@ -263,7 +263,7 @@ namespace Whoop.Instrumentation
 
     private void InstrumentProcedure(InstrumentationRegion region)
     {
-      List<Variable> vars = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(this.EP.Name));
+      var vars = SharedStateAnalyser.GetMemoryRegions(this.EP);
 
       foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
       {

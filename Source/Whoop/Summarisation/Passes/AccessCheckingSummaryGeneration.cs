@@ -97,8 +97,8 @@ namespace Whoop.Summarisation
           foreach (var access in pair.Value)
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false);
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
 
             if (nonWatchedExpr == null)
             {
@@ -112,8 +112,8 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false);
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
       }
     }
 
@@ -133,10 +133,10 @@ namespace Whoop.Summarisation
           foreach (var access in pair.Value)
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false);
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false);
+            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false, true);
+            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false, true);
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
 
             if (nonWatchedExpr == null)
             {
@@ -150,60 +150,11 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false);
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false);
+        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false, true);
+        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false, true);
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
       }
-
-//      if (region.GetResourceAccesses().Count == 0)
-//      {
-//        var epRegion = base.AC.InstrumentationRegions.Find(val =>
-//          val.Implementation().Name.Equals(base.EP.Name));
-//
-//        foreach (var pair in epRegion.GetResourceAccesses())
-//        {
-//          var waVars = base.AC.GetWriteAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
-//          var raVars = base.AC.GetReadAccessCheckingVariables().FindAll(val => val.Name.Contains(pair.Key));
-//          Expr nonWatchedExpr = null;
-//
-//          foreach (var watchedVar in base.AC.GetAccessWatchdogConstants())
-//          {
-//            if (!watchedVar.Name.Contains(pair.Key))
-//              continue;
-//
-//            foreach (var inParam in region.Implementation().InParams)
-//            {
-//              if (!inParam.TypedIdent.Type.IsInt)
-//                continue;
-//
-//              var access = Expr.Add(new IdentifierExpr(inParam.tok, inParam),
-//                new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
-//
-//              var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
-//              base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false);
-//              base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false);
-//              base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false);
-//              base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false);
-//
-//              if (nonWatchedExpr == null)
-//              {
-//                nonWatchedExpr = Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
-//              }
-//              else
-//              {
-//                nonWatchedExpr = Expr.And(nonWatchedExpr,
-//                  Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access));
-//              }
-//            }
-//          }
-//
-//          base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false);
-//          base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false);
-//          base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false);
-//          base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false);
-//        }
-//      }
     }
 
     #endregion
