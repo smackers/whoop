@@ -39,13 +39,13 @@ namespace Whoop.Summarisation
         base.Timer.Start();
       }
 
-//      foreach (var region in base.AC.InstrumentationRegions)
-//      {
-//        if (!base.EP.Name.Equals(region.Implementation().Name))
-//          continue;
-//
-//        this.InstrumentDomainKnowledgeInEntryPointRegion(region);
-//      }
+      foreach (var region in base.InstrumentationRegions)
+      {
+        if (!base.EP.Name.Equals(region.Implementation().Name))
+          continue;
+
+        this.InstrumentDomainKnowledgeInEntryPointRegion(region);
+      }
 
       foreach (var region in base.InstrumentationRegions)
       {
@@ -66,16 +66,20 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
-//    private void InstrumentDomainKnowledgeInEntryPointRegion(InstrumentationRegion region)
-//    {
-//      var devRegVars = base.AC.GetDomainSpecificVariables().FindAll(val => val.Name.Contains("DEVICE_IS_REGISTERED_$"));
-////      base.InstrumentEnsuresCandidates(region, devRegVars, true);
-//      base.InstrumentEnsuresCandidates(region, devRegVars, false);
-//    }
+    private void InstrumentDomainKnowledgeInEntryPointRegion(InstrumentationRegion region)
+    {
+      var devRegVars = base.DomainSpecificVariables.FindAll(val =>
+        val.Name.Contains("DEVICE_IS_REGISTERED_$"));
+
+//      base.InstrumentEnsuresCandidates(region, devRegVars, true);
+      base.InstrumentEnsuresCandidates(region, devRegVars, false);
+    }
 
     private void InstrumentDomainKnowledgeInRegion(InstrumentationRegion region)
     {
-      var devRegVars = base.DomainSpecificVariables.FindAll(val => val.Name.Contains("DEVICE_IS_REGISTERED_$"));
+      var devRegVars = base.DomainSpecificVariables.FindAll(val =>
+        val.Name.Contains("DEVICE_IS_REGISTERED_$"));
+
 //      base.InstrumentRequiresCandidates(region, devRegVars, true);
       base.InstrumentRequiresCandidates(region, devRegVars, false);
 //      base.InstrumentEnsuresCandidates(region, devRegVars, true);

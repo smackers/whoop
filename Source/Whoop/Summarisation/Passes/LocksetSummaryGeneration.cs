@@ -118,9 +118,9 @@ namespace Whoop.Summarisation
     private void InstrumentAccessCallsInRegion(InstrumentationRegion region)
     {
       base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
-      base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, false);
+//      base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, false);
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
-      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
+//      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, false);
 
       foreach (var pair in region.ResourceAccesses)
       {
