@@ -174,16 +174,16 @@ namespace Whoop.Domain.Drivers
     {
       // pci driver API
       if (ep.Equals("probe") || ep.Equals("remove") ||
-        ep.Equals("shutdown"))
+          ep.Equals("shutdown"))
         return true;
 
       // power management API
       if (ep.Equals("prepare") || ep.Equals("complete") ||
-        ep.Equals("resume") || ep.Equals("suspend") ||
-        ep.Equals("freeze") || ep.Equals("poweroff") ||
-        ep.Equals("restore") || ep.Equals("thaw") ||
-        ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
-        ep.Equals("runtime_idle"))
+          ep.Equals("resume") || ep.Equals("suspend") ||
+          ep.Equals("freeze") || ep.Equals("poweroff") ||
+          ep.Equals("restore") || ep.Equals("thaw") ||
+          ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
+          ep.Equals("runtime_idle"))
         return true;
 
       return false;
@@ -198,7 +198,7 @@ namespace Whoop.Domain.Drivers
     {
       // power management API
       if (ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
-        ep.Equals("runtime_idle"))
+          ep.Equals("runtime_idle"))
         return true;
 
       return false;
@@ -213,37 +213,41 @@ namespace Whoop.Domain.Drivers
     {
       // network device management API
       if (ep.Equals("ndo_init") || ep.Equals("ndo_uninit") ||
-        ep.Equals("ndo_open") || ep.Equals("ndo_stop") ||
-        ep.Equals("ndo_validate_addr") ||
-        ep.Equals("ndo_fix_features") || ep.Equals("ndo_set_features"))
+          ep.Equals("ndo_open") || ep.Equals("ndo_stop") ||
+          ep.Equals("ndo_validate_addr") ||
+          ep.Equals("ndo_change_mtu") ||
+          ep.Equals("ndo_fix_features") || ep.Equals("ndo_set_features") ||
+          ep.Equals("ndo_set_mac_address") ||
+          ep.Equals("ndo_do_ioctl") ||
+          ep.Equals("ndo_set_rx_mode"))
         return true;
 
       // ethernet device management API
       if (ep.Equals("get_settings") || ep.Equals("set_settings") ||
-        ep.Equals("get_drvinfo") ||
-        ep.Equals("get_regs_len") || ep.Equals("get_regs") ||
-        ep.Equals("get_wol") || ep.Equals("set_wol") ||
-        ep.Equals("get_msglevel") || ep.Equals("set_msglevel") ||
-        ep.Equals("nway_reset") || ep.Equals("get_link") ||
-        ep.Equals("get_eeprom_len") ||
-        ep.Equals("get_eeprom") || ep.Equals("set_eeprom") ||
-        ep.Equals("get_coalesce") || ep.Equals("set_coalesce") ||
-        ep.Equals("get_ringparam") || ep.Equals("set_ringparam") ||
-        ep.Equals("get_pauseparam") || ep.Equals("set_pauseparam") ||
-        ep.Equals("self_test") || ep.Equals("get_strings") ||
-        ep.Equals("set_phys_id") || ep.Equals("get_ethtool_stats") ||
-        ep.Equals("begin") || ep.Equals("complete") ||
-        ep.Equals("get_priv_flags") || ep.Equals("set_priv_flags") ||
-        ep.Equals("get_sset_count") ||
-        ep.Equals("get_rxnfc") || ep.Equals("set_rxnfc") ||
-        ep.Equals("flash_device") || ep.Equals("reset") ||
-        ep.Equals("get_rxfh_indir_size") ||
-        ep.Equals("get_rxfh_indir") || ep.Equals("set_rxfh_indir") ||
-        ep.Equals("get_channels") || ep.Equals("set_channels") ||
-        ep.Equals("get_dump_flag") || ep.Equals("get_dump_data") ||
-        ep.Equals("set_dump") || ep.Equals("get_ts_info") ||
-        ep.Equals("get_module_info") || ep.Equals("get_module_eeprom") ||
-        ep.Equals("get_eee") || ep.Equals("set_eee"))
+          ep.Equals("get_drvinfo") ||
+          ep.Equals("get_regs_len") || ep.Equals("get_regs") ||
+          ep.Equals("get_wol") || ep.Equals("set_wol") ||
+          ep.Equals("get_msglevel") || ep.Equals("set_msglevel") ||
+          ep.Equals("nway_reset") || ep.Equals("get_link") ||
+          ep.Equals("get_eeprom_len") ||
+          ep.Equals("get_eeprom") || ep.Equals("set_eeprom") ||
+          ep.Equals("get_coalesce") || ep.Equals("set_coalesce") ||
+          ep.Equals("get_ringparam") || ep.Equals("set_ringparam") ||
+          ep.Equals("get_pauseparam") || ep.Equals("set_pauseparam") ||
+          ep.Equals("self_test") || ep.Equals("get_strings") ||
+          ep.Equals("set_phys_id") || ep.Equals("get_ethtool_stats") ||
+          ep.Equals("begin") || ep.Equals("complete") ||
+          ep.Equals("get_priv_flags") || ep.Equals("set_priv_flags") ||
+          ep.Equals("get_sset_count") ||
+          ep.Equals("get_rxnfc") || ep.Equals("set_rxnfc") ||
+          ep.Equals("flash_device") || ep.Equals("reset") ||
+          ep.Equals("get_rxfh_indir_size") ||
+          ep.Equals("get_rxfh_indir") || ep.Equals("set_rxfh_indir") ||
+          ep.Equals("get_channels") || ep.Equals("set_channels") ||
+          ep.Equals("get_dump_flag") || ep.Equals("get_dump_data") ||
+          ep.Equals("set_dump") || ep.Equals("get_ts_info") ||
+          ep.Equals("get_module_info") || ep.Equals("get_module_eeprom") ||
+          ep.Equals("get_eee") || ep.Equals("set_eee"))
         return true;
 
       return false;
