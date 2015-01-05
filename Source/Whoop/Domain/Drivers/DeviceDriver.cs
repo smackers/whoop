@@ -153,13 +153,18 @@ namespace Whoop.Domain.Drivers
       if (DeviceDriver.HasKernelImposedDeviceLock(ep1) &&
         DeviceDriver.HasKernelImposedDeviceLock(ep2))
         return false;
-
       if (DeviceDriver.HasKernelImposedPowerLock(ep1) &&
         DeviceDriver.HasKernelImposedPowerLock(ep2))
         return false;
-
       if (DeviceDriver.HasKernelImposedRTNL(ep1) &&
         DeviceDriver.HasKernelImposedRTNL(ep2))
+        return false;
+      if (DeviceDriver.HasKernelImposedTxLock(ep1) &&
+        DeviceDriver.HasKernelImposedTxLock(ep2))
+        return false;
+
+      if (DeviceDriver.IsCalledWithNetpollDisabled(ep1) &&
+        DeviceDriver.IsCalledWithNetpollDisabled(ep2))
         return false;
 
       return true;
@@ -248,6 +253,37 @@ namespace Whoop.Domain.Drivers
           ep.Equals("set_dump") || ep.Equals("get_ts_info") ||
           ep.Equals("get_module_info") || ep.Equals("get_module_eeprom") ||
           ep.Equals("get_eee") || ep.Equals("set_eee"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the entry point has been serialised by HARD_TX_LOCK.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool HasKernelImposedTxLock(string ep)
+    {
+      // network device management API
+      if (ep.Equals("ndo_start_xmit"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the entry point has been called with netpoll disabled.
+    /// Netpoll is included in this set of entry points for convenience.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    private static bool IsCalledWithNetpollDisabled(string ep)
+    {
+      // network device management API
+      if (ep.Equals("ndo_poll_controller") ||
+          ep.Equals("ndo_open") || ep.Equals("ndo_stop") ||
+          ep.Equals("ndo_validate_addr"))
         return true;
 
       return false;
