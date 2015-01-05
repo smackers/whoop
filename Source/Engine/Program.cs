@@ -108,7 +108,6 @@ namespace Whoop
           timer.Start();
         }
 
-        var analysisContexts = new Dictionary<EntryPoint, AnalysisContext>();
         foreach (var ep in DeviceDriver.EntryPoints)
         {
           AnalysisContext ac = null;
@@ -116,12 +115,12 @@ namespace Whoop
             ref ac, new List<string> { ep.Name });
 
           Analysis.SharedStateAnalyser.AnalyseMemoryRegions(ac, ep);
-          analysisContexts.Add(ep, ac);
+          AnalysisContext.RegisterEntryPointAnalysisContext(ac, ep);
         }
 
         foreach (var ep in DeviceDriver.EntryPoints)
         {
-          var ac = analysisContexts[ep];
+          var ac = AnalysisContext.GetAnalysisContext(ep);
           new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
         }
 

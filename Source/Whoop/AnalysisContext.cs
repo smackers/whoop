@@ -24,6 +24,15 @@ namespace Whoop
 {
   public class AnalysisContext : CheckingContext
   {
+    #region static fields
+
+    private static Dictionary<EntryPoint, AnalysisContext> Registry =
+      new Dictionary<EntryPoint, AnalysisContext>();
+
+    #endregion
+
+    #region fields
+
     public Program Program;
     public ResolutionContext ResContext;
 
@@ -35,6 +44,10 @@ namespace Whoop
     internal List<Lockset> MemoryLocksets;
 
     internal Microsoft.Boogie.Type MemoryModelType;
+
+    #endregion
+
+    #region public API
 
     public AnalysisContext(Program program, ResolutionContext rc)
       : base((IErrorSink)null)
@@ -249,6 +262,27 @@ namespace Whoop
     {
       this.TopLevelDeclarations = this.Program.TopLevelDeclarations.ToArray().ToList();
     }
+
+    #endregion
+
+    #region static public API
+
+    public static AnalysisContext GetAnalysisContext(EntryPoint ep)
+    {
+      if (!AnalysisContext.Registry.ContainsKey(ep))
+        return null;
+      return AnalysisContext.Registry[ep];
+    }
+
+    public static void RegisterEntryPointAnalysisContext(AnalysisContext ac, EntryPoint ep)
+    {
+      if (AnalysisContext.Registry.ContainsKey(ep))
+        AnalysisContext.Registry[ep] = ac;
+      else
+        AnalysisContext.Registry.Add(ep, ac);
+    }
+
+    #endregion
 
     #region internal helper functions
 

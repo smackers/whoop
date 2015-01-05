@@ -69,6 +69,7 @@ namespace Whoop.Regions
       this.CreateProcedure(impl1, impl2);
 
       this.CheckAndRefactorInParamsIfEquals();
+      this.InstrumentConflictedAccesses();
 
       this.RegionHeader = this.CreateRegionHeader();
     }
@@ -331,14 +332,14 @@ namespace Whoop.Regions
 
       foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
       {
-        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
+        var require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
                              new Duplicator().Visit(acv.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
       foreach (var acv in this.AC.GetReadAccessCheckingVariables())
       {
-        Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
+        var require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok,
           new Duplicator().Visit(acv.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
@@ -348,7 +349,7 @@ namespace Whoop.Regions
         if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
           continue;
 
-        Requires require = new Requires(false, new IdentifierExpr(dsv.tok,
+        var require = new Requires(false, new IdentifierExpr(dsv.tok,
           new Duplicator().Visit(dsv.Clone()) as Variable));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
@@ -393,6 +394,98 @@ namespace Whoop.Regions
 
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           dsv.tok, new Duplicator().Visit(dsv.Clone()) as Variable));
+      }
+    }
+
+    private void InstrumentConflictedAccesses()
+    {
+      var conflicts = new List<Requires>();
+
+      if (!this.EP1.Name.Equals(this.EP2.Name))
+      {
+        var ep1Region = AnalysisContext.GetAnalysisContext(this.EP1).InstrumentationRegions.
+          Find(val => val.Implementation().Name.Equals(this.EP1.Name));
+        var ep2Region = AnalysisContext.GetAnalysisContext(this.EP2).InstrumentationRegions.
+          Find(val => val.Implementation().Name.Equals(this.EP2.Name));
+
+        foreach (var resource1 in ep1Region.ResourceAccesses)
+        {
+          foreach (var resource2 in ep2Region.ResourceAccesses)
+          {
+            if (!resource2.Key.Equals(resource1.Key))
+              continue;
+
+            foreach (var access1 in resource1.Value)
+            {
+              IdentifierExpr accessExpr1 = null;
+              if (access1 is NAryExpr)
+                accessExpr1 = (access1 as NAryExpr).Args[0] as IdentifierExpr;
+              else
+                accessExpr1 = access1 as IdentifierExpr;
+
+              var trueAccess1 = access1;
+              var trueVar1 = this.InternalImplementation.Proc.InParams.FirstOrDefault(val =>
+                val.TypedIdent.Name.Equals(accessExpr1.Name + "$1"));
+              if (trueVar1 != null)
+              {
+                var id1 = new IdentifierExpr(trueVar1.tok, new Duplicator().
+                  Visit(trueVar1.Clone()) as Variable);
+                id1.Name = id1.Name + "$1";
+
+                if (access1 is NAryExpr)
+                {
+                  trueAccess1 = new NAryExpr(Token.NoToken, (access1 as NAryExpr).Fun,
+                    new List<Expr> { id1, (access1 as NAryExpr).Args[1]
+                    });
+                }
+                else
+                {
+                  trueAccess1 = id1;
+                }
+              }
+
+              foreach (var access2 in resource2.Value)
+              {
+                IdentifierExpr accessExpr2 = null;
+                if (access2 is NAryExpr)
+                  accessExpr2 = (access2 as NAryExpr).Args[0] as IdentifierExpr;
+                else
+                  accessExpr2 = access2 as IdentifierExpr;
+
+                if (accessExpr1.Name.Equals(accessExpr2.Name))
+                  continue;
+
+                var trueAccess2 = access2;
+                var trueVar2 = this.InternalImplementation.Proc.InParams.FirstOrDefault(val =>
+                  val.TypedIdent.Name.Equals(accessExpr2.Name + "$2"));
+                if (trueVar2 != null)
+                {
+                  var id2 = new IdentifierExpr(trueVar2.tok, new Duplicator().
+                    Visit(trueVar2.Clone()) as Variable);
+                  id2.Name = id2.Name + "$2";
+
+                  if (access2 is NAryExpr)
+                  {
+                    trueAccess2 = new NAryExpr(Token.NoToken, (access2 as NAryExpr).Fun,
+                      new List<Expr> { id2, (access2 as NAryExpr).Args[1]
+                      });
+                  }
+                  else
+                  {
+                    trueAccess2 = id2;
+                  }
+                }
+
+                conflicts.Add(new Requires(false, Expr.Neq(trueAccess1, trueAccess2)));
+              }
+            }
+          }
+        }
+
+        foreach (var conflict in conflicts)
+        {
+          this.InternalImplementation.Proc.Requires.Add(conflict);
+        }
       }
     }
 

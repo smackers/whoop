@@ -83,6 +83,7 @@ namespace Whoop.Analysis
 
       int numberOfCalls = 0;
       int numberOfNonCheckedCalls = 0;
+      Console.WriteLine("region: " + region.Name());
       foreach (var block in region.Implementation().Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
@@ -107,10 +108,11 @@ namespace Whoop.Analysis
 
           if (resource != null && accessType != null)
           {
+            Console.WriteLine("call1: " + call);
             var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
             if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
               ptrExpr = null;
-
+            Console.WriteLine("resource1: " + resource + " " + ptrExpr);
             region.TryAddResourceAccess(resource, ptrExpr);
           }
           else if (!isInstrumentedCall)
@@ -133,7 +135,7 @@ namespace Whoop.Analysis
               numberOfNonCheckedCalls++;
               continue;
             }
-
+            Console.WriteLine("call2: " + call);
             foreach (var r in calleeRegion.ResourceAccesses)
             {
               foreach (var a in r.Value)
@@ -145,17 +147,18 @@ namespace Whoop.Analysis
                   index = this.TryGetArgumentIndex(call, calleeRegion, a);
                 if (index < 0)
                   continue;
-
+                Console.WriteLine("callee-resource: " + r.Key + " " + a);
                 var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[index]);
                 if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
                   ptrExpr = null;
-
+                Console.WriteLine("ptrExpr: " + ptrExpr);
                 Expr computedExpr;
                 if (a is NAryExpr)
                   computedExpr = this.MergeExpr(ptrExpr, (a as NAryExpr).Args[1], (a as NAryExpr).Fun);
                 else
                   computedExpr = ptrExpr;
 
+                Console.WriteLine("resource2: " + r.Key + " " + computedExpr);
                 region.TryAddResourceAccess(r.Key, computedExpr);
               }
             }
@@ -185,16 +188,13 @@ namespace Whoop.Analysis
     {
 //      foreach (var region in this.AC.InstrumentationRegions)
 //      {
-//        if (region.GetResourceAccesses().Count > 0)
+//        if (region.ResourceAccesses.Count > 0)
 //          continue;
-//        Console.WriteLine("region: " + region.Name() + " " + region.GetResourcesWithUnidentifiedAccesses().Count);
-//        if (region.GetResourcesWithUnidentifiedAccesses().Count > 0)
+//        Console.WriteLine("region: " + region.Name() + " " + region.ResourcesWithUnidentifiedAccesses.Count);
+//        if (region.ResourcesWithUnidentifiedAccesses.Count > 0)
 //          continue;
 //
-//        region.Implementation().Proc.Modifies.RemoveAll(val =>
-//          val.Name.Contains("_in_LS_$M.") ||
-//          val.Name.StartsWith("WRITTEN_$M.") ||
-//          val.Name.StartsWith("READ_$M."));
+//        this.CleanUpInstrumentationRegion(region);
 //      }
     }
 
@@ -240,14 +240,18 @@ namespace Whoop.Analysis
       }
       else if (ptr is IdentifierExpr)
       {
-//        var ptrExpr = ptr as IdentifierExpr;
-//        if (!ptrExpr.Type.IsInt)
-//          return result;
-//
-//        if (fun.FunctionName == "$add" || fun.FunctionName == "+")
-//        {
-//          result = Expr.Add(ptrExpr, new LiteralExpr(Token.NoToken, (access as LiteralExpr).asBigNum));
-//        }
+        if (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
+            WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity)
+          return result;
+
+        var ptrExpr = ptr as IdentifierExpr;
+        if (!ptrExpr.Type.IsInt)
+          return result;
+
+        if (fun.FunctionName == "$add" || fun.FunctionName == "+")
+        {
+          result = Expr.Add(ptrExpr, new LiteralExpr(Token.NoToken, (access as LiteralExpr).asBigNum));
+        }
       }
 
       return result;
