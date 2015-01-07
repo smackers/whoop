@@ -119,10 +119,16 @@ namespace Whoop.Analysis
     {
       if (expr is LiteralExpr)
       {
+//        Console.WriteLine("NULL: " + expr);
         return null;
       }
 
-      IdentifierExpr identifier = expr as IdentifierExpr;
+      var identifier = expr as IdentifierExpr;
+      if (identifier == null)
+      {
+//        Console.WriteLine("NULL: " + expr);
+        return null;
+      }
 
       for (int i = impl.Blocks.Count - 1; i >= 0; i--)
       {
@@ -136,6 +142,7 @@ namespace Whoop.Analysis
           return (cmd as AssignCmd).Rhss[0];
         }
       }
+//      Console.WriteLine("NULL: " + expr);
       return null;
     }
 

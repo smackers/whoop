@@ -408,9 +408,9 @@ namespace Whoop.Regions
         var ep2Region = AnalysisContext.GetAnalysisContext(this.EP2).InstrumentationRegions.
           Find(val => val.Implementation().Name.Equals(this.EP2.Name));
 
-        foreach (var resource1 in ep1Region.ResourceAccesses)
+        foreach (var resource1 in ep1Region.GetResourceAccesses())
         {
-          foreach (var resource2 in ep2Region.ResourceAccesses)
+          foreach (var resource2 in ep2Region.GetResourceAccesses())
           {
             if (!resource2.Key.Equals(resource1.Key))
               continue;

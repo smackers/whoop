@@ -16,6 +16,9 @@ using System.Linq;
 
 using Microsoft.Boogie;
 using System.Security.Policy;
+using System.Security.Cryptography;
+using Whoop.Domain.Drivers;
+using System.Collections.Concurrent;
 
 namespace Whoop.Regions
 {
@@ -32,9 +35,17 @@ namespace Whoop.Regions
     protected Block RegionHeader;
     protected List<Block> RegionBlocks;
 
-    internal Dictionary<string, List<Expr>> ResourceAccesses;
-    internal HashSet<string> ResourcesWithUnidentifiedAccesses;
+    private Dictionary<string, List<Expr>> ResourceAccesses;
+    private Dictionary<string, List<Expr>> LocalResourceAccesses;
+    private Dictionary<string, List<Expr>> ExternalResourceAccesses;
+    private HashSet<string> ResourcesWithUnidentifiedAccesses;
     internal bool IsResourceAnalysisDone;
+    internal bool IsLocalResourceAnalysisDone;
+
+    internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
+
+    internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccesses =
+      new Dictionary<EntryPoint, List<HashSet<string>>>();
 
     #endregion
 
@@ -48,9 +59,15 @@ namespace Whoop.Regions
       this.ProcessRegionBlocks(impl);
       this.ProcessWrapperImplementation(impl);
       this.ProcessWrapperProcedure(impl);
+
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
+      this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
+      this.ExternalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
       this.IsResourceAnalysisDone = false;
+      this.IsLocalResourceAnalysisDone = false;
+
+      this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
     }
 
     #endregion
@@ -144,6 +161,21 @@ namespace Whoop.Regions
 
     #region resource analysis related methods
 
+    public Dictionary<string, List<Expr>> GetResourceAccesses()
+    {
+      return this.ResourceAccesses;
+    }
+
+    public Dictionary<string, List<Expr>> GetLocalResourceAccesses()
+    {
+      return this.LocalResourceAccesses;
+    }
+
+    public Dictionary<string, List<Expr>> GetExternalResourceAccesses()
+    {
+      return this.ExternalResourceAccesses;
+    }
+
     public bool TryAddResourceAccess(string resource, Expr access)
     {
       if (access == null)
@@ -169,6 +201,76 @@ namespace Whoop.Regions
       else
       {
         this.ResourceAccesses[resource].Add(access);
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+    }
+
+    public bool TryAddLocalResourceAccess(string resource, Expr access)
+    {
+      if (access == null)
+      {
+        this.ResourcesWithUnidentifiedAccesses.Add(resource);
+        return false;
+      }
+
+      this.TryAddResourceAccess(resource, access);
+
+      if (!this.LocalResourceAccesses.ContainsKey(resource))
+      {
+        this.LocalResourceAccesses.Add(resource, new List<Expr> { access });
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+      else if (this.LocalResourceAccesses[resource].Any(val =>
+        val.ToString().Equals(access.ToString())))
+      {
+        return false;
+      }
+      else
+      {
+        this.LocalResourceAccesses[resource].Add(access);
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+    }
+
+    public bool TryAddExternalResourceAccesses(string resource, Expr access)
+    {
+      if (access == null)
+      {
+        this.ResourcesWithUnidentifiedAccesses.Add(resource);
+        return false;
+      }
+
+      this.TryAddResourceAccess(resource, access);
+
+      if (!this.ExternalResourceAccesses.ContainsKey(resource))
+      {
+        this.ExternalResourceAccesses.Add(resource, new List<Expr> { access });
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+      else if (this.ExternalResourceAccesses[resource].Any(val =>
+        val.ToString().Equals(access.ToString())))
+      {
+        return false;
+      }
+      else
+      {
+        this.ExternalResourceAccesses[resource].Add(access);
 
         if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
           this.ResourcesWithUnidentifiedAccesses.Remove(resource);

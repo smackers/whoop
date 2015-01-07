@@ -148,6 +148,72 @@ namespace Whoop.Summarisation
       }
     }
 
+//    protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
+//      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
+//    {
+//      foreach (var v in variables)
+//      {
+//        var dict = this.GetExistentialDictionary(value);
+//
+//        Constant cons = null;
+//        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
+//        {
+//          cons = dict[v][implExpr.ToString()];
+//        }
+//        else
+//        {
+//          cons = this.CreateConstant();
+//        }
+//
+//        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
+//        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
+//        region.Procedure().Requires.Add(new Requires(false, lExpr));
+//
+//        if (capture && !dict.ContainsKey(v))
+//        {
+//          dict.Add(v, new Dictionary<string, Constant>());
+//          dict[v].Add(implExpr.ToString(), cons);
+//        }
+//        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+//        {
+//          dict[v].Add(implExpr.ToString(), cons);
+//        }
+//      }
+//    }
+//
+//    protected void InstrumentImpliesEnsuresCandidates(InstrumentationRegion region,
+//      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
+//    {
+//      foreach (var v in variables)
+//      {
+//        var dict = this.GetExistentialDictionary(value);
+//
+//        Constant cons = null;
+//        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
+//        {
+//          cons = dict[v][implExpr.ToString()];
+//        }
+//        else
+//        {
+//          cons = this.CreateConstant();
+//        }
+//
+//        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
+//        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
+//        region.Procedure().Ensures.Add(new Ensures(false, lExpr));
+//
+//        if (capture && !dict.ContainsKey(v))
+//        {
+//          dict.Add(v, new Dictionary<string, Constant>());
+//          dict[v].Add(implExpr.ToString(), cons);
+//        }
+//        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+//        {
+//          dict[v].Add(implExpr.ToString(), cons);
+//        }
+//      }
+//    }
+
     protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
       Expr implExpr, List<Variable> variables, bool value, bool capture = false)
     {
@@ -156,9 +222,11 @@ namespace Whoop.Summarisation
         var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
+        bool consExists = false;
+        if (capture && dict.ContainsKey(v) &&
+          GetConstantFromDictionary(out cons, dict[v], implExpr))
         {
-          cons = dict[v][implExpr.ToString()];
+          consExists = true;
         }
         else
         {
@@ -169,12 +237,12 @@ namespace Whoop.Summarisation
         Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
         region.Procedure().Requires.Add(new Requires(false, lExpr));
 
-        if (capture && !dict.ContainsKey(v))
+        if (capture && !dict.ContainsKey(v) && !consExists)
         {
           dict.Add(v, new Dictionary<string, Constant>());
           dict[v].Add(implExpr.ToString(), cons);
         }
-        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+        else if (capture && !consExists)
         {
           dict[v].Add(implExpr.ToString(), cons);
         }
@@ -189,9 +257,11 @@ namespace Whoop.Summarisation
         var dict = this.GetExistentialDictionary(value);
 
         Constant cons = null;
-        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
+        bool consExists = false;
+        if (capture && dict.ContainsKey(v) &&
+          GetConstantFromDictionary(out cons, dict[v], implExpr))
         {
-          cons = dict[v][implExpr.ToString()];
+          consExists = true;
         }
         else
         {
@@ -202,16 +272,59 @@ namespace Whoop.Summarisation
         Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
         region.Procedure().Ensures.Add(new Ensures(false, lExpr));
 
-        if (capture && !dict.ContainsKey(v))
+        if (capture && !dict.ContainsKey(v) && !consExists)
         {
           dict.Add(v, new Dictionary<string, Constant>());
           dict[v].Add(implExpr.ToString(), cons);
         }
-        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
+        else if (capture && !consExists)
         {
           dict[v].Add(implExpr.ToString(), cons);
         }
       }
+    }
+
+    private bool GetConstantFromDictionary(out Constant cons, Dictionary<string, Constant> dict, Expr expr)
+    {
+      cons = null;
+
+      if (dict.ContainsKey(expr.ToString()))
+      {
+        cons = dict[expr.ToString()];
+      }
+      else
+      {
+        string prefix = null;
+        HashSet<string> matchedExprs = null;
+
+        var split = expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None);
+        if (split.Length != 2) return false;
+
+        foreach (var matchedSet in InstrumentationRegion.MatchedAccesses[this.EP])
+        {
+          if (matchedSet.Contains(split[1]))
+          {
+            prefix = split[0] + " == ";
+            matchedExprs = matchedSet;
+            break;
+          }
+        }
+
+        if (matchedExprs == null)
+          return false;
+
+        foreach (var exprStr in matchedExprs)
+        {
+          if (dict.ContainsKey(prefix + exprStr))
+          {
+            cons = dict[prefix + exprStr];
+            break;
+          }
+        }
+      }
+
+      if (cons != null) return true;
+      else return false;
     }
 
     protected void InstrumentExistentialBooleans()
