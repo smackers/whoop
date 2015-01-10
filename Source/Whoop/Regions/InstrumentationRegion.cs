@@ -20,6 +20,8 @@ using System.Security.Cryptography;
 using Whoop.Domain.Drivers;
 using System.Collections.Concurrent;
 
+using Microsoft.Boogie.GraphUtil;
+
 namespace Whoop.Regions
 {
   internal class InstrumentationRegion : IRegion
@@ -34,15 +36,16 @@ namespace Whoop.Regions
 
     protected Block RegionHeader;
     protected List<Block> RegionBlocks;
+    private List<Block> RegionLoopHeaders;
 
     private Dictionary<string, List<Expr>> ResourceAccesses;
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
     private Dictionary<string, List<Expr>> ExternalResourceAccesses;
     private HashSet<string> ResourcesWithUnidentifiedAccesses;
-    internal bool IsResourceAnalysisDone;
-    internal bool IsLocalResourceAnalysisDone;
+    internal bool IsNotAccessingResources;
 
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
+    internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAcceses;
 
     internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccesses =
       new Dictionary<EntryPoint, List<HashSet<string>>>();
@@ -60,14 +63,16 @@ namespace Whoop.Regions
       this.ProcessWrapperImplementation(impl);
       this.ProcessWrapperProcedure(impl);
 
+      this.ComputeLoopHeaders();
+
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ExternalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
-      this.IsResourceAnalysisDone = false;
-      this.IsLocalResourceAnalysisDone = false;
+      this.IsNotAccessingResources = false;
 
       this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
+      this.ExternallyReceivedAcceses = new Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>>();
     }
 
     #endregion
@@ -111,24 +116,9 @@ namespace Whoop.Regions
           yield return c;
     }
 
-    public IEnumerable<object> CmdsChildRegions()
+    public List<Block> LoopHeaders()
     {
-      return Enumerable.Empty<object>();
-    }
-
-    public IEnumerable<IRegion> SubRegions()
-    {
-      return Enumerable.Empty<IRegion>();
-    }
-
-    public IEnumerable<Block> PreHeaders()
-    {
-      return Enumerable.Empty<Block>();
-    }
-
-    public Expr Guard()
-    {
-      return null;
+      return this.RegionLoopHeaders;
     }
 
     public void AddInvariant(PredicateCmd cmd)
@@ -299,16 +289,25 @@ namespace Whoop.Regions
       this.RegionHeader = this.CreateRegionHeader();
     }
 
+    private void ComputeLoopHeaders()
+    {
+      var cfg = Program.GraphFromImpl(this.InternalImplementation);
+      cfg.ComputeLoops();
+      this.RegionLoopHeaders = cfg.Headers.ToList();
+    }
+
     #endregion
 
     #region helper methods
 
     private Block CreateRegionHeader()
     {
-      Block header = new Block(Token.NoToken, "$header",
-        new List<Cmd>(), new GotoCmd(Token.NoToken,
-          new List<string> { this.RegionBlocks[0].Label }));
+      var gotoCmd = new GotoCmd(Token.NoToken, new List<string> { this.RegionBlocks[0].Label });
+      gotoCmd.labelTargets = new List<Block> { this.RegionBlocks[0] };
+
+      var header = new Block(Token.NoToken, "$header", new List<Cmd>(), gotoCmd);
       this.RegionBlocks.Insert(0, header);
+
       return header;
     }
 

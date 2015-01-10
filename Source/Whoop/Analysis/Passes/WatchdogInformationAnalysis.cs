@@ -46,8 +46,9 @@ namespace Whoop.Analysis
         this.Timer.Start();
       }
 
-      this.AnalyseInstrumentationRegions();
-      this.CleanUpRegions();
+      this.AnalyseLocalAccessesInRegions();
+      this.IdentifyCallAccessesInRegions();
+      this.AnalyseCallAccesesInRegions();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -58,72 +59,87 @@ namespace Whoop.Analysis
 
     #region watchdog information analysis
 
-    private void AnalyseInstrumentationRegions()
+    private void AnalyseLocalAccessesInRegions()
+    {
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        this.AnalyseLocalAccessesInRegion(region);
+      }
+    }
+
+    private void IdentifyCallAccessesInRegions()
     {
       var fixpoint = true;
       foreach (var region in this.AC.InstrumentationRegions)
       {
-        fixpoint = this.AnalyseAccessesInRegion(region) && fixpoint;
+        if (region.IsNotAccessingResources)
+          continue;
+
+        fixpoint = this.IdentifyCallAccessesInRegion(region) && fixpoint;
       }
 
       if (!fixpoint)
       {
-        this.AnalyseInstrumentationRegions();
+        this.IdentifyCallAccessesInRegions();
       }
     }
 
-    private bool AnalyseAccessesInRegion(InstrumentationRegion region)
+    private void AnalyseCallAccesesInRegions()
     {
-      if (region.IsResourceAnalysisDone)
-        return true;
-
-      int preCount = 0;
-      int afterCount = 0;
-
-      foreach (var r in region.GetResourceAccesses())
+      var fixpoint = true;
+      foreach (var region in this.AC.InstrumentationRegions)
       {
-        preCount = preCount + r.Value.Count;
+        if (region.IsNotAccessingResources)
+          continue;
+
+        fixpoint = this.AnalyseCallAccesesInRegion(region) && fixpoint;
       }
 
-      int numberOfCalls = 0;
-      int numberOfNonCheckedCalls = 0;
-
-      if (!region.IsLocalResourceAnalysisDone)
+      if (!fixpoint)
       {
-        foreach (var block in region.Implementation().Blocks)
+        this.AnalyseCallAccesesInRegions();
+      }
+    }
+
+    private void AnalyseLocalAccessesInRegion(InstrumentationRegion region)
+    {
+      foreach (var block in region.Implementation().Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
         {
-          for (int idx = 0; idx < block.Cmds.Count; idx++)
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+
+          var call = block.Cmds[idx] as CallCmd;
+          bool isInstrumentedCall = false;
+          string resource = null;
+          string accessType = null;
+
+          if (idx + 1 < block.Cmds.Count && block.Cmds[idx + 1] is AssumeCmd)
           {
-            if (!(block.Cmds[idx] is CallCmd))
-              continue;
+            isInstrumentedCall = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
+              as AssumeCmd).Attributes, "captureState") != null;
+            resource = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
+              as AssumeCmd).Attributes, "resource");
+            accessType = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
+              as AssumeCmd).Attributes, "access");
+          }
 
-            var call = block.Cmds[idx] as CallCmd;
-            bool isInstrumentedCall = false;
-            string resource = null;
-            string accessType = null;
-
-            if (idx + 1 < block.Cmds.Count && block.Cmds[idx + 1] is AssumeCmd)
-            {
-              isInstrumentedCall = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
-                as AssumeCmd).Attributes, "captureState") != null;
-              resource = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
-                as AssumeCmd).Attributes, "resource");
-              accessType = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
-                as AssumeCmd).Attributes, "access");
-            }
-
-            if (isInstrumentedCall && resource != null && accessType != null)
-            {
-              var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
-              if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-                ptrExpr = null;
-              region.TryAddLocalResourceAccess(resource, ptrExpr);
-            }
+          if (isInstrumentedCall && resource != null && accessType != null)
+          {
+            var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
+            if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
+              ptrExpr = null;
+            region.TryAddLocalResourceAccess(resource, ptrExpr);
           }
         }
-
-        region.IsLocalResourceAnalysisDone = true;
       }
+    }
+
+    private bool IdentifyCallAccessesInRegion(InstrumentationRegion region)
+    {
+      int numberOfCalls = 0;
+      int numberOfNonCheckedCalls = 0;
 
       foreach (var block in region.Implementation().Blocks)
       {
@@ -156,7 +172,7 @@ namespace Whoop.Analysis
             if (calleeRegion.GetResourceAccesses() == null)
               continue;
             if (calleeRegion.GetResourceAccesses().Count == 0 &&
-                calleeRegion.IsResourceAnalysisDone)
+                calleeRegion.IsNotAccessingResources)
             {
               numberOfNonCheckedCalls++;
               continue;
@@ -165,11 +181,12 @@ namespace Whoop.Analysis
             if (!region.CallInformation.ContainsKey(call))
             {
               region.CallInformation.Add(call, new Dictionary<int, Tuple<Expr, Expr>>());
+              region.ExternallyReceivedAcceses.Add(call, new Dictionary<string, HashSet<Expr>>());
 
               for (int i = 0; i < call.Ins.Count; i++)
               {
                 var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(),
-                  block.Label, call.Ins[i]);
+                                block.Label, call.Ins[i]);
                 if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
                   ptrExpr = null;
 
@@ -177,42 +194,6 @@ namespace Whoop.Analysis
                 region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
               }
             }
-
-            foreach (var r in calleeRegion.GetResourceAccesses())
-            {
-              foreach (var a in r.Value)
-              {
-                int index;
-                if (a is NAryExpr)
-                  index = this.TryGetArgumentIndex(call, calleeRegion, (a as NAryExpr).Args[0]);
-                else
-                  index = this.TryGetArgumentIndex(call, calleeRegion, a);
-                if (index < 0)
-                  continue;
-
-                var calleeExpr = region.CallInformation[call][index];
-                var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
-                region.TryAddResourceAccess(r.Key, computedExpr);
-              }
-            }
-
-//            foreach (var pair in region.GetResourceAccesses())
-//            {
-//              foreach (var access in pair.Value)
-//              {
-//                foreach (var index in region.CallInformation[call].Keys)
-//                {
-//                  var calleeExpr = region.CallInformation[call][index];
-//                  var mappedExpr = this.ComputeMappedExpr(access, calleeExpr.Item1, calleeExpr.Item2);
-//                  if (mappedExpr != null &&
-//                    calleeRegion.TryAddExternalResourceAccesses(pair.Key, mappedExpr))
-//                  {
-//                    this.CacheMatchedAccesses(pair.Key, access, mappedExpr);
-//                    afterCount++;
-//                  }
-//                }
-//              }
-//            }
           }
         }
       }
@@ -221,8 +202,70 @@ namespace Whoop.Analysis
         numberOfCalls == numberOfNonCheckedCalls)
       {
         this.CleanUpRegion(region);
-        region.IsResourceAnalysisDone = true;
+        region.IsNotAccessingResources = true;
         return false;
+      }
+
+      return true;
+    }
+
+    private bool AnalyseCallAccesesInRegion(InstrumentationRegion region)
+    {
+      int preCount = 0;
+      int afterCount = 0;
+
+      foreach (var r in region.GetResourceAccesses())
+      {
+        preCount = preCount + r.Value.Count;
+      }
+
+      foreach (var call in region.CallInformation.Keys)
+      {
+        var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
+          val.Implementation().Name.Equals(call.callee));
+
+        foreach (var r in calleeRegion.GetResourceAccesses())
+        {
+          if (!region.ExternallyReceivedAcceses[call].ContainsKey(r.Key))
+            region.ExternallyReceivedAcceses[call].Add(r.Key, new HashSet<Expr>());
+
+          foreach (var a in r.Value)
+          {
+            if (region.ExternallyReceivedAcceses[call][r.Key].Contains(a))
+              continue;
+
+            int index;
+            if (a is NAryExpr)
+              index = this.TryGetArgumentIndex(call, calleeRegion, (a as NAryExpr).Args[0]);
+            else
+              index = this.TryGetArgumentIndex(call, calleeRegion, a);
+            if (index < 0)
+              continue;
+
+            var calleeExpr = region.CallInformation[call][index];
+            var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
+            region.TryAddResourceAccess(r.Key, computedExpr);
+            region.ExternallyReceivedAcceses[call][r.Key].Add(a);
+          }
+        }
+
+        foreach (var pair in region.GetResourceAccesses())
+        {
+          foreach (var access in pair.Value)
+          {
+            foreach (var index in region.CallInformation[call].Keys)
+            {
+              var calleeExpr = region.CallInformation[call][index];
+              var mappedExpr = this.ComputeMappedExpr(access, calleeExpr.Item1, calleeExpr.Item2);
+              if (mappedExpr != null &&
+                calleeRegion.TryAddExternalResourceAccesses(pair.Key, mappedExpr))
+              {
+                this.CacheMatchedAccesses(pair.Key, access, mappedExpr);
+                afterCount++;
+              }
+            }
+          }
+        }
       }
 
       foreach (var r in region.GetResourceAccesses())
@@ -232,20 +275,6 @@ namespace Whoop.Analysis
 
       if (preCount != afterCount) return false;
       else return true;
-    }
-
-    private void CleanUpRegions()
-    {
-//      foreach (var region in this.AC.InstrumentationRegions)
-//      {
-//        if (region.ResourceAccesses.Count > 0)
-//          continue;
-//        Console.WriteLine("region: " + region.Name() + " " + region.ResourcesWithUnidentifiedAccesses.Count);
-//        if (region.ResourcesWithUnidentifiedAccesses.Count > 0)
-//          continue;
-//
-//        this.CleanUpInstrumentationRegion(region);
-//      }
     }
 
     #endregion

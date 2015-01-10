@@ -45,10 +45,7 @@ namespace Whoop.Summarisation
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentAccessCallsInEntryPointRegion(region);
-
-//        base.InstrumentEnsuresCandidates(region, base.AC.GetMemoryLocksetVariables(), true, true);
-//        base.InstrumentEnsuresCandidates(region, base.AC.GetMemoryLocksetVariables(), false, true);
+        this.InstrumentLocksetInvariantsInEntryPointRegion(region);
       }
 
       foreach (var region in base.InstrumentationRegions)
@@ -56,14 +53,7 @@ namespace Whoop.Summarisation
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentAccessCallsInRegion(region);
-//        base.InstrumentRequiresCandidates(region, base.AC.GetCurrentLocksetVariables(), true);
-//        base.InstrumentRequiresCandidates(region, base.AC.GetMemoryLocksetVariables(), true, true);
-//        base.InstrumentRequiresCandidates(region, base.AC.GetMemoryLocksetVariables(), false, true);
-//
-//        base.InstrumentEnsuresCandidates(region, base.AC.GetCurrentLocksetVariables(), true);
-//        base.InstrumentEnsuresCandidates(region, base.AC.GetMemoryLocksetVariables(), true, true);
-//        base.InstrumentEnsuresCandidates(region, base.AC.GetMemoryLocksetVariables(), false, true);
+        this.InstrumentLocksetInvariantsInRegion(region);
       }
 
       base.InstrumentExistentialBooleans();
@@ -77,9 +67,13 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
-    private void InstrumentAccessCallsInEntryPointRegion(InstrumentationRegion region)
+    private void InstrumentLocksetInvariantsInEntryPointRegion(InstrumentationRegion region)
     {
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+      foreach (var block in region.LoopHeaders())
+      {
+        base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+      }
 
       foreach (var pair in region.GetResourceAccesses())
       {
@@ -94,7 +88,12 @@ namespace Whoop.Summarisation
           foreach (var access in pair.Value)
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+
             base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, memLsVars, true, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentImpliesAssertCandidates(block, watchedExpr, memLsVars, true, true);
+            }
 
             if (nonWatchedExpr == null)
             {
@@ -109,13 +108,21 @@ namespace Whoop.Summarisation
         }
 
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, memLsVars, true, true);
+        }
       }
     }
 
-    private void InstrumentAccessCallsInRegion(InstrumentationRegion region)
+    private void InstrumentLocksetInvariantsInRegion(InstrumentationRegion region)
     {
       base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
       base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+      foreach (var block in region.LoopHeaders())
+      {
+        base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+      }
 
       foreach (var pair in region.GetResourceAccesses())
       {
@@ -130,8 +137,13 @@ namespace Whoop.Summarisation
           foreach (var access in pair.Value)
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+
             base.InstrumentImpliesRequiresCandidates(region, watchedExpr, memLsVars, true, true);
             base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, memLsVars, true, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentImpliesAssertCandidates(block, watchedExpr, memLsVars, true, true);
+            }
 
             if (nonWatchedExpr == null)
             {
@@ -147,6 +159,10 @@ namespace Whoop.Summarisation
 
         base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, memLsVars, true, true);
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, memLsVars, true, true);
+        }
       }
     }
 

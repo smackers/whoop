@@ -29,14 +29,6 @@ namespace Whoop.Regions
 
     IEnumerable<Cmd> Cmds();
 
-    IEnumerable<object> CmdsChildRegions();
-
-    IEnumerable<IRegion> SubRegions();
-
-    IEnumerable<Block> PreHeaders();
-
-    Expr Guard();
-
     void AddInvariant(PredicateCmd pc);
 
     List<PredicateCmd> RemoveInvariants();

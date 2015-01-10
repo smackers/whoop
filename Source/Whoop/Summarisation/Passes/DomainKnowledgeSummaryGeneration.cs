@@ -72,6 +72,11 @@ namespace Whoop.Summarisation
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
       base.InstrumentEnsuresCandidates(region, devRegVars, false);
+
+      foreach (var block in region.LoopHeaders())
+      {
+        base.InstrumentAssertCandidates(block, devRegVars, false);
+      }
     }
 
     private void InstrumentDomainKnowledgeInRegion(InstrumentationRegion region)
@@ -81,6 +86,11 @@ namespace Whoop.Summarisation
 
       base.InstrumentRequiresCandidates(region, devRegVars, false, true);
       base.InstrumentEnsuresCandidates(region, devRegVars, false, true);
+
+      foreach (var block in region.LoopHeaders())
+      {
+        base.InstrumentAssertCandidates(block, devRegVars, false, true);
+      }
     }
 
     #endregion

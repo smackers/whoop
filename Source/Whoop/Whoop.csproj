@@ -47,7 +47,6 @@
     <Compile Include="FunctionPairingMethod.cs" />
     <Compile Include="Regions\InstrumentationRegion.cs" />
     <Compile Include="Regions\IRegion.cs" />
-    <Compile Include="Regions\LoopAnalysisRegion.cs" />
     <Compile Include="Regions\PairCheckingRegion.cs" />
     <Compile Include="Lock.cs" />
     <Compile Include="MemoryLocation.cs" />

@@ -84,6 +84,38 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
+    protected void InstrumentAssertCandidates(Block block, List<Variable> variables,
+      bool value, bool capture = false)
+    {
+      foreach (var v in variables)
+      {
+        var dict = this.GetExistentialDictionary(value);
+
+        Constant cons = null;
+        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey("$whoop$"))
+        {
+          cons = dict[v]["$whoop$"];
+        }
+        else
+        {
+          cons = this.CreateConstant();
+        }
+
+        Expr expr = this.CreateImplExpr(cons, v, value);
+        block.Cmds.Insert(0, new AssertCmd(Token.NoToken, expr));
+
+        if (capture && !dict.ContainsKey(v))
+        {
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add("$whoop$", cons);
+        }
+        else if (capture && !dict[v].ContainsKey("$whoop$"))
+        {
+          dict[v].Add("$whoop$", cons);
+        }
+      }
+    }
+
     protected void InstrumentRequiresCandidates(InstrumentationRegion region,
       List<Variable> variables, bool value, bool capture = false)
     {
@@ -148,71 +180,40 @@ namespace Whoop.Summarisation
       }
     }
 
-//    protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
-//      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
-//    {
-//      foreach (var v in variables)
-//      {
-//        var dict = this.GetExistentialDictionary(value);
-//
-//        Constant cons = null;
-//        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
-//        {
-//          cons = dict[v][implExpr.ToString()];
-//        }
-//        else
-//        {
-//          cons = this.CreateConstant();
-//        }
-//
-//        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
-//        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
-//        region.Procedure().Requires.Add(new Requires(false, lExpr));
-//
-//        if (capture && !dict.ContainsKey(v))
-//        {
-//          dict.Add(v, new Dictionary<string, Constant>());
-//          dict[v].Add(implExpr.ToString(), cons);
-//        }
-//        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
-//        {
-//          dict[v].Add(implExpr.ToString(), cons);
-//        }
-//      }
-//    }
-//
-//    protected void InstrumentImpliesEnsuresCandidates(InstrumentationRegion region,
-//      Expr implExpr, List<Variable> variables, bool value, bool capture = false)
-//    {
-//      foreach (var v in variables)
-//      {
-//        var dict = this.GetExistentialDictionary(value);
-//
-//        Constant cons = null;
-//        if (capture && dict.ContainsKey(v) && dict[v].ContainsKey(implExpr.ToString()))
-//        {
-//          cons = dict[v][implExpr.ToString()];
-//        }
-//        else
-//        {
-//          cons = this.CreateConstant();
-//        }
-//
-//        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
-//        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
-//        region.Procedure().Ensures.Add(new Ensures(false, lExpr));
-//
-//        if (capture && !dict.ContainsKey(v))
-//        {
-//          dict.Add(v, new Dictionary<string, Constant>());
-//          dict[v].Add(implExpr.ToString(), cons);
-//        }
-//        else if (capture && !dict[v].ContainsKey(implExpr.ToString()))
-//        {
-//          dict[v].Add(implExpr.ToString(), cons);
-//        }
-//      }
-//    }
+    protected void InstrumentImpliesAssertCandidates(Block block, Expr implExpr,
+      List<Variable> variables, bool value, bool capture = false)
+    {
+      foreach (var v in variables)
+      {
+        var dict = this.GetExistentialDictionary(value);
+
+        Constant cons = null;
+        bool consExists = false;
+        if (capture && dict.ContainsKey(v) &&
+          GetConstantFromDictionary(out cons, dict[v], implExpr))
+        {
+          consExists = true;
+        }
+        else
+        {
+          cons = this.CreateConstant();
+        }
+
+        Expr rExpr = this.CreateImplExpr(implExpr, v, value);
+        Expr lExpr = Expr.Imp(new IdentifierExpr(cons.tok, cons), rExpr);
+        block.Cmds.Insert(0, new AssertCmd(Token.NoToken, lExpr));
+
+        if (capture && !dict.ContainsKey(v) && !consExists)
+        {
+          dict.Add(v, new Dictionary<string, Constant>());
+          dict[v].Add(implExpr.ToString(), cons);
+        }
+        else if (capture && !consExists)
+        {
+          dict[v].Add(implExpr.ToString(), cons);
+        }
+      }
+    }
 
     protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
       Expr implExpr, List<Variable> variables, bool value, bool capture = false)
