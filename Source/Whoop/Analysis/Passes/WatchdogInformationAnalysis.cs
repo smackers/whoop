@@ -240,7 +240,15 @@ namespace Whoop.Analysis
             else
               index = this.TryGetArgumentIndex(call, calleeRegion, a);
             if (index < 0)
+            {
+              if (this.IsAxiom(a))
+              {
+                region.TryAddResourceAccess(r.Key, a);
+                region.ExternallyReceivedAcceses[call][r.Key].Add(a);
+              }
+
               continue;
+            }
 
             var calleeExpr = region.CallInformation[call][index];
             var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
@@ -253,15 +261,25 @@ namespace Whoop.Analysis
         {
           foreach (var access in pair.Value)
           {
-            foreach (var index in region.CallInformation[call].Keys)
+            if (this.IsAxiom(access))
             {
-              var calleeExpr = region.CallInformation[call][index];
-              var mappedExpr = this.ComputeMappedExpr(access, calleeExpr.Item1, calleeExpr.Item2);
-              if (mappedExpr != null &&
-                calleeRegion.TryAddExternalResourceAccesses(pair.Key, mappedExpr))
+              if (calleeRegion.TryAddExternalResourceAccesses(pair.Key, access))
               {
-                this.CacheMatchedAccesses(pair.Key, access, mappedExpr);
                 afterCount++;
+              }
+            }
+            else
+            {
+              foreach (var index in region.CallInformation[call].Keys)
+              {
+                var calleeExpr = region.CallInformation[call][index];
+                var mappedExpr = this.ComputeMappedExpr(access, calleeExpr.Item1, calleeExpr.Item2);
+                if (mappedExpr != null &&
+                  calleeRegion.TryAddExternalResourceAccesses(pair.Key, mappedExpr))
+                {
+                  this.CacheMatchedAccesses(pair.Key, access, mappedExpr);
+                  afterCount++;
+                }
               }
             }
           }
@@ -432,6 +450,34 @@ namespace Whoop.Analysis
         InstrumentationRegion.MatchedAccesses[this.EP].Add(
           new HashSet<string> { expr1.ToString(), expr2.ToString() });
       }
+    }
+
+    private bool IsAxiom(Expr expr)
+    {
+      bool result = false;
+
+      Expr e = null;
+      if (expr is NAryExpr)
+        e = (expr as NAryExpr).Args[0];
+      else
+        e = expr;
+
+      foreach (var axiom in this.AC.TopLevelDeclarations.OfType<Axiom>())
+      {
+        Expr axiomExpr = null;
+        if (axiom.Expr is NAryExpr)
+          axiomExpr = (axiom.Expr as NAryExpr).Args[0];
+        else
+          axiomExpr = axiom.Expr;
+
+        if (axiomExpr.ToString().Equals(e.ToString()))
+        {
+          result = true;
+          break;
+        }
+      }
+
+      return result;
     }
 
     private void CleanUpRegion(InstrumentationRegion region)
