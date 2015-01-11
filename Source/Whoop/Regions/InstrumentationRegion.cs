@@ -207,7 +207,10 @@ namespace Whoop.Regions
         return false;
       }
 
-      this.TryAddResourceAccess(resource, access);
+      if (!this.TryAddResourceAccess(resource, access))
+      {
+        return false;
+      }
 
       if (!this.LocalResourceAccesses.ContainsKey(resource))
       {
@@ -242,7 +245,10 @@ namespace Whoop.Regions
         return false;
       }
 
-      this.TryAddResourceAccess(resource, access);
+      if (!this.TryAddResourceAccess(resource, access))
+      {
+        return false;
+      }
 
       if (!this.ExternalResourceAccesses.ContainsKey(resource))
       {
