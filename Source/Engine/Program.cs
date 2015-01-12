@@ -71,6 +71,7 @@ namespace Whoop
         }
 
         DeviceDriver.ParseAndInitialize(fileList);
+        FunctionPointerInformation.ParseAndInitialize(fileList);
         ExecutionTimer timer = null;
 
         if (WhoopEngineCommandLineOptions.Get().PrintPairs)

@@ -20,7 +20,7 @@ namespace Whoop
     public string AnalyseOnly = "";
 
     public int InliningBound = 0;
-    public int EntryPointFunctionCallComplexity = 40;
+    public int EntryPointFunctionCallComplexity = 80;
 
     public bool ModelKernelLocks = false;
 

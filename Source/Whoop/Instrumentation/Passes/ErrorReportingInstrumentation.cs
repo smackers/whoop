@@ -240,11 +240,11 @@ namespace Whoop.Instrumentation
 
       col = new QKeyValue(Token.NoToken, "column",
         new List<object>() { new LiteralExpr(Token.NoToken,
-            BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[2]))))
+            BigNum.FromInt(Int32.Parse(string.Format("{0}", curr.Params[2]))))
         }, null);
       line = new QKeyValue(Token.NoToken, "line",
         new List<object>() { new LiteralExpr(Token.NoToken,
-            BigNum.FromInt(int.Parse(string.Format("{0}", curr.Params[1]))))
+            BigNum.FromInt(Int32.Parse(string.Format("{0}", curr.Params[1]))))
         }, col);
 
       return line;
@@ -257,7 +257,7 @@ namespace Whoop.Instrumentation
         foreach (Block b in impl.Blocks)
         {
           b.Cmds.RemoveAll(val => (val is AssumeCmd) && (val as AssumeCmd).Attributes != null &&
-          (val as AssumeCmd).Attributes.Key.Equals("sourceloc"));
+            (val as AssumeCmd).Attributes.Key.Equals("sourceloc"));
         }
       }
     }

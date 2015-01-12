@@ -301,7 +301,7 @@ namespace Whoop.Summarisation
         var split = expr.ToString().Split(new string[] { " == " }, StringSplitOptions.None);
         if (split.Length != 2) return false;
 
-        foreach (var matchedSet in InstrumentationRegion.MatchedAccesses[this.EP])
+        foreach (var matchedSet in InstrumentationRegion.MatchedAccessesMap[this.EP])
         {
           if (matchedSet.Contains(split[1]))
           {

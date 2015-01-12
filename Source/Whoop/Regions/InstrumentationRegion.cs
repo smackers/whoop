@@ -41,13 +41,16 @@ namespace Whoop.Regions
     private Dictionary<string, List<Expr>> ResourceAccesses;
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
     private Dictionary<string, List<Expr>> ExternalResourceAccesses;
+    private Dictionary<string, List<Expr>> AxiomResourceAccesses;
     private HashSet<string> ResourcesWithUnidentifiedAccesses;
     internal bool IsNotAccessingResources;
 
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
-    internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAcceses;
+    internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAccesses;
 
-    internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccesses =
+    internal static Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>> AxiomAccessesMap =
+      new Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>>();
+    internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccessesMap =
       new Dictionary<EntryPoint, List<HashSet<string>>>();
 
     #endregion
@@ -68,11 +71,12 @@ namespace Whoop.Regions
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ExternalResourceAccesses = new Dictionary<string, List<Expr>>();
+      this.AxiomResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
       this.IsNotAccessingResources = false;
 
       this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
-      this.ExternallyReceivedAcceses = new Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>>();
+      this.ExternallyReceivedAccesses = new Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>>();
     }
 
     #endregion
@@ -164,6 +168,11 @@ namespace Whoop.Regions
     public Dictionary<string, List<Expr>> GetExternalResourceAccesses()
     {
       return this.ExternalResourceAccesses;
+    }
+
+    public Dictionary<string, List<Expr>> GetAxiomResourceAccesses()
+    {
+      return this.AxiomResourceAccesses;
     }
 
     public bool TryAddResourceAccess(string resource, Expr access)
@@ -267,6 +276,44 @@ namespace Whoop.Regions
       else
       {
         this.ExternalResourceAccesses[resource].Add(access);
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+    }
+
+    public bool TryAddAxiomResourceAccesses(string resource, Expr access)
+    {
+      if (access == null)
+      {
+        this.ResourcesWithUnidentifiedAccesses.Add(resource);
+        return false;
+      }
+
+      if (!this.TryAddResourceAccess(resource, access))
+      {
+        return false;
+      }
+
+      if (!this.AxiomResourceAccesses.ContainsKey(resource))
+      {
+        this.AxiomResourceAccesses.Add(resource, new List<Expr> { access });
+
+        if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
+          this.ResourcesWithUnidentifiedAccesses.Remove(resource);
+
+        return true;
+      }
+      else if (this.AxiomResourceAccesses[resource].Any(val =>
+        val.ToString().Equals(access.ToString())))
+      {
+        return false;
+      }
+      else
+      {
+        this.AxiomResourceAccesses[resource].Add(access);
 
         if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
           this.ResourcesWithUnidentifiedAccesses.Remove(resource);

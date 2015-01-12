@@ -98,6 +98,7 @@
     <Compile Include="Analysis\Interfaces\IWatchdogInformationAnalysis.cs" />
     <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Summarisation\Interfaces\IDomainKnowledgeSummaryGeneration.cs" />
+    <Compile Include="Domain\Drivers\FunctionPointerInformation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
