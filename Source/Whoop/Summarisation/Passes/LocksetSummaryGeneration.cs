@@ -45,7 +45,8 @@ namespace Whoop.Summarisation
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentLocksetInvariantsInEntryPointRegion(region);
+        this.InstrumentCurrentLocksetInvariantsInEntryPointRegion(region);
+        this.InstrumentMemoryLocksetInvariantsInEntryPointRegion(region);
       }
 
       foreach (var region in base.InstrumentationRegions)
@@ -53,7 +54,8 @@ namespace Whoop.Summarisation
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentLocksetInvariantsInRegion(region);
+        this.InstrumentCurrentLocksetInvariantsInRegion(region);
+        this.InstrumentMemoryLocksetInvariantsInRegion(region);
       }
 
       base.InstrumentExistentialBooleans();
@@ -67,19 +69,45 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
-    private void InstrumentLocksetInvariantsInEntryPointRegion(InstrumentationRegion region)
+    private void InstrumentCurrentLocksetInvariantsInEntryPointRegion(InstrumentationRegion region)
     {
-      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
-      foreach (var block in region.LoopHeaders())
+      if (this.EP.IsHoldingLock)
       {
-        base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+        base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+        }
       }
+      else
+      {
+        base.InstrumentEnsures(region, base.CurrentLocksetVariables, false);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssert(block, base.CurrentLocksetVariables, false);
+        }
+      }
+    }
 
+    private void InstrumentMemoryLocksetInvariantsInEntryPointRegion(InstrumentationRegion region)
+    {
       foreach (var pair in region.GetResourceAccesses())
       {
         var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
-        Expr nonWatchedExpr = null;
 
+        if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
+          !this.EP.HasReadAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentEnsures(region, memLsVars, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, memLsVars, true);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
@@ -115,20 +143,48 @@ namespace Whoop.Summarisation
       }
     }
 
-    private void InstrumentLocksetInvariantsInRegion(InstrumentationRegion region)
+    private void InstrumentCurrentLocksetInvariantsInRegion(InstrumentationRegion region)
     {
-      base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
-      base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
-      foreach (var block in region.LoopHeaders())
+      if (this.EP.IsHoldingLock)
       {
-        base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+        base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
+        base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+        }
       }
+      else
+      {
+        base.InstrumentRequires(region, base.CurrentLocksetVariables, false);
+        base.InstrumentEnsures(region, base.CurrentLocksetVariables, false);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssert(block, base.CurrentLocksetVariables, false);
+        }
+      }
+    }
 
+    private void InstrumentMemoryLocksetInvariantsInRegion(InstrumentationRegion region)
+    {
       foreach (var pair in region.GetResourceAccesses())
       {
         var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
-        Expr nonWatchedExpr = null;
 
+        if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
+            !this.EP.HasReadAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentRequires(region, memLsVars, true);
+          base.InstrumentEnsures(region, memLsVars, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, memLsVars, true);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))

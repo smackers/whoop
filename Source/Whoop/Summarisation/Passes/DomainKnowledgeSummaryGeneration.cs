@@ -44,7 +44,7 @@ namespace Whoop.Summarisation
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentDomainKnowledgeInEntryPointRegion(region);
+        this.InstrumentRegisteredDeviceVarInEntryPointRegion(region);
       }
 
       foreach (var region in base.InstrumentationRegions)
@@ -52,7 +52,7 @@ namespace Whoop.Summarisation
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentDomainKnowledgeInRegion(region);
+        this.InstrumentRegisteredDeviceVarInRegion(region);
       }
 
       base.InstrumentExistentialBooleans();
@@ -66,30 +66,51 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
-    private void InstrumentDomainKnowledgeInEntryPointRegion(InstrumentationRegion region)
+    private void InstrumentRegisteredDeviceVarInEntryPointRegion(InstrumentationRegion region)
     {
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-      base.InstrumentEnsuresCandidates(region, devRegVars, false);
-
-      foreach (var block in region.LoopHeaders())
+      if (this.EP.IsChangingDeviceRegistration)
       {
-        base.InstrumentAssertCandidates(block, devRegVars, false);
+        base.InstrumentEnsuresCandidates(region, devRegVars, false);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssertCandidates(block, devRegVars, false);
+        }
+      }
+      else
+      {
+        base.InstrumentEnsures(region, devRegVars, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssert(block, devRegVars, true);
+        }
       }
     }
 
-    private void InstrumentDomainKnowledgeInRegion(InstrumentationRegion region)
+    private void InstrumentRegisteredDeviceVarInRegion(InstrumentationRegion region)
     {
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-      base.InstrumentRequiresCandidates(region, devRegVars, false, true);
-      base.InstrumentEnsuresCandidates(region, devRegVars, false, true);
-
-      foreach (var block in region.LoopHeaders())
+      if (this.EP.IsChangingDeviceRegistration)
       {
-        base.InstrumentAssertCandidates(block, devRegVars, false, true);
+        base.InstrumentRequiresCandidates(region, devRegVars, false);
+        base.InstrumentEnsuresCandidates(region, devRegVars, false);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssertCandidates(block, devRegVars, false);
+        }
+      }
+      else
+      {
+        base.InstrumentRequires(region, devRegVars, true);
+        base.InstrumentEnsures(region, devRegVars, true);
+        foreach (var block in region.LoopHeaders())
+        {
+          base.InstrumentAssert(block, devRegVars, true);
+        }
       }
     }
 

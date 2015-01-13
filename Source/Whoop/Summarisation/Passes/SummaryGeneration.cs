@@ -84,6 +84,15 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
+    protected void InstrumentAssert(Block block, List<Variable> variables, bool value)
+    {
+      foreach (var v in variables)
+      {
+        Expr expr = this.CreateExpr(v, value);
+        block.Cmds.Insert(0, new AssertCmd(Token.NoToken, expr));
+      }
+    }
+
     protected void InstrumentAssertCandidates(Block block, List<Variable> variables,
       bool value, bool capture = false)
     {
@@ -116,6 +125,15 @@ namespace Whoop.Summarisation
       }
     }
 
+    protected void InstrumentRequires(InstrumentationRegion region, List<Variable> variables, bool value)
+    {
+      foreach (var v in variables)
+      {
+        Expr expr = this.CreateExpr(v, value);
+        region.Procedure().Requires.Add(new Requires(false, expr));
+      }
+    }
+
     protected void InstrumentRequiresCandidates(InstrumentationRegion region,
       List<Variable> variables, bool value, bool capture = false)
     {
@@ -145,6 +163,15 @@ namespace Whoop.Summarisation
         {
           dict[v].Add("$whoop$", cons);
         }
+      }
+    }
+
+    protected void InstrumentEnsures(InstrumentationRegion region, List<Variable> variables, bool value)
+    {
+      foreach (var v in variables)
+      {
+        Expr expr = this.CreateExpr(v, value);
+        region.Procedure().Ensures.Add(new Ensures(false, expr));
       }
     }
 
@@ -361,35 +388,19 @@ namespace Whoop.Summarisation
 
     private Expr CreateImplExpr(Constant cons, Variable v, bool value)
     {
-      Expr expr = null;
-
-      if (value)
-      {
-        expr = Expr.Imp(new IdentifierExpr(cons.tok, cons),
-          new IdentifierExpr(v.tok, v));
-      }
-      else
-      {
-        expr = Expr.Imp(new IdentifierExpr(cons.tok, cons),
-          Expr.Not(new IdentifierExpr(v.tok, v)));
-      }
-
-      return expr;
+      return Expr.Imp(new IdentifierExpr(cons.tok, cons), this.CreateExpr(v, value));
     }
 
     private Expr CreateImplExpr(Expr consExpr, Variable v, bool value)
     {
+      return Expr.Imp(consExpr, this.CreateExpr(v, value));
+    }
+
+    private Expr CreateExpr(Variable v, bool value)
+    {
       Expr expr = null;
-
-      if (value)
-      {
-        expr = Expr.Imp(consExpr, new IdentifierExpr(v.tok, v));
-      }
-      else
-      {
-        expr = Expr.Imp(consExpr, Expr.Not(new IdentifierExpr(v.tok, v)));
-      }
-
+      if (value) expr = new IdentifierExpr(v.tok, v);
+      else expr = Expr.Not(new IdentifierExpr(v.tok, v));
       return expr;
     }
 

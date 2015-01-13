@@ -145,7 +145,6 @@ class DefaultCmdLineOptions(object):
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
-    self.modelKernelLocks = False
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
@@ -207,7 +206,6 @@ def showHelpAndExit():
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --inline-bound=X        Inline all device driver non-entry point functions during the Whoop instrumentation,
                             for entry points with less or equal than X nested function calls.
-    --model-kernel-locks    Model kernel specific locks in Boogie.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
@@ -311,8 +309,6 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.keepTemps = True
     if o == "--inline":
       CommandLineOptions.inline = True
-    if o == "--model-kernel-locks":
-      CommandLineOptions.modelKernelLocks = True
     if o == "--time":
       CommandLineOptions.time = True
     if o == "--time-as-csv":
@@ -525,7 +521,6 @@ def startToolChain(argv):
     opts, args = getopt.gnu_getopt(argv,'hVD:I:',
              ['help', 'version', 'debug', 'verbose', 'silent',
               'only-race-checking', 'only-deadlock-checking',
-              'model-kernel-locks',
               'time', 'time-as-csv=', 'time-passes',
               'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
@@ -552,6 +547,7 @@ def startToolChain(argv):
   bplFilename = filename + '.bpl'
   wbplFilename = filename + '.wbpl'
   infoFilename = filename + '.info'
+  fpFilename = filename + '_fp.info'
   summaryInfoFilename = filename + '_summaries.info'
   smt2Filename = filename + '.smt2'
   if not CommandLineOptions.keepTemps:
@@ -572,6 +568,7 @@ def startToolChain(argv):
     cleanUpHandler.register(DeleteFile, bcFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, reFilename)
     if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, infoFilename)
+    if not CommandLineOptions.stopAtRe: cleanUpHandler.register(DeleteFile, fpFilename)
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFile, summaryInfoFilename)
@@ -626,9 +623,6 @@ def startToolChain(argv):
 
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
-
-  if CommandLineOptions.modelKernelLocks:
-    CommandLineOptions.whoopEngineOptions += [ "/modelKernelLocks" ]
 
   CommandLineOptions.whoopEngineOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
   CommandLineOptions.whoopCruncherOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]

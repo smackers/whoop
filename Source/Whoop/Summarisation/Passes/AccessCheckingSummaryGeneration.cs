@@ -44,7 +44,8 @@ namespace Whoop.Summarisation
         if (!base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentAccessInvariantsInEntryPointRegion(region);
+        this.InstrumentWriteAccessInvariantsInEntryPointRegion(region);
+        this.InstrumentReadAccessInvariantsInEntryPointRegion(region);
       }
 
       foreach (var region in base.InstrumentationRegions)
@@ -52,7 +53,8 @@ namespace Whoop.Summarisation
         if (base.EP.Name.Equals(region.Implementation().Name))
           continue;
 
-        this.InstrumentAccessInvariantsInRegion(region);
+        this.InstrumentWriteAccessInvariantsInRegion(region);
+        this.InstrumentReadAccessInvariantsInRegion(region);
       }
 
       base.InstrumentExistentialBooleans();
@@ -66,14 +68,24 @@ namespace Whoop.Summarisation
 
     #region summary instrumentation functions
 
-    private void InstrumentAccessInvariantsInEntryPointRegion(InstrumentationRegion region)
+    private void InstrumentWriteAccessInvariantsInEntryPointRegion(InstrumentationRegion region)
     {
       foreach (var pair in region.GetResourceAccesses())
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
-        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
-        Expr nonWatchedExpr = null;
 
+        if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentEnsures(region, waVars, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, waVars, false);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
@@ -84,11 +96,9 @@ namespace Whoop.Summarisation
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
             base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
             foreach (var block in region.LoopHeaders())
             {
               base.InstrumentImpliesAssertCandidates(block, watchedExpr, waVars, false, true);
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
             }
 
             if (nonWatchedExpr == null)
@@ -104,23 +114,85 @@ namespace Whoop.Summarisation
         }
 
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
         foreach (var block in region.LoopHeaders())
         {
           base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, waVars, false, true);
+        }
+      }
+    }
+
+    private void InstrumentReadAccessInvariantsInEntryPointRegion(InstrumentationRegion region)
+    {
+      foreach (var pair in region.GetResourceAccesses())
+      {
+        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
+
+        if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentEnsures(region, raVars, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, raVars, false);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
+        foreach (var watchedVar in base.AccessWatchdogConstants)
+        {
+          if (!watchedVar.Name.Contains(pair.Key))
+            continue;
+
+          foreach (var access in pair.Value)
+          {
+            var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
+            }
+
+            if (nonWatchedExpr == null)
+            {
+              nonWatchedExpr = Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+            }
+            else
+            {
+              nonWatchedExpr = Expr.And(nonWatchedExpr,
+                Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access));
+            }
+          }
+        }
+
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
+        foreach (var block in region.LoopHeaders())
+        {
           base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, raVars, false, true);
         }
       }
     }
 
-    private void InstrumentAccessInvariantsInRegion(InstrumentationRegion region)
+    private void InstrumentWriteAccessInvariantsInRegion(InstrumentationRegion region)
     {
       foreach (var pair in region.GetResourceAccesses())
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
-        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
-        Expr nonWatchedExpr = null;
 
+        if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentRequires(region, waVars, false);
+          base.InstrumentEnsures(region, waVars, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, waVars, false);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
           if (!watchedVar.Name.Contains(pair.Key))
@@ -131,13 +203,10 @@ namespace Whoop.Summarisation
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
             base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false, true);
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false, true);
             base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
             foreach (var block in region.LoopHeaders())
             {
               base.InstrumentImpliesAssertCandidates(block, watchedExpr, waVars, false, true);
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
             }
 
             if (nonWatchedExpr == null)
@@ -153,12 +222,65 @@ namespace Whoop.Summarisation
         }
 
         base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false, true);
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false, true);
         base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
         foreach (var block in region.LoopHeaders())
         {
           base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, waVars, false, true);
+        }
+      }
+    }
+
+    private void InstrumentReadAccessInvariantsInRegion(InstrumentationRegion region)
+    {
+      foreach (var pair in region.GetResourceAccesses())
+      {
+        var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
+
+        if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
+        {
+          base.InstrumentRequires(region, raVars, false);
+          base.InstrumentEnsures(region, raVars, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, raVars, false);
+          }
+
+          continue;
+        }
+
+        Expr nonWatchedExpr = null;
+        foreach (var watchedVar in base.AccessWatchdogConstants)
+        {
+          if (!watchedVar.Name.Contains(pair.Key))
+            continue;
+
+          foreach (var access in pair.Value)
+          {
+            var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+
+            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false, true);
+            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
+            }
+
+            if (nonWatchedExpr == null)
+            {
+              nonWatchedExpr = Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
+            }
+            else
+            {
+              nonWatchedExpr = Expr.And(nonWatchedExpr,
+                Expr.Neq(new IdentifierExpr(watchedVar.tok, watchedVar), access));
+            }
+          }
+        }
+
+        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false, true);
+        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
+        foreach (var block in region.LoopHeaders())
+        {
           base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, raVars, false, true);
         }
       }

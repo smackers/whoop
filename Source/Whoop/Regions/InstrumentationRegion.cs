@@ -38,6 +38,11 @@ namespace Whoop.Regions
     protected List<Block> RegionBlocks;
     private List<Block> RegionLoopHeaders;
 
+    internal Dictionary<string, bool> HasWriteAccess;
+    internal Dictionary<string, bool> HasReadAccess;
+    internal bool IsHoldingLock;
+    internal bool IsChangingDeviceRegistration;
+
     private Dictionary<string, List<Expr>> ResourceAccesses;
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
     private Dictionary<string, List<Expr>> ExternalResourceAccesses;
@@ -67,6 +72,11 @@ namespace Whoop.Regions
       this.ProcessWrapperProcedure(impl);
 
       this.ComputeLoopHeaders();
+
+      this.HasWriteAccess = new Dictionary<string, bool>();
+      this.HasReadAccess = new Dictionary<string, bool>();
+      this.IsHoldingLock = false;
+      this.IsChangingDeviceRegistration = false;
 
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
@@ -320,6 +330,23 @@ namespace Whoop.Regions
 
         return true;
       }
+    }
+
+    public override bool Equals(System.Object obj)
+    {
+      if (obj == null)
+        return false;
+
+      InstrumentationRegion otherRegion = obj as InstrumentationRegion;
+      if ((System.Object)otherRegion == null)
+        return false;
+
+      return this.Name().Equals(otherRegion.Name());
+    }
+
+    public override int GetHashCode()
+    {
+      return this.Name().GetHashCode();
     }
 
     #endregion

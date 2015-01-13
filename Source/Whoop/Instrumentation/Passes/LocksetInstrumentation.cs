@@ -49,6 +49,13 @@ namespace Whoop.Instrumentation
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
+      }
+
+//      this.AnalyseCallGraph();
+
+      this.InstrumentEntryPointProcedure();
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
         this.InstrumentProcedure(region);
       }
 
@@ -135,22 +142,22 @@ namespace Whoop.Instrumentation
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.True);
+          region.IsHoldingLock = true;
         }
         else if (c.callee.Equals("mutex_unlock"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.False);
+          region.IsHoldingLock = true;
         }
         else if (c.callee.Equals("ASSERT_RTNL"))
         {
-          if (!WhoopCommandLineOptions.Get().ModelKernelLocks)
-            continue;
-
           var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
 
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
           c.Ins.Add(Expr.True);
+          region.IsHoldingLock = true;
         }
         else if (c.callee.Equals("pm_runtime_get_sync") ||
           c.callee.Equals("pm_runtime_get_noresume"))
@@ -164,6 +171,7 @@ namespace Whoop.Instrumentation
 
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.True);
+          region.IsHoldingLock = true;
         }
         else if (c.callee.Equals("pm_runtime_put_sync") ||
           c.callee.Equals("pm_runtime_put_noidle"))
@@ -177,8 +185,12 @@ namespace Whoop.Instrumentation
 
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.False);
+          region.IsHoldingLock = true;
         }
       }
+
+      if (region.IsHoldingLock)
+        this.EP.IsHoldingLock = true;
     }
 
     private void InstrumentProcedure(InstrumentationRegion region)
@@ -207,9 +219,12 @@ namespace Whoop.Instrumentation
 
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
       }
+    }
 
-      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
-        return;
+    private void InstrumentEntryPointProcedure()
+    {
+      var region = this.AC.InstrumentationRegions.Find(val =>
+        val.Name().Equals(this.EP.Name + "$instrumented"));
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
@@ -247,6 +262,42 @@ namespace Whoop.Instrumentation
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
         region.Procedure().Requires.Add(require);
       }
+    }
+
+    #endregion
+
+    #region helper functions
+
+    private void AnalyseCallGraph()
+    {
+      bool fixpoint = true;
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        if (region.IsHoldingLock)
+          continue;
+        fixpoint = this.AnalyseSuccessors(region) && fixpoint;
+      }
+
+      if (!fixpoint)
+      {
+        this.AnalyseCallGraph();
+      }
+    }
+
+    private bool AnalyseSuccessors(InstrumentationRegion region)
+    {
+      var successors = this.EP.CallGraph.Successors(region);
+      if (successors == null)
+        return true;
+
+      bool exists = successors.Any(val => val.IsHoldingLock);
+      if (exists)
+      {
+        region.IsHoldingLock = true;
+        return false;
+      }
+
+      return true;
     }
 
     #endregion

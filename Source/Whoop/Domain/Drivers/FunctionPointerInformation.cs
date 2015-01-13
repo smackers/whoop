@@ -40,7 +40,7 @@ namespace Whoop.Domain.Drivers
     public static void ParseAndInitialize(List<string> files)
     {
       string fpInfoFile = files[files.Count - 1].Substring(0,
-        files[files.Count - 1].IndexOf(".")) + ".fp.info";
+        files[files.Count - 1].IndexOf(".")) + "_fp.info";
 
       FunctionPointerInformation.Declarations = new Dictionary<string, HashSet<string>>();
       FunctionPointerInformation.Calls = new Dictionary<string, List<Tuple<string, int, int>>>();

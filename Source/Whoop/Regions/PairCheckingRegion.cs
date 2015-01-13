@@ -187,20 +187,6 @@ namespace Whoop.Regions
                         new List<Cmd>(), new GotoCmd(Token.NoToken,
                         new List<string> { "$checker" }));
 
-        if (WhoopCommandLineOptions.Get().ModelKernelLocks)
-        {
-          var rtnl = this.AC.GetCurrentLocksetVariables().Find(val =>
-            val.Name.Equals("lock$rtnl_in_CLS_$" + this.EP1.Name));
-          if (this.EP1.IsRtnlLocked)
-            call.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl.tok, new IdentifierExpr(rtnl.tok, rtnl)) },
-              new List<Expr> { Expr.True }));
-          else
-            call.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl.tok, new IdentifierExpr(rtnl.tok, rtnl)) },
-              new List<Expr> { Expr.False }));
-        }
-
         this.CC1 = this.CreateCallCmd(impl1, impl2);
         call.Cmds.Add(this.CC1);
 
@@ -212,40 +198,12 @@ namespace Whoop.Regions
                         new List<Cmd>(), new GotoCmd(Token.NoToken,
                         new List<string> { "$logger$2" }));
 
-        if (WhoopCommandLineOptions.Get().ModelKernelLocks)
-        {
-          var rtnl1 = this.AC.GetCurrentLocksetVariables().Find(val =>
-            val.Name.Equals("lock$rtnl_in_CLS_$" + this.EP1.Name));
-          if (this.EP1.IsRtnlLocked)
-            call1.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl1.tok, new IdentifierExpr(rtnl1.tok, rtnl1)) },
-              new List<Expr> { Expr.True }));
-          else
-            call1.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl1.tok, new IdentifierExpr(rtnl1.tok, rtnl1)) },
-              new List<Expr> { Expr.False }));
-        }
-
         this.CC1 = this.CreateCallCmd(impl1, impl2);
         call1.Cmds.Add(this.CC1);
 
         Block call2 = new Block(Token.NoToken, "$logger$2",
                         new List<Cmd>(), new GotoCmd(Token.NoToken,
                         new List<string> { "$checker" }));
-
-        if (WhoopCommandLineOptions.Get().ModelKernelLocks)
-        {
-          var rtnl2 = this.AC.GetCurrentLocksetVariables().Find(val =>
-            val.Name.Equals("lock$rtnl_in_CLS_$" + this.EP2.Name));
-          if (this.EP2.IsRtnlLocked)
-            call2.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl2.tok, new IdentifierExpr(rtnl2.tok, rtnl2)) },
-              new List<Expr> { Expr.True }));
-          else
-            call2.Cmds.Add(new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(rtnl2.tok, new IdentifierExpr(rtnl2.tok, rtnl2)) },
-              new List<Expr> { Expr.False }));
-        }
 
         this.CC2 = this.CreateCallCmd(impl2, impl1, true);
         call2.Cmds.Add(this.CC2);

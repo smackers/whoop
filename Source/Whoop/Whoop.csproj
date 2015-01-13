@@ -99,6 +99,7 @@
     <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Summarisation\Interfaces\IDomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Domain\Drivers\FunctionPointerInformation.cs" />
+    <Compile Include="CallGraph.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

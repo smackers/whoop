@@ -50,7 +50,7 @@ namespace Whoop
 
       SharedStateAnalyser.AnalyseMemoryRegionsWithPairInformation(this.AC, this.EP);
 
-      Instrumentation.Factory.CreateInstrumentationRegionsConstructor(this.AC).Run();
+      Instrumentation.Factory.CreateInstrumentationRegionsConstructor(this.AC, this.EP).Run();
       Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, this.EP).Run();
 
       Instrumentation.Factory.CreateLocksetInstrumentation(this.AC, this.EP).Run();

@@ -22,8 +22,6 @@ namespace Whoop
     public int InliningBound = 0;
     public int EntryPointFunctionCallComplexity = 80;
 
-    public bool ModelKernelLocks = false;
-
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
     public bool SkipInference = false;
@@ -69,12 +67,6 @@ namespace Whoop
         {
           this.InliningBound = Int32.Parse(ps.args[ps.i]);
         }
-        return true;
-      }
-
-      if (option == "modelKernelLocks")
-      {
-        this.ModelKernelLocks = true;
         return true;
       }
 

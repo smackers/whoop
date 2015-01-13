@@ -52,6 +52,10 @@ namespace Whoop.Instrumentation
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
+      }
+
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
         this.InstrumentProcedure(region);
       }
 
@@ -232,6 +236,9 @@ namespace Whoop.Instrumentation
             }
 
             block.Cmds.Insert(idx + 1, call);
+
+            if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
+              region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, true);
           }
 
           foreach (var rhs in (c as AssignCmd).Rhss.OfType<NAryExpr>())
@@ -256,8 +263,23 @@ namespace Whoop.Instrumentation
             }
 
             block.Cmds.Insert(idx + 1, call);
+
+            if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
+              region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, true);
           }
         }
+      }
+
+      foreach (var write in region.HasWriteAccess)
+      {
+        if (!this.EP.HasWriteAccess.ContainsKey(write.Key))
+          this.EP.HasWriteAccess.Add(write.Key, true);
+      }
+
+      foreach (var read in region.HasReadAccess)
+      {
+        if (!this.EP.HasReadAccess.ContainsKey(read.Key))
+          this.EP.HasReadAccess.Add(read.Key, true);
       }
     }
 

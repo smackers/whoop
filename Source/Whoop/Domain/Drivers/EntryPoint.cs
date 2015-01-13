@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using System.Collections.Generic;
+using Whoop.Regions;
 
 namespace Whoop.Domain.Drivers
 {
@@ -20,14 +22,21 @@ namespace Whoop.Domain.Drivers
 
     public readonly Module Module;
 
+    internal CallGraph<InstrumentationRegion> CallGraph;
+
     public readonly bool IsInit;
 
-    public readonly bool IsDeviceLocked;
-    public readonly bool IsPowerLocked;
-    public readonly bool IsRtnlLocked;
+    internal readonly bool IsDeviceLocked;
+    internal readonly bool IsPowerLocked;
+    internal readonly bool IsRtnlLocked;
 
-    public bool IsCallingPowerLock;
-    public bool IsCallingRtnlLock;
+    internal bool IsCallingPowerLock;
+    internal bool IsCallingRtnlLock;
+
+    internal Dictionary<string, bool> HasWriteAccess;
+    internal Dictionary<string, bool> HasReadAccess;
+    internal bool IsHoldingLock;
+    internal bool IsChangingDeviceRegistration;
 
     public EntryPoint(string name, string kernelFunc, Module module)
     {
@@ -62,6 +71,11 @@ namespace Whoop.Domain.Drivers
 
       this.IsCallingPowerLock = false;
       this.IsCallingRtnlLock = false;
+
+      this.HasWriteAccess = new Dictionary<string, bool>();
+      this.HasReadAccess = new Dictionary<string, bool>();
+      this.IsHoldingLock = false;
+      this.IsChangingDeviceRegistration = false;
     }
   }
 }

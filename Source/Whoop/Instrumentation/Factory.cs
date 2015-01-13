@@ -16,9 +16,9 @@ namespace Whoop.Instrumentation
 {
   public static class Factory
   {
-    public static IInstrumentationRegionsConstructor CreateInstrumentationRegionsConstructor(AnalysisContext ac)
+    public static IInstrumentationRegionsConstructor CreateInstrumentationRegionsConstructor(AnalysisContext ac, EntryPoint ep)
     {
-      return new InstrumentationRegionsConstructor(ac);
+      return new InstrumentationRegionsConstructor(ac, ep);
     }
 
     public static ILocksetInstrumentation CreateLocksetInstrumentation(AnalysisContext ac, EntryPoint ep)

@@ -20,6 +20,7 @@ using Microsoft.Basetypes;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
+using Microsoft.Boogie.GraphUtil;
 
 namespace Whoop.Instrumentation
 {
@@ -49,6 +50,13 @@ namespace Whoop.Instrumentation
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
+      }
+
+//      this.AnalyseCallGraph();
+
+      this.InstrumentEntryPointProcedure();
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
         this.InstrumentProcedure(region);
       }
 
@@ -116,14 +124,19 @@ namespace Whoop.Instrumentation
           c.callee = "_REGISTER_DEVICE$" + this.EP.Name;
           c.Ins.Clear();
           c.Ins.Add(Expr.True);
+          region.IsChangingDeviceRegistration = true;
         }
         else if (c.callee.Equals("unregister_netdev"))
         {
           c.callee = "_REGISTER_DEVICE$" + this.EP.Name;
           c.Ins.Clear();
           c.Ins.Add(Expr.False);
+          region.IsChangingDeviceRegistration = true;
         }
       }
+
+      if (region.IsChangingDeviceRegistration)
+        this.EP.IsChangingDeviceRegistration = true;
     }
 
     private void InstrumentProcedure(InstrumentationRegion region)
@@ -133,12 +146,55 @@ namespace Whoop.Instrumentation
       Contract.Requires(devReg != null);
 
       region.Procedure().Modifies.Add(new IdentifierExpr(devReg.tok, devReg));
+    }
 
-      if (!(region as InstrumentationRegion).Name().Equals(this.EP.Name + "$instrumented"))
-        return;
+    private void InstrumentEntryPointProcedure()
+    {
+      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
+        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
+      Contract.Requires(devReg != null);
+
+      var region = this.AC.InstrumentationRegions.Find(val =>
+        val.Name().Equals(this.EP.Name + "$instrumented"));
 
       Requires require = new Requires(false, new IdentifierExpr(devReg.tok, devReg));
       region.Procedure().Requires.Add(require);
+    }
+
+    #endregion
+
+    #region helper functions
+
+    private void AnalyseCallGraph()
+    {
+      bool fixpoint = true;
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        if (region.IsChangingDeviceRegistration)
+          continue;
+        fixpoint = this.AnalyseSuccessors(region) && fixpoint;
+      }
+
+      if (!fixpoint)
+      {
+        this.AnalyseCallGraph();
+      }
+    }
+
+    private bool AnalyseSuccessors(InstrumentationRegion region)
+    {
+      var successors = this.EP.CallGraph.Successors(region);
+      if (successors == null)
+        return true;
+
+      bool exists = successors.Any(val => val.IsChangingDeviceRegistration);
+      if (exists)
+      {
+        region.IsChangingDeviceRegistration = true;
+        return false;
+      }
+
+      return true;
     }
 
     #endregion
