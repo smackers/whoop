@@ -41,11 +41,7 @@ namespace Whoop.Analysis
     /// <param name="id">Identifier expression</param>
     public static Expr ComputeRootPointer(Implementation impl, string label, Expr id)
     {
-      if (id is LiteralExpr)
-      {
-        return id;
-      }
-
+      if (id is LiteralExpr) return id;
       if (id is NAryExpr && (id as NAryExpr).Args.Count == 1 &&
         (id as NAryExpr).Fun.FunctionName.Equals("-"))
       {
@@ -53,11 +49,7 @@ namespace Whoop.Analysis
       }
 
       NAryExpr root = DataFlowAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
-
-      if (root == null)
-      {
-        return id;
-      }
+      if (root == null) return id;
 
       Expr result = root;
       Expr resolution = result;
@@ -76,18 +68,14 @@ namespace Whoop.Analysis
           }
 
           if (DataFlowAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
-          {
             return id;
-          }
-
           if (alreadyVisited.Any(v => v.Item1.Equals(label) && v.Item2.Equals(result)))
             return id;
+
           alreadyVisited.Add(new Tuple<string, Expr>(label, result));
 
           if (DataFlowAnalyser.IsArithmeticExpression(result as NAryExpr))
-          {
             return id;
-          }
 
           Expr p = (result as NAryExpr).Args[0];
           Expr i = (result as NAryExpr).Args[1];
@@ -118,17 +106,11 @@ namespace Whoop.Analysis
     public static Expr GetPointerArithmeticExpr(Implementation impl, Expr expr)
     {
       if (expr is LiteralExpr)
-      {
-//        Console.WriteLine("NULL: " + expr);
         return null;
-      }
 
       var identifier = expr as IdentifierExpr;
       if (identifier == null)
-      {
-//        Console.WriteLine("NULL: " + expr);
         return null;
-      }
 
       for (int i = impl.Blocks.Count - 1; i >= 0; i--)
       {
@@ -142,7 +124,7 @@ namespace Whoop.Analysis
           return (cmd as AssignCmd).Rhss[0];
         }
       }
-//      Console.WriteLine("NULL: " + expr);
+
       return null;
     }
 

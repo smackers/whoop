@@ -62,9 +62,9 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private CallGraph<InstrumentationRegion> BuildCallGraph()
+    private Graph<InstrumentationRegion> BuildCallGraph()
     {
-      var callGraph = new CallGraph<InstrumentationRegion>();
+      var callGraph = new Graph<InstrumentationRegion>();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {

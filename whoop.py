@@ -547,8 +547,8 @@ def startToolChain(argv):
   bplFilename = filename + '.bpl'
   wbplFilename = filename + '.wbpl'
   infoFilename = filename + '.info'
-  fpFilename = filename + '_fp.info'
-  summaryInfoFilename = filename + '_summaries.info'
+  fpFilename = filename + '.fp.info'
+  summaryInfoFilename = filename + '.summaries.info'
   smt2Filename = filename + '.smt2'
   if not CommandLineOptions.keepTemps:
     inputFilename = filename + ext

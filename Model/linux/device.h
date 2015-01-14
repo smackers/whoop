@@ -22,7 +22,7 @@ struct device {
 
 struct device_driver {
 	const char *name;
-	
+
 	int (*probe) (struct device *dev);
 	int (*remove) (struct device *dev);
 	void (*shutdown) (struct device *dev);
@@ -35,6 +35,7 @@ struct device_driver {
 
 static inline void *dev_get_drvdata(struct device *dev);
 static inline void dev_set_drvdata(struct device *dev, void *data);
+static inline int dev_to_node(struct device *dev);
 
 #define module_driver(__driver, __register, __unregister, ...) \
 static int __init __driver##_init(void) \

@@ -29,11 +29,15 @@ namespace Whoop.Analysis
     protected EntryPoint EP;
     protected ExecutionTimer Timer;
 
+    Dictionary<InstrumentationRegion, PointerArithmeticAnalyser> PtrAnalyserCache;
+
     public WatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
+
+      this.PtrAnalyserCache = new Dictionary<InstrumentationRegion, PointerArithmeticAnalyser>();
 
       InstrumentationRegion.AxiomAccessesMap.Add(this.EP, new Dictionary<string, HashSet<Expr>>());
       InstrumentationRegion.MatchedAccessesMap.Add(this.EP, new List<HashSet<string>>());
@@ -65,6 +69,8 @@ namespace Whoop.Analysis
     {
       foreach (var region in this.AC.InstrumentationRegions)
       {
+        this.PtrAnalyserCache.Add(region, new PointerArithmeticAnalyser(
+          this.EP, region.Implementation()));
         this.AnalyseLocalAccessesInRegion(region);
       }
     }
@@ -146,23 +152,26 @@ namespace Whoop.Analysis
 
           if (isInstrumentedCall && resource != null && accessType != null)
           {
-            var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(), block.Label, call.Ins[0]);
-            if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-              ptrExpr = null;
+            var ptrExprs = this.PtrAnalyserCache[region].ComputeRootPointers(call.Ins[0]);
+            foreach (var ptrExpr in ptrExprs)
+            {
+              if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
+                continue;
 
-            if (this.IsAxiom(ptrExpr))
-            {
-              if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(resource))
-                InstrumentationRegion.AxiomAccessesMap[this.EP].Add(resource, new HashSet<Expr>());
-              if (!InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Any(val =>
-                val.ToString().Equals(ptrExpr.ToString())))
+              if (this.IsAxiom(ptrExpr))
               {
-                InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Add(ptrExpr);
+                if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(resource))
+                  InstrumentationRegion.AxiomAccessesMap[this.EP].Add(resource, new HashSet<Expr>());
+                if (!InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Any(val =>
+                  val.ToString().Equals(ptrExpr.ToString())))
+                {
+                  InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Add(ptrExpr);
+                }
               }
-            }
-            else
-            {
-              region.TryAddLocalResourceAccess(resource, ptrExpr);
+              else
+              {
+                region.TryAddLocalResourceAccess(resource, ptrExpr);
+              }
             }
           }
         }

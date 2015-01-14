@@ -22,7 +22,7 @@ namespace Whoop.Domain.Drivers
 
     public readonly Module Module;
 
-    internal CallGraph<InstrumentationRegion> CallGraph;
+    internal Graph<InstrumentationRegion> CallGraph;
 
     public readonly bool IsInit;
 

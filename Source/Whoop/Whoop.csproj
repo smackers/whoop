@@ -33,23 +33,15 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Compile Include="WhoopCommandLineOptions.cs" />
-    <Compile Include="SourceLocationInfo.cs" />
-    <Compile Include="AnalysisContext.cs" />
-    <Compile Include="AccessType.cs" />
-    <Compile Include="Outcome.cs" />
     <Compile Include="Utilities\AnalysisContextParser.cs" />
     <Compile Include="IO\Reporter.cs" />
     <Compile Include="IO\BoogieProgramEmitter.cs" />
     <Compile Include="Domain\Drivers\DeviceDriver.cs" />
     <Compile Include="Domain\Drivers\EntryPoint.cs" />
     <Compile Include="Domain\Drivers\Module.cs" />
-    <Compile Include="FunctionPairingMethod.cs" />
     <Compile Include="Regions\InstrumentationRegion.cs" />
     <Compile Include="Regions\IRegion.cs" />
     <Compile Include="Regions\PairCheckingRegion.cs" />
-    <Compile Include="Lock.cs" />
-    <Compile Include="MemoryLocation.cs" />
     <Compile Include="Instrumentation\Passes\DeadlockInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\LocksetInstrumentation.cs" />
@@ -67,7 +59,6 @@
     <Compile Include="Instrumentation\Factory.cs" />
     <Compile Include="Refactoring\Interfaces\IEntryPointRefactoring.cs" />
     <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
-    <Compile Include="Lockset.cs" />
     <Compile Include="Instrumentation\Interfaces\IInstrumentationRegionsConstructor.cs" />
     <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
     <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
@@ -99,7 +90,17 @@
     <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Summarisation\Interfaces\IDomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Domain\Drivers\FunctionPointerInformation.cs" />
-    <Compile Include="CallGraph.cs" />
+    <Compile Include="Analysis\PointerArithmeticAnalyser.cs" />
+    <Compile Include="Core\Graph.cs" />
+    <Compile Include="Core\AnalysisContext.cs" />
+    <Compile Include="Core\Lockset.cs" />
+    <Compile Include="Core\MemoryLocation.cs" />
+    <Compile Include="Core\Lock.cs" />
+    <Compile Include="Core\SourceLocationInfo.cs" />
+    <Compile Include="Core\AccessType.cs" />
+    <Compile Include="Core\FunctionPairingMethod.cs" />
+    <Compile Include="Core\Outcome.cs" />
+    <Compile Include="Utilities\WhoopCommandLineOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
@@ -115,6 +116,7 @@
     <Folder Include="Summarisation\" />
     <Folder Include="Summarisation\Interfaces\" />
     <Folder Include="Summarisation\Passes\" />
+    <Folder Include="Core\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

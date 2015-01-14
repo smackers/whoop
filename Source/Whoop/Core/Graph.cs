@@ -15,7 +15,7 @@ using Whoop.Regions;
 
 namespace Whoop
 {
-  internal class CallGraph<Node>
+  internal class Graph<Node>
   {
     private Dictionary<Node, HashSet<Node>> PredCache;
     private Dictionary<Node, HashSet<Node>> SuccCache;
@@ -25,7 +25,7 @@ namespace Whoop
     internal HashSet<Tuple<Node, Node>> Edges;
     internal HashSet<Node> Nodes;
 
-    public CallGraph()
+    public Graph()
     {
       this.Edges = new HashSet<Tuple<Node, Node>>();
       this.Nodes = new HashSet<Node>();
