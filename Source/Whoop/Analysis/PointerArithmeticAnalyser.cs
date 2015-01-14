@@ -28,7 +28,8 @@ namespace Whoop.Analysis
   {
     #region fields
 
-    private EntryPoint EntryPoint;
+    private AnalysisContext AC;
+    private EntryPoint EP;
     private Implementation Implementation;
     private List<Variable> InParams;
 
@@ -50,9 +51,11 @@ namespace Whoop.Analysis
 
     #region public API
 
-    public PointerArithmeticAnalyser(EntryPoint ep, Implementation impl)
+    public PointerArithmeticAnalyser(AnalysisContext ac, EntryPoint ep, Implementation impl)
     {
-      this.EntryPoint = ep;
+      Contract.Requires(ac != null && ep != null && impl != null);
+      this.AC = ac;
+      this.EP = ep;
       this.Implementation = impl;
       this.InParams = impl.InParams;
 
@@ -74,13 +77,20 @@ namespace Whoop.Analysis
     /// <param name="id">Identifier expression</param>
     public HashSet<Expr> ComputeRootPointers(Expr id)
     {
-      if (!(id is IdentifierExpr))
+      if ((id is LiteralExpr) && (id as LiteralExpr).isBigNum)
         return new HashSet<Expr> { id };
+      if (!(id is IdentifierExpr))
+        return new HashSet<Expr>();
 
       var identifier = id as IdentifierExpr;
-      if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(identifier))
+      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)))
+        return new HashSet<Expr> { identifier };
+      if (this.IsAxiom(identifier))
+        return new HashSet<Expr> { identifier };
+
+      if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(identifier))
       {
-        return PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][identifier];
+        return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
       }
 
       this.CleanUp();
@@ -93,21 +103,161 @@ namespace Whoop.Analysis
       this.ComputeAndCacheRootPointers();
       this.CacheMatchedPointers();
 
-      return PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][identifier];
+      return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
     }
 
-    //    public Expr GetPointerArithmeticExpr(Expr expr)
-    //    {
-    //      return this.ComputePtrArithmeticExpr(expr);
-    //    }
+    public bool IsAxiom(Expr expr)
+    {
+      bool result = false;
+      if (expr == null)
+        return result;
+
+      Expr e = null;
+      if (expr is NAryExpr)
+        e = (expr as NAryExpr).Args[0];
+      else
+        e = expr;
+
+      foreach (var axiom in this.AC.TopLevelDeclarations.OfType<Axiom>())
+      {
+        Expr axiomExpr = null;
+        if (axiom.Expr is NAryExpr)
+          axiomExpr = (axiom.Expr as NAryExpr).Args[0];
+        else
+          axiomExpr = axiom.Expr;
+
+        if (axiomExpr.ToString().Equals(e.ToString()))
+        {
+          result = true;
+          break;
+        }
+      }
+
+      return result;
+    }
 
     #endregion
 
-    #region helper functions
+    #region static public API
+
+    /// <summary>
+    /// Compute $pa(p, i, s) == p + i * s);
+    /// </summary>
+    /// <returns>The root pointer.</returns>
+    /// <param name="impl">Implementation</param>
+    /// <param name="label">Root block label</param>
+    /// <param name="id">Identifier expression</param>
+    public static Expr ComputeRootPointer(Implementation impl, string label, Expr id)
+    {
+      if (id is LiteralExpr) return id;
+      if (id is NAryExpr && (id as NAryExpr).Args.Count == 1 &&
+        (id as NAryExpr).Fun.FunctionName.Equals("-"))
+      {
+        return id;
+      }
+
+      NAryExpr root = PointerArithmeticAnalyser.GetPointerArithmeticExpr(impl, id) as NAryExpr;
+      if (root == null) return id;
+
+      Expr result = root;
+      Expr resolution = result;
+      int ixs = 0;
+
+      var alreadyVisited = new HashSet<Tuple<string, Expr>>();
+
+      do
+      {
+        if (result is NAryExpr)
+        {
+          if (((result as NAryExpr).Args[0] is IdentifierExpr) &&
+            ((result as NAryExpr).Args[0] as IdentifierExpr).Name.Contains("$M."))
+          {
+            return id;
+          }
+
+          if (PointerArithmeticAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
+            return id;
+          if (alreadyVisited.Any(v => v.Item1.Equals(label) && v.Item2.Equals(result)))
+            return id;
+
+          alreadyVisited.Add(new Tuple<string, Expr>(label, result));
+
+          if (PointerArithmeticAnalyser.IsArithmeticExpression(result as NAryExpr))
+            return id;
+
+          Expr p = (result as NAryExpr).Args[0];
+          Expr i = (result as NAryExpr).Args[1];
+          Expr s = (result as NAryExpr).Args[2];
+
+          if ((i is LiteralExpr) && (s is LiteralExpr))
+          {
+            ixs += (i as LiteralExpr).asBigNum.ToInt * (s as LiteralExpr).asBigNum.ToInt;
+          }
+          else
+          {
+            return id;
+          }
+
+          result = p;
+        }
+        else
+        {
+          resolution = PointerArithmeticAnalyser.GetPointerArithmeticExpr(impl, result);
+          if (resolution != null) result = resolution;
+        }
+      }
+      while (resolution != null);
+
+      return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(ixs)));
+    }
+
+    public static Expr GetPointerArithmeticExpr(Implementation impl, Expr expr)
+    {
+      if (expr is LiteralExpr)
+        return null;
+
+      var identifier = expr as IdentifierExpr;
+      if (identifier == null)
+        return null;
+
+      for (int i = impl.Blocks.Count - 1; i >= 0; i--)
+      {
+        for (int j = impl.Blocks[i].Cmds.Count - 1; j >= 0; j--)
+        {
+          Cmd cmd = impl.Blocks[i].Cmds[j];
+          if (!(cmd is AssignCmd))
+            continue;
+          if (!((cmd as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(identifier.Name)))
+            continue;
+          return (cmd as AssignCmd).Rhss[0];
+        }
+      }
+
+      return null;
+    }
+
+    public static Expr ComputeLiteralsInExpr(Expr expr)
+    {
+      if (!((expr as NAryExpr).Args[0] is NAryExpr))
+      {
+        return expr;
+      }
+
+      int l1 = ((expr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+      int l2 = (((expr as NAryExpr).Args[0] as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+
+      Expr result = ((expr as NAryExpr).Args[0] as NAryExpr).Args[0];
+
+      return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(l1 + l2)));
+    }
+
+    #endregion
+
+    #region pointer arithmetic analysis functions
 
     private void ComputeExpressionAndAssignmentMaps(IdentifierExpr id)
     {
-      if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(id))
+      if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(id))
         return;
 
       if (!this.ExpressionMap.ContainsKey(id))
@@ -141,7 +291,7 @@ namespace Whoop.Analysis
     {
       foreach (var id in identifiers.Keys.ToList())
       {
-        if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(id))
+        if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(id))
           continue;
 
         if (identifiers[id]) continue;
@@ -164,7 +314,7 @@ namespace Whoop.Analysis
             continue;
 
           this.ComputeExpressionAndAssignmentMaps(exprId);
-          if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(exprId) &&
+          if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(exprId) &&
             !identifiers.ContainsKey(exprId))
           {
             identifiers.Add(exprId, true);
@@ -186,7 +336,7 @@ namespace Whoop.Analysis
             continue;
 
           this.ComputeExpressionAndAssignmentMaps(exprId);
-          if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(exprId) &&
+          if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(exprId) &&
             !identifiers.ContainsKey(exprId))
           {
             identifiers.Add(exprId, true);
@@ -206,16 +356,16 @@ namespace Whoop.Analysis
     {
       foreach (var identifier in this.ExpressionMap)
       {
-        if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(identifier.Key))
+        if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(identifier.Key))
           continue;
 
-        PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].Add(identifier.Key, new HashSet<Expr>());
+        PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].Add(identifier.Key, new HashSet<Expr>());
         foreach (var pair in identifier.Value)
         {
           var id = pair.Key as IdentifierExpr;
           if (this.InParams.Any(val => val.Name.Equals(id.Name)))
           {
-            PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][identifier.Key].Add(
+            PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(
               Expr.Add(id, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value))));
           }
           else
@@ -225,7 +375,7 @@ namespace Whoop.Analysis
             this.MatchExpressions(outcome, identifier.Key, id, pair.Value, alreadyMatched);
             foreach (var expr in outcome)
             {
-              PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][identifier.Key].Add(expr);
+              PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(expr);
             }
           }
         }
@@ -236,7 +386,7 @@ namespace Whoop.Analysis
     {
       foreach (var identifier in this.AssignmentMap)
       {
-        if (!PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(identifier.Key))
+        if (!PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(identifier.Key))
           continue;
 
         foreach (var expr in identifier.Value)
@@ -244,13 +394,13 @@ namespace Whoop.Analysis
           if (!(expr is IdentifierExpr))continue;
           var exprId = expr as IdentifierExpr;
           if (!exprId.Name.StartsWith("$p")) continue;
-          if (!PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(exprId))
+          if (!PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(exprId))
             continue;
 
-          var results = PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][exprId];
+          var results = PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][exprId];
           foreach (var res in results)
           {
-            PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][identifier.Key].Add(res);
+            PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(res);
           }
         }
       }
@@ -264,9 +414,9 @@ namespace Whoop.Analysis
         return;
 
       alreadyMatched.Add(new Tuple<IdentifierExpr, IdentifierExpr>(lhs, rhs));
-      if (PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation].ContainsKey(rhs))
+      if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(rhs))
       {
-        var results = PointerArithmeticAnalyser.Cache[this.EntryPoint][this.Implementation][rhs];
+        var results = PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][rhs];
         foreach (var r in results)
         {
           var arg = (r as NAryExpr).Args[0];
@@ -330,13 +480,13 @@ namespace Whoop.Analysis
           continue;
         }
 
-        if (this.ShouldSkipFromAnalysis(expr as NAryExpr))
+        if (PointerArithmeticAnalyser.ShouldSkipFromAnalysis(expr as NAryExpr))
         {
           toRemove.Add(expr);
           continue;
         }
 
-        if (this.IsArithmeticExpression(expr as NAryExpr))
+        if (PointerArithmeticAnalyser.IsArithmeticExpression(expr as NAryExpr))
         {
           toRemove.Add(expr);
           continue;
@@ -369,6 +519,10 @@ namespace Whoop.Analysis
       return true;
     }
 
+    #endregion
+
+    #region helper functions
+
     private Graph<Block> BuildBlockGraph(List<Block> blocks)
     {
       var blockGraph = new Graph<Block>();
@@ -388,7 +542,7 @@ namespace Whoop.Analysis
       return blockGraph;
     }
 
-    private bool IsArithmeticExpression(NAryExpr expr)
+    private static bool IsArithmeticExpression(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$add" || (expr as NAryExpr).Fun.FunctionName == "+" ||
         expr.Fun.FunctionName == "$sub" || (expr as NAryExpr).Fun.FunctionName == "-" ||
@@ -402,7 +556,7 @@ namespace Whoop.Analysis
     /// </summary>
     /// <returns>Boolean value</returns>
     /// <param name="call">CallCmd</param>
-    private bool ShouldSkipFromAnalysis(NAryExpr expr)
+    private static bool ShouldSkipFromAnalysis(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$and" || expr.Fun.FunctionName == "$or" ||
         expr.Fun.FunctionName == "$xor" ||

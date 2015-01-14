@@ -100,7 +100,7 @@ namespace Whoop.Refactoring
             if (call.callee.Contains("mutex_lock") ||
                 call.callee.Contains("mutex_unlock"))
             {
-              Expr lockExpr = DataFlowAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
+              Expr lockExpr = PointerArithmeticAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
               if (inPtrs != null && (!(lockExpr is LiteralExpr) || (lockExpr is NAryExpr)))
               {
                 if (lockExpr is IdentifierExpr)
@@ -127,7 +127,7 @@ namespace Whoop.Refactoring
                   }
                 }
 
-                lockExpr = DataFlowAnalyser.ComputeLiteralsInExpr(lockExpr);
+                lockExpr = PointerArithmeticAnalyser.ComputeLiteralsInExpr(lockExpr);
               }
 
               bool matched = false;
@@ -158,7 +158,7 @@ namespace Whoop.Refactoring
                 }
                 else
                 {
-                  Expr ptrExpr = DataFlowAnalyser.ComputeRootPointer(impl, block.Label, inParam);
+                  Expr ptrExpr = PointerArithmeticAnalyser.ComputeRootPointer(impl, block.Label, inParam);
                   computedRootPointers.Add(ptrExpr);
                 }
               }

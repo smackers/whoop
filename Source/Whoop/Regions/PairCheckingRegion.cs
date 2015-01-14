@@ -647,7 +647,7 @@ namespace Whoop.Regions
           {
             foreach (var inParam in call.Ins)
             {
-              Expr resolved = DataFlowAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+              Expr resolved = PointerArithmeticAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
               {
@@ -664,7 +664,7 @@ namespace Whoop.Regions
           {
             foreach (var inParam in call.Ins)
             {
-              Expr resolved = DataFlowAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
+              Expr resolved = PointerArithmeticAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
               {

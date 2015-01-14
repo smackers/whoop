@@ -84,7 +84,6 @@
     <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
     <Compile Include="Instrumentation\Interfaces\IDomainKnowledgeInstrumentation.cs" />
     <Compile Include="Summarisation\SummaryInformationParser.cs" />
-    <Compile Include="Analysis\DataFlowAnalyser.cs" />
     <Compile Include="Analysis\Passes\WatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Interfaces\IWatchdogInformationAnalysis.cs" />
     <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />

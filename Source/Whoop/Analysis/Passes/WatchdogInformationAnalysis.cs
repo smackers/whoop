@@ -29,7 +29,7 @@ namespace Whoop.Analysis
     protected EntryPoint EP;
     protected ExecutionTimer Timer;
 
-    Dictionary<InstrumentationRegion, PointerArithmeticAnalyser> PtrAnalyserCache;
+    private Dictionary<InstrumentationRegion, PointerArithmeticAnalyser> PtrAnalysisCache;
 
     public WatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
     {
@@ -37,7 +37,7 @@ namespace Whoop.Analysis
       this.AC = ac;
       this.EP = ep;
 
-      this.PtrAnalyserCache = new Dictionary<InstrumentationRegion, PointerArithmeticAnalyser>();
+      this.PtrAnalysisCache = new Dictionary<InstrumentationRegion, PointerArithmeticAnalyser>();
 
       InstrumentationRegion.AxiomAccessesMap.Add(this.EP, new Dictionary<string, HashSet<Expr>>());
       InstrumentationRegion.MatchedAccessesMap.Add(this.EP, new List<HashSet<string>>());
@@ -69,8 +69,8 @@ namespace Whoop.Analysis
     {
       foreach (var region in this.AC.InstrumentationRegions)
       {
-        this.PtrAnalyserCache.Add(region, new PointerArithmeticAnalyser(
-          this.EP, region.Implementation()));
+        this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
+          this.AC, this.EP, region.Implementation()));
         this.AnalyseLocalAccessesInRegion(region);
       }
     }
@@ -152,13 +152,10 @@ namespace Whoop.Analysis
 
           if (isInstrumentedCall && resource != null && accessType != null)
           {
-            var ptrExprs = this.PtrAnalyserCache[region].ComputeRootPointers(call.Ins[0]);
+            var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[0]);
             foreach (var ptrExpr in ptrExprs)
             {
-              if (ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-                continue;
-
-              if (this.IsAxiom(ptrExpr))
+              if (this.PtrAnalysisCache[region].IsAxiom(ptrExpr))
               {
                 if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(resource))
                   InstrumentationRegion.AxiomAccessesMap[this.EP].Add(resource, new HashSet<Expr>());
@@ -227,13 +224,21 @@ namespace Whoop.Analysis
 
               for (int i = 0; i < call.Ins.Count; i++)
               {
-                var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(),
-                                block.Label, call.Ins[i]);
-                if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-                  ptrExpr = null;
-
                 var id = calleeRegion.Implementation().InParams[i];
-                region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
+                var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[i]);
+                foreach (var ptrExpr in ptrExprs)
+                {
+                  region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
+                  break;
+                }
+
+//                var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(),
+//                                block.Label, call.Ins[i]);
+//                if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
+//                  ptrExpr = null;
+//
+//                var id = calleeRegion.Implementation().InParams[i];
+//                region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
               }
             }
           }
@@ -284,10 +289,12 @@ namespace Whoop.Analysis
             if (index < 0)
               continue;
 
+            if (!region.CallInformation[call].ContainsKey(index))
+              continue;
             var calleeExpr = region.CallInformation[call][index];
             var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
 
-            if (this.IsAxiom(computedExpr))
+            if (this.PtrAnalysisCache[region].IsAxiom(computedExpr))
             {
               if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(r.Key))
                 InstrumentationRegion.AxiomAccessesMap[this.EP].Add(r.Key, new HashSet<Expr>());
@@ -311,6 +318,9 @@ namespace Whoop.Analysis
           {
             foreach (var index in region.CallInformation[call].Keys)
             {
+              if (!region.CallInformation[call].ContainsKey(index))
+                continue;
+
               var calleeExpr = region.CallInformation[call][index];
               var mappedExpr = this.ComputeMappedExpr(access, calleeExpr.Item1, calleeExpr.Item2);
               if (mappedExpr != null &&
@@ -379,7 +389,6 @@ namespace Whoop.Analysis
         }
         else if (ptrExpr is IdentifierExpr)
         {
-//          Console.WriteLine(this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name));
           if (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
             WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity)
             return result;
@@ -489,36 +498,6 @@ namespace Whoop.Analysis
         InstrumentationRegion.MatchedAccessesMap[this.EP].Add(
           new HashSet<string> { expr1.ToString(), expr2.ToString() });
       }
-    }
-
-    private bool IsAxiom(Expr expr)
-    {
-      bool result = false;
-      if (expr == null)
-        return result;
-
-      Expr e = null;
-      if (expr is NAryExpr)
-        e = (expr as NAryExpr).Args[0];
-      else
-        e = expr;
-
-      foreach (var axiom in this.AC.TopLevelDeclarations.OfType<Axiom>())
-      {
-        Expr axiomExpr = null;
-        if (axiom.Expr is NAryExpr)
-          axiomExpr = (axiom.Expr as NAryExpr).Args[0];
-        else
-          axiomExpr = axiom.Expr;
-
-        if (axiomExpr.ToString().Equals(e.ToString()))
-        {
-          result = true;
-          break;
-        }
-      }
-
-      return result;
     }
 
     private void CleanUpRegion(InstrumentationRegion region)
