@@ -17,6 +17,8 @@ namespace Whoop
 {
   internal class Graph<Node>
   {
+    #region fields
+
     private Dictionary<Node, HashSet<Node>> PredCache;
     private Dictionary<Node, HashSet<Node>> SuccCache;
 
@@ -24,6 +26,10 @@ namespace Whoop
 
     internal HashSet<Tuple<Node, Node>> Edges;
     internal HashSet<Node> Nodes;
+
+    #endregion
+
+    #region public API
 
     public Graph()
     {
@@ -59,6 +65,19 @@ namespace Whoop
       return this.SuccCache[n];
     }
 
+    public void Reset()
+    {
+      this.Edges.Clear();
+      this.Nodes.Clear();
+      this.PredCache.Clear();
+      this.SuccCache.Clear();
+      this.IsComputed = false;
+    }
+
+    #endregion
+
+    #region helper functions
+
     private void ComputePredSuccCaches()
     {
       if (this.IsComputed)
@@ -88,6 +107,8 @@ namespace Whoop
 
       this.IsComputed = true;
     }
+
+    #endregion
   }
 }
 

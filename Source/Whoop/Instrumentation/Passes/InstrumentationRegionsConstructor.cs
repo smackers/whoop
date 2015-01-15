@@ -52,7 +52,6 @@ namespace Whoop.Instrumentation
         this.AC.InstrumentationRegions.Add(region);
       }
 
-
       this.EP.CallGraph = this.BuildCallGraph();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)

@@ -16,16 +16,19 @@ using System.Linq;
 
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
-using Microsoft.Boogie.GraphUtil;
 
 namespace Whoop.Refactoring
 {
   internal class FunctionPointerRefactoring : IFunctionPointerRefactoring
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
+    private Implementation Implementation;
     private ExecutionTimer Timer;
+
+    private Graph<Implementation> CallGraph;
 
     private HashSet<Implementation> AlreadyRefactoredFunctions;
     private Dictionary<string, int> NameCounter;
@@ -34,7 +37,10 @@ namespace Whoop.Refactoring
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
+
+      this.Implementation = this.AC.GetImplementation(ep.Name);
+      this.CallGraph = this.BuildCallGraph();
 
       this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
       this.NameCounter = new Dictionary<string, int>();
@@ -47,8 +53,8 @@ namespace Whoop.Refactoring
         this.Timer = new ExecutionTimer();
         this.Timer.Start();
       }
-
-      this.RefactorFunctionPointers(this.EP);
+      Console.WriteLine("\n >> EP: " + this.EP.Name + "\n");
+      this.RefactorFunctionPointers(this.Implementation);
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -72,7 +78,7 @@ namespace Whoop.Refactoring
       var toRemove = new List<Block>();
       foreach (var block in impl.Blocks)
       {
-        toRemove.AddRange(this.RefactorFunctionPointers(block));
+        toRemove.AddRange(this.RefactorFunctionPointers(impl, block));
         this.RefactorFunctionPointersAcrossCalls(block);
       }
 
@@ -87,15 +93,14 @@ namespace Whoop.Refactoring
             continue;
           }
 
-          this.RefactorFunctionPointersInCall(call);
+          this.RefactorFunctionPointersInCall(call, impl);
         }
       }
     }
 
-    private void RefactorFunctionPointersInCall(CallCmd cmd)
+    private void RefactorFunctionPointersInCall(CallCmd cmd, Implementation caller)
     {
       var impl = this.AC.GetImplementation(cmd.callee);
-
       if (impl != null && Utilities.ShouldAccessFunction(impl.Name))
       {
         this.RefactorFunctionPointers(impl);
@@ -113,7 +118,7 @@ namespace Whoop.Refactoring
       }
     }
 
-    private List<Block> RefactorFunctionPointers(Block block)
+    private List<Block> RefactorFunctionPointers(Implementation impl, Block block)
     {
       var blocks = new List<Block>();
 
@@ -158,7 +163,24 @@ namespace Whoop.Refactoring
                   blocks.Add(ptrBlock.Value);
                 }
               }
+
+              break;
             }
+
+            Tuple<string, string> macro = null;
+            FunctionPointerInformation.TryGetFromMacro(line, out macro);
+
+            var rhs = (assign.Rhss[0] as NAryExpr).Args[1];
+            var ptrExpr = new PointerArithmeticAnalyser(this.AC, this.EP, impl).
+              ComputeRootPointers(rhs).FirstOrDefault();
+            if (ptrExpr == null) break;
+
+            var index = -1;
+            if (!this.TryGetIndex(impl, ptrExpr, out index))
+              break;
+
+            var outcome = new Stack<Tuple<Implementation, CallCmd>>();
+            this.RefactorFunctionPointersInCallGraph(impl, index, macro, funcPtrBlocks, outcome);
 
             break;
           }
@@ -166,6 +188,90 @@ namespace Whoop.Refactoring
       }
 
       return blocks;
+    }
+
+    private void RefactorFunctionPointersInCallGraph(Implementation impl, int index, Tuple<string, string> macro,
+      Dictionary<string, Block> funcPtrBlocks, Stack<Tuple<Implementation, CallCmd>> outcome)
+    {
+      var predecessors = this.CallGraph.Predecessors(impl);
+      if (predecessors == null)
+        return;
+
+      foreach (var predecessor in predecessors)
+      {
+        foreach (var block in predecessor.Blocks)
+        {
+          foreach (var call in block.Cmds.OfType<CallCmd>())
+          {
+            if (!call.callee.Equals(impl.Name))
+              continue;
+
+            var callInParam = call.Ins[index];
+            if (this.AC.TopLevelDeclarations.OfType<Constant>().Any(val =>
+              val.Name.Equals(callInParam.ToString())))
+            {
+              outcome.Push(new Tuple<Implementation, CallCmd>(impl, call));
+
+              string matchedName = "";
+              if (macro != null)
+              {
+                var match = macro.Item1;
+                var split = macro.Item2.Split(new string[] { "##" }, StringSplitOptions.None);
+                foreach (var token in split)
+                {
+                  if (token.Equals(match))
+                    matchedName = matchedName + callInParam.ToString();
+                  else
+                    matchedName = matchedName + token;
+                }
+              }
+              else
+              {
+                matchedName = callInParam.ToString();
+              }
+
+              var blocks = new List<Block>();
+              foreach (var ptrBlock in funcPtrBlocks)
+              {
+                if (!matchedName.Equals(ptrBlock.Key))
+                {
+                  blocks.Add(ptrBlock.Value);
+                }
+              }
+
+              int counter = 0;
+              foreach (var item in outcome)
+              {
+                counter++;
+                if (counter == outcome.Count())
+                {
+                  item.Item2.callee = this.CreateNewImplementation(item.Item1, blocks);
+                }
+                else
+                {
+                  item.Item2.callee = this.CreateNewImplementation(item.Item1, new List<Block>());
+                }
+              }
+
+              outcome.Pop();
+            }
+            else
+            {
+              var ptrExpr = new PointerArithmeticAnalyser(this.AC, this.EP, impl).
+                ComputeRootPointers(callInParam).FirstOrDefault();
+              if (ptrExpr == null) continue;
+
+              var idx = -1;
+              if (!this.TryGetIndex(predecessor, ptrExpr, out idx))
+                continue;
+
+              outcome.Push(new Tuple<Implementation, CallCmd>(impl, call));
+              this.RefactorFunctionPointersInCallGraph(predecessor, idx, macro, funcPtrBlocks, outcome);
+              outcome.Pop();
+            }
+          }
+        }
+      }
     }
 
     private void RefactorFunctionPointersAcrossCalls(Block block)
@@ -251,6 +357,13 @@ namespace Whoop.Refactoring
 
     #region helper functions
 
+    private Tuple<Implementation, Dictionary<string, Block>> GetFuncPtrBlocks(Implementation impl, int index)
+    {
+      var arg = impl.InParams[index];
+      var funcPtrBlocks = this.GetFuncPtrBlocks(impl.Blocks, arg.Name);
+      return new Tuple<Implementation, Dictionary<string, Block>>(impl, funcPtrBlocks);
+    }
+
     private Dictionary<string, Block> GetFuncPtrBlocks(List<Block> targets, string name)
     {
       var funcPtrBlocks = new Dictionary<string, Block>();
@@ -281,13 +394,6 @@ namespace Whoop.Refactoring
       }
 
       return funcPtrBlocks;
-    }
-
-    private Tuple<Implementation, Dictionary<string, Block>> GetFuncPtrBlocks(Implementation impl, int index)
-    {
-      var arg = impl.InParams[index];
-      var funcPtrBlocks = this.GetFuncPtrBlocks(impl.Blocks, arg.Name);
-      return new Tuple<Implementation, Dictionary<string, Block>>(impl, funcPtrBlocks);
     }
 
     private string CreateNewImplementation(Implementation impl, List<Block> blocks)
@@ -393,6 +499,45 @@ namespace Whoop.Refactoring
       var newCons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken,
         consName, Microsoft.Boogie.Type.Int), true);
       return newCons;
+    }
+
+    private Graph<Implementation> BuildCallGraph()
+    {
+      var callGraph = new Graph<Implementation>();
+
+      foreach (var implementation in this.AC.TopLevelDeclarations.OfType<Implementation>())
+      {
+        foreach (var block in implementation.Blocks)
+        {
+          foreach (var call in block.Cmds.OfType<CallCmd>())
+          {
+            var callee = this.AC.GetImplementation(call.callee);
+            if (callee == null || !Utilities.ShouldAccessFunction(callee.Name))
+              continue;
+            callGraph.AddEdge(implementation, callee);
+          }
+        }
+      }
+
+      return callGraph;
+    }
+
+    private bool TryGetIndex(Implementation impl, Expr ptrExpr, out int index)
+    {
+      index = -1;
+      Expr arg = null;
+      if (ptrExpr is NAryExpr) arg = (ptrExpr as NAryExpr).Args[0];
+      else arg = ptrExpr;
+      for (int idx = 0; idx < impl.InParams.Count; idx++)
+      {
+        if (impl.InParams[idx].ToString().Equals(arg.ToString()))
+        {
+          index = idx;
+          return true;
+        }
+      }
+
+      return false;
     }
 
     #endregion

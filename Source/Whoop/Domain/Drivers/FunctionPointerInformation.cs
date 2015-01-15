@@ -28,6 +28,7 @@ namespace Whoop.Domain.Drivers
 
     public static Dictionary<string, HashSet<string>> Declarations;
     public static Dictionary<string, List<Tuple<string, int, int>>> Calls;
+    public static Dictionary<string, Tuple<string, string>> Macros;
 
     #endregion
 
@@ -44,6 +45,7 @@ namespace Whoop.Domain.Drivers
 
       FunctionPointerInformation.Declarations = new Dictionary<string, HashSet<string>>();
       FunctionPointerInformation.Calls = new Dictionary<string, List<Tuple<string, int, int>>>();
+      FunctionPointerInformation.Macros = new Dictionary<string, Tuple<string, string>>();
 
       using(StreamReader file = new StreamReader(fpInfoFile))
       {
@@ -54,6 +56,7 @@ namespace Whoop.Domain.Drivers
           string type = line.Trim(new char[] { '<', '>' });
           FunctionPointerInformation.Declarations.Add(type, new HashSet<string>());
           FunctionPointerInformation.Calls.Add(type, new List<Tuple<string, int, int>>());
+          FunctionPointerInformation.Macros.Add(type, null);
 
           while ((line = file.ReadLine()) != null)
           {
@@ -63,6 +66,10 @@ namespace Whoop.Domain.Drivers
             if (pair.Count() == 2)
             {
               FunctionPointerInformation.Declarations[type].Add(pair[1]);
+            }
+            else if (pair.Count() == 3)
+            {
+              FunctionPointerInformation.Macros[type] = new Tuple<string, string>(pair[1], pair[2]);
             }
             else if (pair.Count() == 4)
             {
@@ -97,6 +104,34 @@ namespace Whoop.Domain.Drivers
       {
         funcPtrs = FunctionPointerInformation.Declarations[funcPtr];
         if (funcPtrs.Count == 0) result = false;
+      }
+
+      return result;
+    }
+
+    public static bool TryGetFromMacro(int line, out Tuple<string, string> macro)
+    {
+      bool result = false;
+      string funcPtr = null;
+      macro = null;
+
+      foreach (var fp in FunctionPointerInformation.Calls)
+      {
+        foreach (var call in fp.Value)
+        {
+          if (call.Item2 == line)
+          {
+            funcPtr = fp.Key;
+            result = true;
+            break;
+          }
+        }
+      }
+
+      if (funcPtr != null)
+      {
+        macro = FunctionPointerInformation.Macros[funcPtr];
+        if (macro == null) result = false;
       }
 
       return result;

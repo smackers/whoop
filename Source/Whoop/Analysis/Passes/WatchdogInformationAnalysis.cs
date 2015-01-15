@@ -231,14 +231,6 @@ namespace Whoop.Analysis
                   region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
                   break;
                 }
-
-//                var ptrExpr = DataFlowAnalyser.ComputeRootPointer(region.Implementation(),
-//                                block.Label, call.Ins[i]);
-//                if (ptrExpr.ToString().Length > 2 && ptrExpr.ToString().Substring(0, 2).Equals("$p"))
-//                  ptrExpr = null;
-//
-//                var id = calleeRegion.Implementation().InParams[i];
-//                region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));
               }
             }
           }
@@ -291,6 +283,7 @@ namespace Whoop.Analysis
 
             if (!region.CallInformation[call].ContainsKey(index))
               continue;
+
             var calleeExpr = region.CallInformation[call][index];
             var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
 
@@ -468,6 +461,9 @@ namespace Whoop.Analysis
           return result;
         result = ce;
       }
+
+      if (result is IdentifierExpr)
+        result = Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
 
       return result;
     }

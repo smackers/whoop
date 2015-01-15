@@ -88,6 +88,14 @@ namespace Whoop.Analysis
       if (this.IsAxiom(identifier))
         return new HashSet<Expr> { identifier };
 
+//      var identifier = id as IdentifierExpr;
+//      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)) ||
+//        this.IsAxiom(identifier))
+//      {
+//        var result = Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
+//        return new HashSet<Expr> { result };
+//      }
+
       if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(identifier))
       {
         return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
