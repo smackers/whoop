@@ -81,16 +81,17 @@ namespace Whoop.Analysis
         return new HashSet<Expr> { id };
       if (!(id is IdentifierExpr))
         return new HashSet<Expr>();
+//      if (this.IsAxiom(id))
+//        return new HashSet<Expr>();
 
       var identifier = id as IdentifierExpr;
       if (this.InParams.Any(val => val.Name.Equals(identifier.Name)))
         return new HashSet<Expr> { identifier };
-      if (this.IsAxiom(identifier))
+      if (this.IsAxiom(id))
         return new HashSet<Expr> { identifier };
 
 //      var identifier = id as IdentifierExpr;
-//      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)) ||
-//        this.IsAxiom(identifier))
+//      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)))
 //      {
 //        var result = Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
 //        return new HashSet<Expr> { result };

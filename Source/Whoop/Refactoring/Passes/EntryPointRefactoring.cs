@@ -201,7 +201,7 @@ namespace Whoop.Refactoring
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
           impl.Name.Contains("$memset") ||
           impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock") ||
-          impl.Name.Equals("ASSERT_RTNL") ||
+          impl.Name.Equals("ASSERT_RTNL") || impl.Name.Equals("netif_device_detach") ||
           impl.Name.Equals("pm_runtime_get_sync") || impl.Name.Equals("pm_runtime_get_noresume") ||
           impl.Name.Equals("pm_runtime_put_sync") || impl.Name.Equals("pm_runtime_put_noidle") ||
 //          impl.Name.Equals("dma_alloc_coherent") || impl.Name.Equals("dma_free_coherent") ||

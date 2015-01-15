@@ -26,7 +26,7 @@ namespace Whoop
       if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
         funcName.Contains("$memset") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
-        funcName.Equals("ASSERT_RTNL") ||
+        funcName.Equals("ASSERT_RTNL") || funcName.Equals("netif_device_detach") ||
         funcName.Equals("pm_runtime_get_sync") || funcName.Equals("pm_runtime_get_noresume") ||
         funcName.Equals("pm_runtime_put_sync") || funcName.Equals("pm_runtime_put_noidle") ||
 //        funcName.Equals("dma_alloc_coherent") || funcName.Equals("dma_free_coherent") ||

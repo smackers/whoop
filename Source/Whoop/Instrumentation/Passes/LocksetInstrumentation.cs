@@ -150,11 +150,16 @@ namespace Whoop.Instrumentation
           c.Ins.Add(Expr.False);
           region.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("ASSERT_RTNL"))
+        else if (c.callee.Equals("ASSERT_RTNL") ||
+          c.callee.Equals("netif_device_detach"))
         {
           var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
 
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+
+          c.Ins.Clear();
+          c.Outs.Clear();
+
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
           c.Ins.Add(Expr.True);
           region.IsHoldingLock = true;

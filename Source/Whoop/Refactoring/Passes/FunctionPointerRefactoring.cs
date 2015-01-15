@@ -467,6 +467,7 @@ namespace Whoop.Refactoring
 
       var newImpl = new Implementation(Token.NoToken, impl.Name + "#" + this.NameCounter[impl.Name],
         new List<TypeVariable>(), newInParams, newOutParams, newLocalParams, newBlocks, impl.Attributes);
+
       var newProc = this.CreateNewProcedure(newImpl, impl.Proc.Modifies);
       var newCons = this.CreateNewConstant(newImpl);
 

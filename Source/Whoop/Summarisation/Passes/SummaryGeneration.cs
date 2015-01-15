@@ -245,6 +245,9 @@ namespace Whoop.Summarisation
     protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
       Expr implExpr, List<Variable> variables, bool value, bool capture = false)
     {
+//      var check = QKeyValue.FindIntAttribute(region.Implementation().Attributes, "inline", -1);
+//      if (check == -1) return;
+
       foreach (var v in variables)
       {
         var dict = this.GetExistentialDictionary(value);
