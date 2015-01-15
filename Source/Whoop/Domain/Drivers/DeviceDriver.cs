@@ -151,20 +151,23 @@ namespace Whoop.Domain.Drivers
         return false;
 
       if (DeviceDriver.HasKernelImposedDeviceLock(ep1) &&
-        DeviceDriver.HasKernelImposedDeviceLock(ep2))
+          DeviceDriver.HasKernelImposedDeviceLock(ep2))
         return false;
       if (DeviceDriver.HasKernelImposedPowerLock(ep1) &&
-        DeviceDriver.HasKernelImposedPowerLock(ep2))
+          DeviceDriver.HasKernelImposedPowerLock(ep2))
         return false;
       if (DeviceDriver.HasKernelImposedRTNL(ep1) &&
-        DeviceDriver.HasKernelImposedRTNL(ep2))
+          DeviceDriver.HasKernelImposedRTNL(ep2))
         return false;
       if (DeviceDriver.HasKernelImposedTxLock(ep1) &&
-        DeviceDriver.HasKernelImposedTxLock(ep2))
+          DeviceDriver.HasKernelImposedTxLock(ep2))
         return false;
 
+      if (DeviceDriver.IsPowerManagementAPI(ep1) &&
+          DeviceDriver.IsPowerManagementAPI(ep2))
+        return false;
       if (DeviceDriver.IsCalledWithNetpollDisabled(ep1) &&
-        DeviceDriver.IsCalledWithNetpollDisabled(ep2))
+          DeviceDriver.IsCalledWithNetpollDisabled(ep2))
         return false;
 
       return true;
@@ -268,6 +271,25 @@ namespace Whoop.Domain.Drivers
     {
       // network device management API
       if (ep.Equals("ndo_start_xmit"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if it is a power management entry point.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsPowerManagementAPI(string ep)
+    {
+      // power management API
+      if (ep.Equals("prepare") || ep.Equals("complete") ||
+        ep.Equals("resume") || ep.Equals("suspend") ||
+        ep.Equals("freeze") || ep.Equals("poweroff") ||
+        ep.Equals("restore") || ep.Equals("thaw") ||
+        ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
+        ep.Equals("runtime_idle"))
         return true;
 
       return false;

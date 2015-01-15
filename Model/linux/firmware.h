@@ -8,6 +8,7 @@ struct firmware {
 	void *priv;
 };
 
+int request_firmware(const struct firmware **fw, const char *name, struct device *device);
 void release_firmware(const struct firmware *fw);
 
 #endif /* _LINUX_FIRMWARE_H */

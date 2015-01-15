@@ -1,26 +1,14 @@
 #ifndef _LINUX_SLAB_H
 #define	_LINUX_SLAB_H
 
-unsigned int ksize(const void *);
+inline void *kmalloc(size_t size, gfp_t flags);
 
-void *kmalloc(size_t size, gfp_t flags)
-{
-	void *memory = (void *) malloc(size);
-	return memory;
-}
+inline void *kzalloc(size_t size, gfp_t flags);
 
-void *kzalloc(size_t size, gfp_t flags)
-{
-	void *memory = (void *) malloc(size);
-	return memory;
-}
+inline void *kmalloc_node(size_t size, gfp_t flags, int node);
 
-void *kmalloc_node(size_t size, gfp_t flags, int node)
-{
-	void *memory = (void *) malloc(size);
-	return memory;
-}
+inline unsigned int ksize(const void *);
 
-void kfree(const void *);
+inline void kfree(const void *);
 
 #endif

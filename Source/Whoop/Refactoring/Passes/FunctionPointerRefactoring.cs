@@ -53,7 +53,7 @@ namespace Whoop.Refactoring
         this.Timer = new ExecutionTimer();
         this.Timer.Start();
       }
-      Console.WriteLine("\n >> EP: " + this.EP.Name + "\n");
+
       this.RefactorFunctionPointers(this.Implementation);
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
