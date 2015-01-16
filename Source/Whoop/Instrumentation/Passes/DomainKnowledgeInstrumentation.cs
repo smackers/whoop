@@ -184,7 +184,7 @@ namespace Whoop.Instrumentation
     private bool AnalyseSuccessors(InstrumentationRegion region)
     {
       var successors = this.EP.CallGraph.Successors(region);
-      if (successors == null)
+      if (successors.Count == 0)
         return true;
 
       bool exists = successors.Any(val => val.IsChangingDeviceRegistration);

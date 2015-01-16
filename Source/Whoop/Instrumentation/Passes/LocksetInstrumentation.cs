@@ -29,11 +29,15 @@ namespace Whoop.Instrumentation
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
+    private InstrumentationRegion NetworkLockHolder;
+
     public LocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
+
+      this.NetworkLockHolder = null;
     }
 
     public void Run()
@@ -50,6 +54,8 @@ namespace Whoop.Instrumentation
       {
         this.InstrumentImplementation(region);
       }
+
+      this.InstrumentRtnlLocks();
 
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
@@ -140,13 +146,15 @@ namespace Whoop.Instrumentation
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.True);
-          region.IsHoldingLock = true;
+
+          this.EP.IsHoldingLock = true;
         }
         else if (c.callee.Equals("mutex_unlock"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.False);
-          region.IsHoldingLock = true;
+
+          this.EP.IsHoldingLock = true;
         }
         else if (c.callee.Equals("ASSERT_RTNL") ||
           c.callee.Equals("netif_device_detach"))
@@ -160,7 +168,11 @@ namespace Whoop.Instrumentation
 
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
           c.Ins.Add(Expr.True);
-          region.IsHoldingLock = true;
+
+          if (this.NetworkLockHolder == null)
+            this.NetworkLockHolder = region;
+
+          this.EP.IsHoldingLock = true;
         }
         else if (c.callee.Equals("pm_runtime_get_sync") ||
           c.callee.Equals("pm_runtime_get_noresume"))
@@ -174,7 +186,8 @@ namespace Whoop.Instrumentation
 
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.True);
-          region.IsHoldingLock = true;
+
+          this.EP.IsHoldingLock = true;
         }
         else if (c.callee.Equals("pm_runtime_put_sync") ||
           c.callee.Equals("pm_runtime_put_noidle"))
@@ -188,12 +201,10 @@ namespace Whoop.Instrumentation
 
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.False);
-          region.IsHoldingLock = true;
+
+          this.EP.IsHoldingLock = true;
         }
       }
-
-      if (region.IsHoldingLock)
-        this.EP.IsHoldingLock = true;
     }
 
     private void InstrumentProcedure(InstrumentationRegion region)
@@ -238,9 +249,6 @@ namespace Whoop.Instrumentation
 
         var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Requires.Add(require);
-
-//        var ensures = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
-//        region.Procedure().Ensures.Add(ensures);
       }
 
       foreach (var ls in this.AC.MemoryLocksets)
@@ -264,6 +272,62 @@ namespace Whoop.Instrumentation
       {
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
         region.Procedure().Requires.Add(require);
+      }
+    }
+
+    #endregion
+
+    #region helper functions
+
+    private void InstrumentRtnlLocks()
+    {
+      if (this.NetworkLockHolder == null)
+        return;
+
+      var predecessorCallees = new HashSet<InstrumentationRegion>();
+      var successorCallees = new HashSet<InstrumentationRegion>();
+
+      bool foundRtnlCall = false;
+      foreach (var block in this.NetworkLockHolder.Blocks())
+      {
+        foreach (var call in block.Cmds.OfType<CallCmd>())
+        {
+          if (!foundRtnlCall && call.callee.StartsWith("_UPDATE_CLS_") &&
+              call.Ins[0].ToString().Equals("lock$rtnl"))
+          {
+            foundRtnlCall = true;
+          }
+
+          var region = this.AC.InstrumentationRegions.Find(val =>
+            val.Name().Equals(call.callee + "$instrumented"));
+          if (region == null) continue;
+
+          if (foundRtnlCall && !predecessorCallees.Contains(region))
+            successorCallees.Add(region);
+          else
+            predecessorCallees.Add(region);
+        }
+      }
+
+      var predecessors = this.EP.CallGraph.NestedPredecessors(this.NetworkLockHolder);
+      predecessorCallees.UnionWith(predecessors);
+
+      var predSuccs = new HashSet<InstrumentationRegion>();
+      foreach (var pred in predecessorCallees)
+      {
+        var succs = this.EP.CallGraph.NestedSuccessors(pred, this.NetworkLockHolder);
+        predSuccs.UnionWith(succs);
+      }
+
+      predecessorCallees.UnionWith(predSuccs);
+
+      var successors = this.EP.CallGraph.NestedSuccessors(this.NetworkLockHolder);
+      successorCallees.UnionWith(successors);
+      successorCallees.RemoveWhere(val => predecessorCallees.Contains(val));
+
+      foreach (var succ in successorCallees)
+      {
+        succ.IsHoldingRtnlLock = true;
       }
     }
 

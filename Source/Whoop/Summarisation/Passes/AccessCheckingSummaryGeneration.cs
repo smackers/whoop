@@ -76,10 +76,13 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentEnsures(region, waVars, false);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in waVars)
           {
-            base.InstrumentAssert(block, waVars, false);
+            base.InstrumentEnsures(region, variable, false);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, false);
+            }
           }
 
           continue;
@@ -95,10 +98,13 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in waVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, waVars, false, true);
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -113,10 +119,13 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in waVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, waVars, false, true);
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, false, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, false, true);
+          }
         }
       }
     }
@@ -129,10 +138,13 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentEnsures(region, raVars, false);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in raVars)
           {
-            base.InstrumentAssert(block, raVars, false);
+            base.InstrumentEnsures(region, variable, false);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, false);
+            }
           }
 
           continue;
@@ -148,10 +160,13 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in raVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -166,10 +181,13 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in raVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, raVars, false, true);
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, false, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, false, true);
+          }
         }
       }
     }
@@ -182,11 +200,14 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentRequires(region, waVars, false);
-          base.InstrumentEnsures(region, waVars, false);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in waVars)
           {
-            base.InstrumentAssert(block, waVars, false);
+            base.InstrumentRequires(region, variable, false);
+            base.InstrumentEnsures(region, variable, false);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, false);
+            }
           }
 
           continue;
@@ -202,11 +223,14 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, waVars, false, true);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, waVars, false, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in waVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, waVars, false, true);
+              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -221,11 +245,14 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, waVars, false, true);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, waVars, false, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in waVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, waVars, false, true);
+          base.InstrumentImpliesRequiresCandidate(region, nonWatchedExpr, variable, false, true);
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, false, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, false, true);
+          }
         }
       }
     }
@@ -238,11 +265,14 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentRequires(region, raVars, false);
-          base.InstrumentEnsures(region, raVars, false);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in raVars)
           {
-            base.InstrumentAssert(block, raVars, false);
+            base.InstrumentRequires(region, variable, false);
+            base.InstrumentEnsures(region, variable, false);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, false);
+            }
           }
 
           continue;
@@ -258,11 +288,14 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, raVars, false, true);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, raVars, false, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in raVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, raVars, false, true);
+              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -277,11 +310,14 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, raVars, false, true);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, raVars, false, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in raVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, raVars, false, true);
+          base.InstrumentImpliesRequiresCandidate(region, nonWatchedExpr, variable, false, true);
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, false, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, false, true);
+          }
         }
       }
     }

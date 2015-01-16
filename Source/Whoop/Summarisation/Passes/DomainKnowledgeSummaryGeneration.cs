@@ -73,18 +73,24 @@ namespace Whoop.Summarisation
 
       if (this.EP.IsChangingDeviceRegistration)
       {
-        base.InstrumentEnsuresCandidates(region, devRegVars, false);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in devRegVars)
         {
-          base.InstrumentAssertCandidates(block, devRegVars, false);
+          base.InstrumentEnsuresCandidate(region, variable, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssertCandidate(block, variable, false);
+          }
         }
       }
       else
       {
-        base.InstrumentEnsures(region, devRegVars, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in devRegVars)
         {
-          base.InstrumentAssert(block, devRegVars, true);
+          base.InstrumentEnsures(region, variable, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, variable, true);
+          }
         }
       }
     }
@@ -96,20 +102,26 @@ namespace Whoop.Summarisation
 
       if (this.EP.IsChangingDeviceRegistration)
       {
-        base.InstrumentRequiresCandidates(region, devRegVars, false);
-        base.InstrumentEnsuresCandidates(region, devRegVars, false);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in devRegVars)
         {
-          base.InstrumentAssertCandidates(block, devRegVars, false);
+          base.InstrumentRequiresCandidate(region, variable, false);
+          base.InstrumentEnsuresCandidate(region, variable, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssertCandidate(block, variable, false);
+          }
         }
       }
       else
       {
-        base.InstrumentRequires(region, devRegVars, true);
-        base.InstrumentEnsures(region, devRegVars, true);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in devRegVars)
         {
-          base.InstrumentAssert(block, devRegVars, true);
+          base.InstrumentRequires(region, variable, true);
+          base.InstrumentEnsures(region, variable, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, variable, true);
+          }
         }
       }
     }

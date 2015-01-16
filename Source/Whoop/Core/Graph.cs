@@ -49,20 +49,68 @@ namespace Whoop
       this.IsComputed = false;
     }
 
-    public IEnumerable<Node> Predecessors(Node n)
+    public HashSet<Node> Predecessors(Node node)
     {
       ComputePredSuccCaches();
-      if (!this.PredCache.ContainsKey(n))
-        return null;
-      return this.PredCache[n];
+      if (!this.PredCache.ContainsKey(node))
+        return new HashSet<Node>();
+      return this.PredCache[node];
     }
 
-    public IEnumerable<Node> Successors(Node n)
+    public HashSet<Node> Successors(Node node)
     {
       ComputePredSuccCaches();
-      if (!this.SuccCache.ContainsKey(n))
-        return null;
-      return this.SuccCache[n];
+      if (!this.SuccCache.ContainsKey(node))
+        return new HashSet<Node>();
+      return this.SuccCache[node];
+    }
+
+    public HashSet<Node> NestedPredecessors(Node node)
+    {
+      ComputePredSuccCaches();
+      if (!this.PredCache.ContainsKey(node))
+        return new HashSet<Node>();
+
+      var nestedPred = new HashSet<Node>();
+      this.ComputeNestedPredecessors(node, nestedPred);
+
+      return nestedPred;
+    }
+
+    public HashSet<Node> NestedPredecessors(Node node, Node skipNode)
+    {
+      ComputePredSuccCaches();
+      if (!this.PredCache.ContainsKey(node))
+        return new HashSet<Node>();
+
+      var nestedPred = new HashSet<Node>();
+      this.ComputeNestedPredecessors(node, nestedPred, skipNode);
+
+      return nestedPred;
+    }
+
+    public HashSet<Node> NestedSuccessors(Node node)
+    {
+      ComputePredSuccCaches();
+      if (!this.SuccCache.ContainsKey(node))
+        return new HashSet<Node>();
+
+      var nestedSucc = new HashSet<Node>();
+      this.ComputeNestedSuccessors(node, nestedSucc);
+
+      return nestedSucc;
+    }
+
+    public HashSet<Node> NestedSuccessors(Node node, Node skipNode)
+    {
+      ComputePredSuccCaches();
+      if (!this.SuccCache.ContainsKey(node))
+        return new HashSet<Node>();
+
+      var nestedSucc = new HashSet<Node>();
+      this.ComputeNestedSuccessors(node, nestedSucc, skipNode);
+
+      return nestedSucc;
     }
 
     public void Reset()
@@ -106,6 +154,83 @@ namespace Whoop
       }
 
       this.IsComputed = true;
+    }
+
+    private void ComputeNestedPredecessors(Node node, HashSet<Node> nestedPred)
+    {
+      if (nestedPred.Contains(node))
+        return;
+
+      var predecessors = this.PredCache[node];
+      foreach (var pred in predecessors)
+      {
+        if (nestedPred.Contains(pred))
+          continue;
+
+        nestedPred.Add(pred);
+        if (!this.PredCache.ContainsKey(pred))
+          continue;
+
+        this.ComputeNestedPredecessors(pred, nestedPred);
+      }
+    }
+
+    private void ComputeNestedPredecessors(Node node, HashSet<Node> nestedPred, Node skipNode)
+    {
+      if (nestedPred.Contains(node))
+        return;
+
+      var predecessors = this.PredCache[node];
+      foreach (var pred in predecessors)
+      {
+        if (nestedPred.Contains(pred))
+          continue;
+
+        nestedPred.Add(pred);
+        if (skipNode != null && skipNode.Equals(pred))
+          continue;
+        if (!this.PredCache.ContainsKey(pred))
+          continue;
+
+        this.ComputeNestedPredecessors(pred, nestedPred);
+      }
+    }
+
+    private void ComputeNestedSuccessors(Node node, HashSet<Node> nestedSucc)
+    {
+      var successors = this.SuccCache[node];
+      foreach (var succ in successors)
+      {
+        if (nestedSucc.Contains(succ))
+          continue;
+
+        nestedSucc.Add(succ);
+        if (!this.SuccCache.ContainsKey(succ))
+          continue;
+
+        this.ComputeNestedSuccessors(succ, nestedSucc);
+      }
+    }
+
+    private void ComputeNestedSuccessors(Node node, HashSet<Node> nestedSucc, Node skipNode)
+    {
+      if (nestedSucc.Contains(node))
+        return;
+
+      var successors = this.SuccCache[node];
+      foreach (var succ in successors)
+      {
+        if (nestedSucc.Contains(succ))
+          continue;
+
+        nestedSucc.Add(succ);
+        if (skipNode != null && skipNode.Equals(succ))
+          continue;
+        if (!this.SuccCache.ContainsKey(succ))
+          continue;
+
+        this.ComputeNestedSuccessors(succ, nestedSucc);
+      }
     }
 
     #endregion

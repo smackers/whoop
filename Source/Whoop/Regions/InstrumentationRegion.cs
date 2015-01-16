@@ -40,15 +40,17 @@ namespace Whoop.Regions
 
     internal Dictionary<string, bool> HasWriteAccess;
     internal Dictionary<string, bool> HasReadAccess;
-    internal bool IsHoldingLock;
+
+    internal bool IsHoldingPowerLock;
+    internal bool IsHoldingRtnlLock;
     internal bool IsChangingDeviceRegistration;
+    internal bool IsNotAccessingResources;
 
     private Dictionary<string, List<Expr>> ResourceAccesses;
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
     private Dictionary<string, List<Expr>> ExternalResourceAccesses;
     private Dictionary<string, List<Expr>> AxiomResourceAccesses;
     private HashSet<string> ResourcesWithUnidentifiedAccesses;
-    internal bool IsNotAccessingResources;
 
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
     internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAccesses;
@@ -75,15 +77,17 @@ namespace Whoop.Regions
 
       this.HasWriteAccess = new Dictionary<string, bool>();
       this.HasReadAccess = new Dictionary<string, bool>();
-      this.IsHoldingLock = false;
+
+      this.IsHoldingPowerLock = false;
+      this.IsHoldingRtnlLock = false;
       this.IsChangingDeviceRegistration = false;
+      this.IsNotAccessingResources = false;
 
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ExternalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.AxiomResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
-      this.IsNotAccessingResources = false;
 
       this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
       this.ExternallyReceivedAccesses = new Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>>();

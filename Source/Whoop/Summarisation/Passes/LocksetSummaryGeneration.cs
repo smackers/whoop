@@ -73,18 +73,40 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsHoldingLock)
       {
-        base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
-        foreach (var block in region.LoopHeaders())
+        var nonCandidateVars = new HashSet<Variable>();
+        foreach (var variable in base.CurrentLocksetVariables)
         {
-          base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          {
+            nonCandidateVars.Add(variable);
+            continue;
+          }
+
+          base.InstrumentEnsuresCandidate(region, variable, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssertCandidate(block, variable, true);
+          }
+        }
+
+        foreach (var ncVar in nonCandidateVars)
+        {
+          base.InstrumentEnsures(region, ncVar, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, ncVar, true);
+          }
         }
       }
       else
       {
-        base.InstrumentEnsures(region, base.CurrentLocksetVariables, false);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in base.CurrentLocksetVariables)
         {
-          base.InstrumentAssert(block, base.CurrentLocksetVariables, false);
+          base.InstrumentEnsures(region, variable, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, variable, false);
+          }
         }
       }
     }
@@ -98,10 +120,13 @@ namespace Whoop.Summarisation
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
           !this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentEnsures(region, memLsVars, true);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in memLsVars)
           {
-            base.InstrumentAssert(block, memLsVars, true);
+            base.InstrumentEnsures(region, variable, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, true);
+            }
           }
 
           continue;
@@ -117,10 +142,16 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, memLsVars, true, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in memLsVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, memLsVars, true, true);
+              if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+                continue;
+
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, true, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -135,10 +166,29 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true, true);
-        foreach (var block in region.LoopHeaders())
+        var nonCandidateVars = new HashSet<Variable>();
+        foreach (var variable in memLsVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, memLsVars, true, true);
+          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          {
+            nonCandidateVars.Add(variable);
+            continue;
+          }
+
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, true, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, true, true);
+          }
+        }
+
+        foreach (var ncVar in nonCandidateVars)
+        {
+          base.InstrumentEnsures(region, ncVar, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, ncVar, true);
+          }
         }
       }
     }
@@ -147,20 +197,43 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsHoldingLock)
       {
-        base.InstrumentRequiresCandidates(region, base.CurrentLocksetVariables, true);
-        base.InstrumentEnsuresCandidates(region, base.CurrentLocksetVariables, true);
-        foreach (var block in region.LoopHeaders())
+        var nonCandidateVars = new HashSet<Variable>();
+        foreach (var variable in base.CurrentLocksetVariables)
         {
-          base.InstrumentAssertCandidates(block, base.CurrentLocksetVariables, true);
+          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          {
+            nonCandidateVars.Add(variable);
+            continue;
+          }
+
+          base.InstrumentRequiresCandidate(region, variable, true);
+          base.InstrumentEnsuresCandidate(region, variable, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssertCandidate(block, variable, true);
+          }
+        }
+
+        foreach (var ncVar in nonCandidateVars)
+        {
+          base.InstrumentRequires(region, ncVar, true);
+          base.InstrumentEnsures(region, ncVar, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, ncVar, true);
+          }
         }
       }
       else
       {
-        base.InstrumentRequires(region, base.CurrentLocksetVariables, false);
-        base.InstrumentEnsures(region, base.CurrentLocksetVariables, false);
-        foreach (var block in region.LoopHeaders())
+        foreach (var variable in base.CurrentLocksetVariables)
         {
-          base.InstrumentAssert(block, base.CurrentLocksetVariables, false);
+          base.InstrumentRequires(region, variable, false);
+          base.InstrumentEnsures(region, variable, false);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, variable, false);
+          }
         }
       }
     }
@@ -174,11 +247,14 @@ namespace Whoop.Summarisation
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
             !this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
-          base.InstrumentRequires(region, memLsVars, true);
-          base.InstrumentEnsures(region, memLsVars, true);
-          foreach (var block in region.LoopHeaders())
+          foreach (var variable in memLsVars)
           {
-            base.InstrumentAssert(block, memLsVars, true);
+            base.InstrumentRequires(region, variable, true);
+            base.InstrumentEnsures(region, variable, true);
+            foreach (var block in region.LoopHeaders())
+            {
+              base.InstrumentAssert(block, variable, true);
+            }
           }
 
           continue;
@@ -194,11 +270,17 @@ namespace Whoop.Summarisation
           {
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
-            base.InstrumentImpliesRequiresCandidates(region, watchedExpr, memLsVars, true, true);
-            base.InstrumentImpliesEnsuresCandidates(region, watchedExpr, memLsVars, true, true);
-            foreach (var block in region.LoopHeaders())
+            foreach (var variable in memLsVars)
             {
-              base.InstrumentImpliesAssertCandidates(block, watchedExpr, memLsVars, true, true);
+              if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+                continue;
+
+              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
+              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
+              foreach (var block in region.LoopHeaders())
+              {
+                base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, true, true);
+              }
             }
 
             if (nonWatchedExpr == null)
@@ -213,11 +295,31 @@ namespace Whoop.Summarisation
           }
         }
 
-        base.InstrumentImpliesRequiresCandidates(region, nonWatchedExpr, memLsVars, true, true);
-        base.InstrumentImpliesEnsuresCandidates(region, nonWatchedExpr, memLsVars, true, true);
-        foreach (var block in region.LoopHeaders())
+        var nonCandidateVars = new HashSet<Variable>();
+        foreach (var variable in memLsVars)
         {
-          base.InstrumentImpliesAssertCandidates(block, nonWatchedExpr, memLsVars, true, true);
+          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          {
+            nonCandidateVars.Add(variable);
+            continue;
+          }
+
+          base.InstrumentImpliesRequiresCandidate(region, nonWatchedExpr, variable, true, true);
+          base.InstrumentImpliesEnsuresCandidate(region, nonWatchedExpr, variable, true, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, true, true);
+          }
+        }
+
+        foreach (var ncVar in nonCandidateVars)
+        {
+          base.InstrumentRequires(region, ncVar, true);
+          base.InstrumentEnsures(region, ncVar, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, ncVar, true);
+          }
         }
       }
     }

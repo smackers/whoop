@@ -194,7 +194,7 @@ namespace Whoop.Refactoring
       Dictionary<string, Block> funcPtrBlocks, Stack<Tuple<Implementation, CallCmd>> outcome)
     {
       var predecessors = this.CallGraph.Predecessors(impl);
-      if (predecessors == null)
+      if (predecessors.Count == 0)
         return;
 
       foreach (var predecessor in predecessors)
