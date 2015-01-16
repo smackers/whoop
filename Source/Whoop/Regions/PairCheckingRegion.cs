@@ -69,7 +69,7 @@ namespace Whoop.Regions
       this.CreateProcedure(impl1, impl2);
 
       this.CheckAndRefactorInParamsIfEquals();
-      this.InstrumentConflictedAccesses();
+//      this.InstrumentConflictingAccesses();
 
       this.RegionHeader = this.CreateRegionHeader();
     }
@@ -355,7 +355,7 @@ namespace Whoop.Regions
       }
     }
 
-    private void InstrumentConflictedAccesses()
+    private void InstrumentConflictingAccesses()
     {
       var conflicts = new List<Requires>();
 

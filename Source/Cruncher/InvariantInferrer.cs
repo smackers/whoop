@@ -62,9 +62,16 @@ namespace Whoop
 
       ModelCleaner.RemoveGenericTopLevelDeclerations(this.PostAC, this.EP);
       ModelCleaner.RemoveGlobalLocksets(this.PostAC);
-      ModelCleaner.RemoveWhoopFunctions(this.PostAC);
-      ModelCleaner.RemoveConstants(this.PostAC);
-      ModelCleaner.RemoveImplementations(this.PostAC);
+      ModelCleaner.RemoveExistentials(this.PostAC);
+
+      if (!(WhoopCruncherCommandLineOptions.Get().InliningBound > 0 &&
+          this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
+        WhoopCruncherCommandLineOptions.Get().InliningBound))
+      {
+        ModelCleaner.RemoveWhoopFunctions(this.PostAC);
+        ModelCleaner.RemoveConstants(this.PostAC);
+        ModelCleaner.RemoveImplementations(this.PostAC);
+      }
 
       if (WhoopCruncherCommandLineOptions.Get().MeasurePassExecutionTime)
       {

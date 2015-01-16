@@ -30,6 +30,7 @@ namespace Whoop.Domain.Drivers
     internal readonly bool IsPowerLocked;
     internal readonly bool IsRtnlLocked;
 
+    internal bool IsInlined;
     internal bool IsCallingPowerLock;
     internal bool IsCallingRtnlLock;
 
@@ -69,6 +70,7 @@ namespace Whoop.Domain.Drivers
       else
         this.IsRtnlLocked = false;
 
+      this.IsInlined = false;
       this.IsCallingPowerLock = false;
       this.IsCallingRtnlLock = false;
 

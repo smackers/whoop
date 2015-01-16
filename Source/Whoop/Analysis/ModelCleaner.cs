@@ -106,6 +106,26 @@ namespace Whoop.Analysis
       {
         if (!ac.IsAWhoopVariable(v))
           continue;
+        if (QKeyValue.FindBoolAttribute(v.Attributes, "existential"))
+          continue;
+        toRemove.Add(v);
+      }
+
+      foreach (var v in toRemove)
+      {
+        ac.TopLevelDeclarations.RemoveAll(val =>
+          (val is Variable) && (val as Variable).Name.Equals(v.Name));
+      }
+    }
+
+    public static void RemoveExistentials(AnalysisContext ac)
+    {
+      List<Variable> toRemove = new List<Variable>();
+
+      foreach (var v in ac.TopLevelDeclarations.OfType<Variable>())
+      {
+        if (!QKeyValue.FindBoolAttribute(v.Attributes, "existential"))
+          continue;
         toRemove.Add(v);
       }
 

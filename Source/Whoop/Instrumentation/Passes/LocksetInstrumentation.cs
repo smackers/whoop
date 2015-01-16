@@ -51,8 +51,6 @@ namespace Whoop.Instrumentation
         this.InstrumentImplementation(region);
       }
 
-//      this.AnalyseCallGraph();
-
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -267,42 +265,6 @@ namespace Whoop.Instrumentation
         Requires require = new Requires(false, Expr.Not(new IdentifierExpr(acv.tok, acv)));
         region.Procedure().Requires.Add(require);
       }
-    }
-
-    #endregion
-
-    #region helper functions
-
-    private void AnalyseCallGraph()
-    {
-      bool fixpoint = true;
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        if (region.IsHoldingLock)
-          continue;
-        fixpoint = this.AnalyseSuccessors(region) && fixpoint;
-      }
-
-      if (!fixpoint)
-      {
-        this.AnalyseCallGraph();
-      }
-    }
-
-    private bool AnalyseSuccessors(InstrumentationRegion region)
-    {
-      var successors = this.EP.CallGraph.Successors(region);
-      if (successors == null)
-        return true;
-
-      bool exists = successors.Any(val => val.IsHoldingLock);
-      if (exists)
-      {
-        region.IsHoldingLock = true;
-        return false;
-      }
-
-      return true;
     }
 
     #endregion

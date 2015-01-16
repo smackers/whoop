@@ -53,10 +53,10 @@ namespace Whoop.Regions
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
     internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAccesses;
 
-    internal static Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>> AxiomAccessesMap =
-      new Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>>();
     internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccessesMap =
       new Dictionary<EntryPoint, List<HashSet<string>>>();
+    internal static Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>> AxiomAccessesMap =
+      new Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>>();
 
     #endregion
 

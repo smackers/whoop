@@ -78,9 +78,9 @@ namespace Whoop
       ExecutionEngine.Inline(this.Program);
     }
 
-    public void InlineFunction(string name)
+    public void InlineEntryPoint(EntryPoint ep)
     {
-      var impl = this.GetImplementation(name);
+      var impl = this.GetImplementation(ep.Name);
 
       impl.Proc.Attributes = new QKeyValue(Token.NoToken,
         "inline", new List<object>{ new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) },
@@ -88,6 +88,8 @@ namespace Whoop
       impl.Attributes = new QKeyValue(Token.NoToken,
         "inline", new List<object>{ new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) },
         impl.Attributes);
+
+      ep.IsInlined = true;
     }
 
     public List<Implementation> GetCheckerImplementations()

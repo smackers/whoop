@@ -71,10 +71,13 @@ namespace Whoop
         this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
         WhoopEngineCommandLineOptions.Get().InliningBound)
       {
-        this.AC.InlineFunction(this.EP.Name);
+        this.AC.InlineEntryPoint(this.EP);
 
-        ModelCleaner.RemoveGenericTopLevelDeclerations(this.AC, this.EP);
-        ModelCleaner.RemoveGlobalLocksets(this.AC);
+        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
+        Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.Factory.CreateDomainKnowledgeSummaryGeneration(this.AC, this.EP).Run();
+        Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
       }
       else
       {

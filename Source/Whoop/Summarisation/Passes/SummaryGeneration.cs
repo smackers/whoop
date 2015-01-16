@@ -93,6 +93,24 @@ namespace Whoop.Summarisation
       }
     }
 
+    protected void InstrumentRequires(InstrumentationRegion region, List<Variable> variables, bool value)
+    {
+      foreach (var v in variables)
+      {
+        Expr expr = this.CreateExpr(v, value);
+        region.Procedure().Requires.Add(new Requires(false, expr));
+      }
+    }
+
+    protected void InstrumentEnsures(InstrumentationRegion region, List<Variable> variables, bool value)
+    {
+      foreach (var v in variables)
+      {
+        Expr expr = this.CreateExpr(v, value);
+        region.Procedure().Ensures.Add(new Ensures(false, expr));
+      }
+    }
+
     protected void InstrumentAssertCandidates(Block block, List<Variable> variables,
       bool value, bool capture = false)
     {
@@ -125,18 +143,12 @@ namespace Whoop.Summarisation
       }
     }
 
-    protected void InstrumentRequires(InstrumentationRegion region, List<Variable> variables, bool value)
-    {
-      foreach (var v in variables)
-      {
-        Expr expr = this.CreateExpr(v, value);
-        region.Procedure().Requires.Add(new Requires(false, expr));
-      }
-    }
-
     protected void InstrumentRequiresCandidates(InstrumentationRegion region,
       List<Variable> variables, bool value, bool capture = false)
     {
+      if (this.EP.IsInlined)
+        return;
+
       foreach (var v in variables)
       {
         var dict = this.GetExistentialDictionary(value);
@@ -166,18 +178,12 @@ namespace Whoop.Summarisation
       }
     }
 
-    protected void InstrumentEnsures(InstrumentationRegion region, List<Variable> variables, bool value)
-    {
-      foreach (var v in variables)
-      {
-        Expr expr = this.CreateExpr(v, value);
-        region.Procedure().Ensures.Add(new Ensures(false, expr));
-      }
-    }
-
     protected void InstrumentEnsuresCandidates(InstrumentationRegion region,
       List<Variable> variables, bool value, bool capture = false)
     {
+      if (this.EP.IsInlined)
+        return;
+
       foreach (var v in variables)
       {
         var dict = this.GetExistentialDictionary(value);
@@ -245,6 +251,9 @@ namespace Whoop.Summarisation
     protected void InstrumentImpliesRequiresCandidates(InstrumentationRegion region,
       Expr implExpr, List<Variable> variables, bool value, bool capture = false)
     {
+      if (this.EP.IsInlined)
+        return;
+
 //      var check = QKeyValue.FindIntAttribute(region.Implementation().Attributes, "inline", -1);
 //      if (check == -1) return;
 
@@ -283,6 +292,9 @@ namespace Whoop.Summarisation
     protected void InstrumentImpliesEnsuresCandidates(InstrumentationRegion region,
       Expr implExpr, List<Variable> variables, bool value, bool capture = false)
     {
+      if (this.EP.IsInlined)
+        return;
+
       foreach (var v in variables)
       {
         var dict = this.GetExistentialDictionary(value);
