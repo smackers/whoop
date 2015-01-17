@@ -47,7 +47,6 @@ namespace Whoop.Instrumentation
 
       this.AddAccessFuncs(AccessType.WRITE);
       this.AddAccessFuncs(AccessType.READ);
-      this.AddNonCheckedAccessFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -90,14 +89,7 @@ namespace Whoop.Instrumentation
         {
           if (!ls.TargetName.Equals(mr.Name))
             continue;
-
-          if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-            continue;
-          else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-            continue;
-          else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
-            continue;
-          else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+          if (this.ShouldSkipLockset(ls))
             continue;
 
           foreach (var cls in this.AC.CurrentLocksets)
@@ -193,17 +185,6 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private void AddNonCheckedAccessFunc()
-    {
-      Procedure proc = new Procedure(Token.NoToken, this.MakeNonCheckedAccessFuncName(),
-        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
-        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
-      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-
-      this.AC.TopLevelDeclarations.Add(proc);
-      this.AC.ResContext.AddProcedure(proc);
-    }
-
     #endregion
 
     #region race checking instrumentation
@@ -234,8 +215,7 @@ namespace Whoop.Instrumentation
             }
             else
             {
-              call = new CallCmd(Token.NoToken,
-                this.MakeNonCheckedAccessFuncName(),
+              call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
                 new List<Expr>(), new List<IdentifierExpr>());
             }
 
@@ -261,8 +241,7 @@ namespace Whoop.Instrumentation
             }
             else
             {
-              call = new CallCmd(Token.NoToken,
-                this.MakeNonCheckedAccessFuncName(),
+              call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
                 new List<Expr>(), new List<IdentifierExpr>());
             }
 
@@ -331,9 +310,17 @@ namespace Whoop.Instrumentation
       return "_" + access.ToString() + "_LS_" + name + "_$" + this.EP.Name;
     }
 
-    private string MakeNonCheckedAccessFuncName()
+    private bool ShouldSkipLockset(Lockset ls)
     {
-      return "_NON_CHECKED_ACCESS_$" + this.EP.Name;
+      if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        return true;
+      return false;
     }
 
     #endregion

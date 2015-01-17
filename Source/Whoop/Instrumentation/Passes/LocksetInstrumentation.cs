@@ -51,6 +51,7 @@ namespace Whoop.Instrumentation
       }
 
       this.AddUpdateLocksetFunc();
+      this.AddNonCheckedFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -133,6 +134,17 @@ namespace Whoop.Instrumentation
       this.AC.TopLevelDeclarations.Add(impl);
     }
 
+    private void AddNonCheckedFunc()
+    {
+      Procedure proc = new Procedure(Token.NoToken, "_NO_OP_$" + this.EP.Name,
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
+        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      this.AC.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
+    }
+
     #endregion
 
     #region lockset instrumentation
@@ -158,13 +170,11 @@ namespace Whoop.Instrumentation
         else if (c.callee.Equals("pm_runtime_get_sync") ||
           c.callee.Equals("pm_runtime_get_noresume"))
         {
-          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
-
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
-
           c.Ins.Clear();
           c.Outs.Clear();
 
+          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.True);
 
@@ -173,13 +183,11 @@ namespace Whoop.Instrumentation
         else if (c.callee.Equals("pm_runtime_put_sync") ||
           c.callee.Equals("pm_runtime_put_noidle"))
         {
-          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
-
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
-
           c.Ins.Clear();
           c.Outs.Clear();
 
+          var powerLock = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$power"));
           c.Ins.Add(new IdentifierExpr(powerLock.tok, powerLock));
           c.Ins.Add(Expr.False);
 
@@ -187,13 +195,11 @@ namespace Whoop.Instrumentation
         }
         else if (c.callee.Equals("ASSERT_RTNL"))
         {
-          var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
-
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
-
           c.Ins.Clear();
           c.Outs.Clear();
 
+          var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
           c.Ins.Add(Expr.True);
 
@@ -201,37 +207,51 @@ namespace Whoop.Instrumentation
         }
         else if (c.callee.Equals("netif_device_detach"))
         {
-          var net = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$net"));
+          if (!this.EP.IsNetLocked)
+          {
+            c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            c.Ins.Clear();
+            c.Outs.Clear();
 
-          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            var net = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$net"));
+            c.Ins.Add(new IdentifierExpr(net.tok, net));
+            c.Ins.Add(Expr.True);
 
-          c.Ins.Clear();
-          c.Outs.Clear();
+            if (this.NetworkLockHolder == null)
+              this.NetworkLockHolder = region;
 
-          c.Ins.Add(new IdentifierExpr(net.tok, net));
-          c.Ins.Add(Expr.True);
-
-          if (this.NetworkLockHolder == null)
-            this.NetworkLockHolder = region;
-
-          this.EP.IsHoldingLock = true;
+            this.EP.IsHoldingLock = true;
+          }
+          else
+          {
+            c.callee = "_NO_OP_$" + this.EP.Name;
+            c.Ins.Clear();
+            c.Outs.Clear();
+          }
         }
         else if (c.callee.Equals("netif_stop_queue"))
         {
-          var tx = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$tx"));
+          if (!this.EP.IsTxLocked)
+          {
+            c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            c.Ins.Clear();
+            c.Outs.Clear();
 
-          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            var tx = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$tx"));
+            c.Ins.Add(new IdentifierExpr(tx.tok, tx));
+            c.Ins.Add(Expr.True);
 
-          c.Ins.Clear();
-          c.Outs.Clear();
+            if (this.TransmitLockHolder == null)
+              this.TransmitLockHolder = region;
 
-          c.Ins.Add(new IdentifierExpr(tx.tok, tx));
-          c.Ins.Add(Expr.True);
-
-          if (this.TransmitLockHolder == null)
-            this.TransmitLockHolder = region;
-
-          this.EP.IsHoldingLock = true;
+            this.EP.IsHoldingLock = true;
+          }
+          else
+          {
+            c.callee = "_NO_OP_$" + this.EP.Name;
+            c.Ins.Clear();
+            c.Outs.Clear();
+          }
         }
       }
     }

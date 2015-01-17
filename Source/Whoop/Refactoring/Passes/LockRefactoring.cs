@@ -98,12 +98,14 @@ namespace Whoop.Refactoring
             }
             else if (call.callee.Contains("netif_device_detach"))
             {
-              this.EP.IsCallingNetLock = true;
+              if (!this.EP.IsNetLocked)
+                this.EP.IsCallingNetLock = true;
               continue;
             }
             else if (call.callee.Contains("netif_stop_queue"))
             {
-              this.EP.IsCallingTxLock = true;
+              if (!this.EP.IsTxLocked)
+                this.EP.IsCallingTxLock = true;
               continue;
             }
 
