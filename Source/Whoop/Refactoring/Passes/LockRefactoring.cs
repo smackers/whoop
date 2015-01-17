@@ -97,6 +97,11 @@ namespace Whoop.Refactoring
               this.EP.IsCallingRtnlLock = true;
               continue;
             }
+            else if (call.callee.Contains("netif_stop_queue"))
+            {
+              this.EP.IsCallingTxLock = true;
+              continue;
+            }
 
             if (call.callee.Contains("mutex_lock") ||
                 call.callee.Contains("mutex_unlock"))

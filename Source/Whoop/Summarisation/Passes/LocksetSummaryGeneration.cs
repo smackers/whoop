@@ -76,7 +76,8 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
-          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+            (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -144,7 +145,8 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+              if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+                (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
                 continue;
 
               base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
@@ -169,7 +171,8 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
-          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+            (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -200,7 +203,8 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
-          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+            (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -272,7 +276,8 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+              if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+                (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
                 continue;
 
               base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
@@ -298,7 +303,8 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
-          if (region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl"))
+          if ((region.IsHoldingRtnlLock && variable.Name.StartsWith("lock$rtnl")) ||
+            (region.IsHoldingTxLock && variable.Name.StartsWith("lock$tx")))
           {
             nonCandidateVars.Add(variable);
             continue;

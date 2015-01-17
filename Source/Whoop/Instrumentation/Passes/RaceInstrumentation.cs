@@ -95,6 +95,8 @@ namespace Whoop.Instrumentation
             continue;
           else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
             continue;
+          else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+            continue;
 
           foreach (var cls in this.AC.CurrentLocksets)
           {
@@ -292,6 +294,8 @@ namespace Whoop.Instrumentation
         string targetName = acv.Name.Split('_')[1];
         if (!vars.Any(val => val.Name.Equals(targetName)))
           continue;
+        if (!this.EP.HasWriteAccess.ContainsKey(targetName))
+          continue;
 
         var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
           val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
@@ -304,6 +308,8 @@ namespace Whoop.Instrumentation
       {
         string targetName = acv.Name.Split('_')[1];
         if (!vars.Any(val => val.Name.Equals(targetName)))
+          continue;
+        if (!this.EP.HasReadAccess.ContainsKey(targetName))
           continue;
 
         var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>

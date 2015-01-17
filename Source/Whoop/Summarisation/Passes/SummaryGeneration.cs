@@ -61,6 +61,8 @@ namespace Whoop.Summarisation
           continue;
         else if (ls.Name.StartsWith("lock$rtnl") && !this.EP.IsCallingRtnlLock)
           continue;
+        else if (ls.Name.StartsWith("lock$tx") && !this.EP.IsCallingTxLock)
+          continue;
 
         this.CurrentLocksetVariables.Add(ls);
       }
@@ -71,6 +73,8 @@ namespace Whoop.Summarisation
         if (ls.Name.StartsWith("lock$power") && !this.EP.IsCallingPowerLock)
           continue;
         else if (ls.Name.StartsWith("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+          continue;
+        else if (ls.Name.StartsWith("lock$tx") && !this.EP.IsCallingTxLock)
           continue;
 
         this.MemoryLocksetVariables.Add(ls);

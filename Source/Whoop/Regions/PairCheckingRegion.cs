@@ -267,14 +267,7 @@ namespace Whoop.Regions
       {
         Requires require = null;
 
-        if ((ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
-          !this.EP1.IsCallingPowerLock && !this.EP1.IsPowerLocked) ||
-          (ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
-            !this.EP2.IsCallingPowerLock && !this.EP2.IsPowerLocked) ||
-          (ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
-            !this.EP1.IsCallingRtnlLock && !this.EP1.IsRtnlLocked) ||
-          (ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
-            !this.EP2.IsCallingRtnlLock && !this.EP2.IsRtnlLocked))
+        if (!this.IsLockUsed(ls))
         {
           require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
             new Duplicator().Visit(ls.Id.Clone()) as Variable)));
@@ -323,24 +316,40 @@ namespace Whoop.Regions
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
+        if (!this.IsLockUsed(ls))
+          continue;
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           ls.Id.tok, new Duplicator().Visit(ls.Id.Clone()) as Variable));
       }
 
       foreach (var ls in this.AC.MemoryLocksets)
       {
+        if (!this.IsLockUsed(ls))
+          continue;
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           ls.Id.tok, new Duplicator().Visit(ls.Id.Clone()) as Variable));
       }
 
       foreach (var acs in this.AC.GetWriteAccessCheckingVariables())
       {
+        var split = acs.Name.Split(new string[] { "_" }, StringSplitOptions.None);
+        if (acs.Name.Contains(this.EP1.Name) && !this.EP1.HasWriteAccess.ContainsKey(split[1]))
+          continue;
+        if (acs.Name.Contains(this.EP2.Name) && !this.EP2.HasWriteAccess.ContainsKey(split[1]))
+          continue;
+
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
       }
 
       foreach (var acs in this.AC.GetReadAccessCheckingVariables())
       {
+        var split = acs.Name.Split(new string[] { "_" }, StringSplitOptions.None);
+        if (acs.Name.Contains(this.EP1.Name) && !this.EP1.HasReadAccess.ContainsKey(split[1]))
+          continue;
+        if (acs.Name.Contains(this.EP2.Name) && !this.EP2.HasReadAccess.ContainsKey(split[1]))
+          continue;
+
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
       }
@@ -348,6 +357,10 @@ namespace Whoop.Regions
       foreach (var dsv in this.AC.GetDomainSpecificVariables())
       {
         if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
+          continue;
+        if (dsv.Name.Contains(this.EP1.Name) && !this.EP1.IsChangingDeviceRegistration)
+          continue;
+        if (dsv.Name.Contains(this.EP2.Name) && !this.EP2.IsChangingDeviceRegistration)
           continue;
 
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
@@ -711,6 +724,29 @@ namespace Whoop.Regions
       }
 
       return newInParams;
+    }
+
+    private bool IsLockUsed(Lockset ls)
+    {
+      if ((ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
+        !this.EP1.IsCallingPowerLock && !this.EP1.IsPowerLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
+        !this.EP2.IsCallingPowerLock && !this.EP2.IsPowerLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
+        !this.EP1.IsCallingRtnlLock && !this.EP1.IsRtnlLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
+        !this.EP2.IsCallingRtnlLock && !this.EP2.IsRtnlLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$tx") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
+        !this.EP1.IsCallingTxLock && !this.EP1.IsTxLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$tx") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
+        !this.EP2.IsCallingTxLock && !this.EP2.IsTxLocked))
+        return false;
+      return true;
     }
 
     #endregion

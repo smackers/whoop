@@ -29,10 +29,12 @@ namespace Whoop.Domain.Drivers
     internal readonly bool IsDeviceLocked;
     internal readonly bool IsPowerLocked;
     internal readonly bool IsRtnlLocked;
+    internal readonly bool IsTxLocked;
 
     internal bool IsInlined;
     internal bool IsCallingPowerLock;
     internal bool IsCallingRtnlLock;
+    internal bool IsCallingTxLock;
 
     internal Dictionary<string, bool> HasWriteAccess;
     internal Dictionary<string, bool> HasReadAccess;
@@ -70,9 +72,15 @@ namespace Whoop.Domain.Drivers
       else
         this.IsRtnlLocked = false;
 
+      if (DeviceDriver.HasKernelImposedTxLock(kernelFunc))
+        this.IsTxLocked = true;
+      else
+        this.IsTxLocked = false;
+
       this.IsInlined = false;
       this.IsCallingPowerLock = false;
       this.IsCallingRtnlLock = false;
+      this.IsCallingTxLock = false;
 
       this.HasWriteAccess = new Dictionary<string, bool>();
       this.HasReadAccess = new Dictionary<string, bool>();

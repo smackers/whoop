@@ -52,11 +52,12 @@ namespace Whoop.Instrumentation
         this.InstrumentImplementation(region);
       }
 
-//      this.AnalyseCallGraph();
-
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
       {
+        if (!this.EP.IsChangingDeviceRegistration)
+          break;
+
         this.InstrumentProcedure(region);
       }
 
@@ -141,6 +142,9 @@ namespace Whoop.Instrumentation
 
     private void InstrumentProcedure(InstrumentationRegion region)
     {
+      if (!this.EP.IsChangingDeviceRegistration)
+        return;
+
       var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
         v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
       Contract.Requires(devReg != null);
@@ -159,42 +163,6 @@ namespace Whoop.Instrumentation
 
       Requires require = new Requires(false, new IdentifierExpr(devReg.tok, devReg));
       region.Procedure().Requires.Add(require);
-    }
-
-    #endregion
-
-    #region helper functions
-
-    private void AnalyseCallGraph()
-    {
-      bool fixpoint = true;
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        if (region.IsChangingDeviceRegistration)
-          continue;
-        fixpoint = this.AnalyseSuccessors(region) && fixpoint;
-      }
-
-      if (!fixpoint)
-      {
-        this.AnalyseCallGraph();
-      }
-    }
-
-    private bool AnalyseSuccessors(InstrumentationRegion region)
-    {
-      var successors = this.EP.CallGraph.Successors(region);
-      if (successors.Count == 0)
-        return true;
-
-      bool exists = successors.Any(val => val.IsChangingDeviceRegistration);
-      if (exists)
-      {
-        region.IsChangingDeviceRegistration = true;
-        return false;
-      }
-
-      return true;
     }
 
     #endregion
