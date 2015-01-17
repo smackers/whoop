@@ -277,6 +277,18 @@ namespace Whoop.Domain.Drivers
     }
 
     /// <summary>
+    /// Checks if it is a network entry point.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsNetworkAPI(string ep)
+    {
+      if (DeviceDriver.HasKernelImposedRTNL(ep))
+        return true;
+      return false;
+    }
+
+    /// <summary>
     /// Checks if it is a power management entry point.
     /// </summary>
     /// <returns>Boolean value</returns>

@@ -91,10 +91,14 @@ namespace Whoop.Refactoring
               this.EP.IsCallingPowerLock = true;
               continue;
             }
-            else if (call.callee.Contains("ASSERT_RTNL") ||
-                     call.callee.Contains("netif_device_detach"))
+            else if (call.callee.Contains("ASSERT_RTNL"))
             {
               this.EP.IsCallingRtnlLock = true;
+              continue;
+            }
+            else if (call.callee.Contains("netif_device_detach"))
+            {
+              this.EP.IsCallingNetLock = true;
               continue;
             }
             else if (call.callee.Contains("netif_stop_queue"))

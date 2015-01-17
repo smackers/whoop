@@ -95,6 +95,8 @@ namespace Whoop.Instrumentation
             continue;
           else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
             continue;
+          else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
+            continue;
           else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
             continue;
 

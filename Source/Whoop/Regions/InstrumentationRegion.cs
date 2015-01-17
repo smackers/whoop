@@ -43,6 +43,7 @@ namespace Whoop.Regions
 
     internal bool IsHoldingPowerLock;
     internal bool IsHoldingRtnlLock;
+    internal bool IsHoldingNetLock;
     internal bool IsHoldingTxLock;
     internal bool IsChangingDeviceRegistration;
     internal bool IsNotAccessingResources;
@@ -81,6 +82,7 @@ namespace Whoop.Regions
 
       this.IsHoldingPowerLock = false;
       this.IsHoldingRtnlLock = false;
+      this.IsHoldingNetLock = false;
       this.IsHoldingTxLock = false;
       this.IsChangingDeviceRegistration = false;
       this.IsNotAccessingResources = false;

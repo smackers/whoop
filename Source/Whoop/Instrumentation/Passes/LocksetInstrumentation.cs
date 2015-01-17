@@ -57,7 +57,7 @@ namespace Whoop.Instrumentation
         this.InstrumentImplementation(region);
       }
 
-      this.AnalyseDomainSpecificLockUsage("rtnl");
+      this.AnalyseDomainSpecificLockUsage("net");
       this.AnalyseDomainSpecificLockUsage("tx");
 
       this.InstrumentEntryPointProcedure();
@@ -93,11 +93,7 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         proc.Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
@@ -110,11 +106,7 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         List<AssignLhs> newLhss = new List<AssignLhs>();
@@ -193,8 +185,7 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("ASSERT_RTNL") ||
-          c.callee.Equals("netif_device_detach"))
+        else if (c.callee.Equals("ASSERT_RTNL"))
         {
           var rtnl = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$rtnl"));
 
@@ -204,6 +195,20 @@ namespace Whoop.Instrumentation
           c.Outs.Clear();
 
           c.Ins.Add(new IdentifierExpr(rtnl.tok, rtnl));
+          c.Ins.Add(Expr.True);
+
+          this.EP.IsHoldingLock = true;
+        }
+        else if (c.callee.Equals("netif_device_detach"))
+        {
+          var net = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$net"));
+
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+
+          c.Ins.Clear();
+          c.Outs.Clear();
+
+          c.Ins.Add(new IdentifierExpr(net.tok, net));
           c.Ins.Add(Expr.True);
 
           if (this.NetworkLockHolder == null)
@@ -235,11 +240,7 @@ namespace Whoop.Instrumentation
     {
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
@@ -251,12 +252,7 @@ namespace Whoop.Instrumentation
       {
         if (!vars.Any(val => val.Name.Equals(ls.TargetName)))
           continue;
-
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         region.Procedure().Modifies.Add(new IdentifierExpr(ls.Id.tok, ls.Id));
@@ -270,11 +266,7 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
@@ -283,11 +275,7 @@ namespace Whoop.Instrumentation
 
       foreach (var ls in this.AC.MemoryLocksets)
       {
-        if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-          continue;
-        else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        if (this.ShouldSkipLockset(ls))
           continue;
 
         Requires require = new Requires(false, new IdentifierExpr(ls.Id.tok, ls.Id));
@@ -313,13 +301,13 @@ namespace Whoop.Instrumentation
 
     private void AnalyseDomainSpecificLockUsage(string type)
     {
-      if (type.Equals("rtnl") && this.NetworkLockHolder == null)
+      if (type.Equals("net") && this.NetworkLockHolder == null)
         return;
       if (type.Equals("tx") && this.TransmitLockHolder == null)
         return;
 
       InstrumentationRegion lockHolder = null;
-      if (type.Equals("rtnl"))
+      if (type.Equals("net"))
         lockHolder = this.NetworkLockHolder;
       if (type.Equals("tx"))
         lockHolder = this.TransmitLockHolder;
@@ -327,22 +315,22 @@ namespace Whoop.Instrumentation
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
-      bool foundRtnlCall = false;
+      bool foundCall = false;
       foreach (var block in lockHolder.Blocks())
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (!foundRtnlCall && call.callee.StartsWith("_UPDATE_CLS_") &&
+          if (!foundCall && call.callee.StartsWith("_UPDATE_CLS_") &&
               call.Ins[0].ToString().Equals("lock$" + type))
           {
-            foundRtnlCall = true;
+            foundCall = true;
           }
 
           var region = this.AC.InstrumentationRegions.Find(val =>
             val.Name().Equals(call.callee + "$instrumented"));
           if (region == null) continue;
 
-          if (foundRtnlCall && !predecessorCallees.Contains(region))
+          if (foundCall && !predecessorCallees.Contains(region))
             successorCallees.Add(region);
           else
             predecessorCallees.Add(region);
@@ -367,11 +355,24 @@ namespace Whoop.Instrumentation
 
       foreach (var succ in successorCallees)
       {
-        if (type.Equals("rtnl"))
-          succ.IsHoldingRtnlLock = true;
+        if (type.Equals("net"))
+          succ.IsHoldingNetLock = true;
         if (type.Equals("tx"))
           succ.IsHoldingTxLock = true;
       }
+    }
+
+    private bool ShouldSkipLockset(Lockset ls)
+    {
+      if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
+        return true;
+      else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
+        return true;
+      return false;
     }
 
     #endregion

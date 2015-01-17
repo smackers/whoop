@@ -592,6 +592,11 @@ namespace Whoop.Regions
       Expr checkExpr = null;
       foreach (var l in this.AC.Locks)
       {
+        if (l.Name.Equals("lock$net") && !this.EP1.IsNetLocked && !this.EP2.IsNetLocked)
+          continue;
+        if (l.Name.Equals("lock$tx") && !this.EP1.IsTxLocked && !this.EP2.IsTxLocked)
+          continue;
+
         var ls1  = this.AC.MemoryLocksets.Find(val => val.Lock.Name.Equals(l.Name) &&
           val.TargetName.Equals(mr.Name) && val.EntryPoint.Name.Equals(impl1.Name));
         var ls2  = this.AC.MemoryLocksets.Find(val => val.Lock.Name.Equals(l.Name) &&
@@ -739,6 +744,12 @@ namespace Whoop.Regions
         return false;
       if ((ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
         !this.EP2.IsCallingRtnlLock && !this.EP2.IsRtnlLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$net") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
+        !this.EP1.IsCallingNetLock && !this.EP1.IsNetLocked))
+        return false;
+      if ((ls.Lock.Name.Equals("lock$net") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
+        !this.EP2.IsCallingNetLock && !this.EP2.IsNetLocked))
         return false;
       if ((ls.Lock.Name.Equals("lock$tx") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
         !this.EP1.IsCallingTxLock && !this.EP1.IsTxLocked))
