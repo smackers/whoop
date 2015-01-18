@@ -184,7 +184,7 @@ namespace Whoop
       if (name.Contains("_UPDATE_CLS") ||
         name.Contains("_WRITE_LS_") || name.Contains("_READ_LS_") ||
         name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
-        name.Contains("_NON_CHECKED_ACCESS_") ||
+        name.Contains("_NO_OP_") ||
         name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
         name.Contains("_REGISTER_DEVICE"))
         return true;
