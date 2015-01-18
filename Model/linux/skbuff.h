@@ -87,12 +87,9 @@ static inline unsigned int skb_end_offset(const struct sk_buff *skb)
 	return skb->end - skb->head;
 }
 
-#define skb_shinfo(SKB)	((struct skb_shared_info *)(skb_end_pointer(SKB)))
+struct skb_shared_info *skb_shinfo(const struct sk_buff *skb);
 
-static inline unsigned int skb_headlen(const struct sk_buff *skb)
-{
-	return skb->len - skb->data_len;
-}
+static inline unsigned int skb_headlen(const struct sk_buff *skb);
 
 static inline struct page *skb_frag_page(const skb_frag_t *frag)
 {

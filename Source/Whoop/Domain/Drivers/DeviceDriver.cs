@@ -222,6 +222,7 @@ namespace Whoop.Domain.Drivers
       // network device management API
       if (ep.Equals("ndo_init") || ep.Equals("ndo_uninit") ||
           ep.Equals("ndo_open") || ep.Equals("ndo_stop") ||
+          ep.Equals("ndo_start_xmit") ||
           ep.Equals("ndo_validate_addr") ||
           ep.Equals("ndo_change_mtu") ||
           ep.Equals("ndo_get_stats64") || ep.Equals("ndo_get_stats") ||
