@@ -58,8 +58,7 @@ namespace Whoop.Instrumentation
         this.InstrumentImplementation(region);
       }
 
-      this.AnalyseDomainSpecificLockUsage("net");
-      this.AnalyseDomainSpecificLockUsage("tx");
+      this.AnalyseDomainSpecificLockUsage();
 
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
@@ -319,7 +318,13 @@ namespace Whoop.Instrumentation
 
     #region helper functions
 
-    private void AnalyseDomainSpecificLockUsage(string type)
+    private void AnalyseDomainSpecificLockUsage()
+    {
+      this.AnalyseLocksetFuncUsage("net");
+      this.AnalyseLocksetFuncUsage("tx");
+    }
+
+    private void AnalyseLocksetFuncUsage(string type)
     {
       if (type.Equals("net") && this.NetworkLockHolder == null)
         return;

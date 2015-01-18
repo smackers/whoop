@@ -181,12 +181,12 @@ namespace Whoop
     public bool IsAWhoopFunc(string name)
     {
       Contract.Requires(name != null);
-      if (name.Contains("_UPDATE_CLS") ||
+      if (name.Contains("_UPDATE_CLS_") ||
         name.Contains("_WRITE_LS_") || name.Contains("_READ_LS_") ||
         name.Contains("_CHECK_WRITE_LS_") || name.Contains("_CHECK_READ_LS_") ||
         name.Contains("_NO_OP_") ||
         name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
-        name.Contains("_REGISTER_DEVICE"))
+        name.Contains("_REGISTER_DEVICE_"))
         return true;
       return false;
     }

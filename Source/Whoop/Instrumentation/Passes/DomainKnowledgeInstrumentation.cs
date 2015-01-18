@@ -30,11 +30,17 @@ namespace Whoop.Instrumentation
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
+    private InstrumentationRegion DeviceRegisterHolder;
+    private InstrumentationRegion DeviceUnregisterHolder;
+
     public DomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
+
+      this.DeviceRegisterHolder = null;
+      this.DeviceUnregisterHolder = null;
     }
 
     public void Run()
@@ -51,6 +57,9 @@ namespace Whoop.Instrumentation
       {
         this.InstrumentImplementation(region);
       }
+
+      this.AnalyseDeviceRegistrationFuncUsage();
+      this.SliceEntryPoint();
 
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
@@ -77,7 +86,7 @@ namespace Whoop.Instrumentation
         "isRegistered", Microsoft.Boogie.Type.Bool));
       inParams.Add(inParam);
 
-      Procedure proc = new Procedure(Token.NoToken, "_REGISTER_DEVICE$" + this.EP.Name,
+      Procedure proc = new Procedure(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
         new List<TypeVariable>(), inParams, new List<Variable>(),
         new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
@@ -102,7 +111,7 @@ namespace Whoop.Instrumentation
       AssignCmd assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
       b.Cmds.Add(assign);
 
-      Implementation impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE$" + this.EP.Name,
+      Implementation impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
         new List<TypeVariable>(), inParams, new List<Variable>(),
         new List<Variable>(), new List<Block>());
       impl.Blocks.Add(b);
@@ -122,22 +131,29 @@ namespace Whoop.Instrumentation
       {
         if (c.callee.Equals("register_netdev"))
         {
-          c.callee = "_REGISTER_DEVICE$" + this.EP.Name;
+          c.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
           c.Ins.Clear();
           c.Ins.Add(Expr.True);
+
+          if (this.DeviceRegisterHolder == null)
+            this.DeviceRegisterHolder = region;
+
           region.IsChangingDeviceRegistration = true;
+          this.EP.IsChangingDeviceRegistration = true;
         }
         else if (c.callee.Equals("unregister_netdev"))
         {
-          c.callee = "_REGISTER_DEVICE$" + this.EP.Name;
+          c.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
           c.Ins.Clear();
           c.Ins.Add(Expr.False);
+
+          if (this.DeviceUnregisterHolder == null)
+            this.DeviceUnregisterHolder = region;
+
           region.IsChangingDeviceRegistration = true;
+          this.EP.IsChangingDeviceRegistration = true;
         }
       }
-
-      if (region.IsChangingDeviceRegistration)
-        this.EP.IsChangingDeviceRegistration = true;
     }
 
     private void InstrumentProcedure(InstrumentationRegion region)
@@ -161,8 +177,126 @@ namespace Whoop.Instrumentation
       var region = this.AC.InstrumentationRegions.Find(val =>
         val.Name().Equals(this.EP.Name + "$instrumented"));
 
-      Requires require = new Requires(false, new IdentifierExpr(devReg.tok, devReg));
-      region.Procedure().Requires.Add(require);
+      Expr expr = null;
+      if (this.EP.IsInit)
+      {
+        expr = Expr.Not(new IdentifierExpr(devReg.tok, devReg));
+      }
+      else
+      {
+        expr = new IdentifierExpr(devReg.tok, devReg);
+      }
+
+      region.Procedure().Requires.Add(new Requires(false, expr));
+    }
+
+    private void SliceEntryPoint()
+    {
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        if (!region.IsDeviceRegistered && !region.IsChangingDeviceRegistration)
+          continue;
+
+        foreach (var c in region.Cmds().OfType<CallCmd>())
+        {
+          var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
+            val.Implementation().Name.Equals(c.callee));
+          if (calleeRegion == null)
+            continue;
+
+          if (calleeRegion.IsDeviceRegistered || calleeRegion.IsChangingDeviceRegistration)
+            continue;
+
+          c.callee = "_NO_OP_$" + this.EP.Name;
+          c.Ins.Clear();
+          c.Outs.Clear();
+        }
+      }
+
+      foreach (var region in this.AC.InstrumentationRegions.ToList())
+      {
+        if (region.IsDeviceRegistered || region.IsChangingDeviceRegistration)
+          continue;
+
+        this.AC.TopLevelDeclarations.RemoveAll(val =>
+          (val is Procedure && (val as Procedure).Name.Equals(region.Implementation().Name)) ||
+          (val is Implementation && (val as Implementation).Name.Equals(region.Implementation().Name)) ||
+          (val is Constant && (val as Constant).Name.Equals(region.Implementation().Name)));
+        this.AC.InstrumentationRegions.Remove(region);
+        this.EP.CallGraph.Remove(region);
+      }
+    }
+
+    #endregion
+
+    #region helper functions
+
+    private void AnalyseDeviceRegistrationFuncUsage()
+    {
+      if (!this.EP.IsChangingDeviceRegistration)
+        return;
+
+      if (this.DeviceUnregisterHolder != null)
+        this.AnalyseDomainSpecificFuncUsage("unregister_netdev");
+    }
+
+    private void AnalyseDomainSpecificFuncUsage(string type)
+    {
+      InstrumentationRegion domainSpecificHolder = null;
+      if (type.Equals("register_netdev"))
+        domainSpecificHolder = this.DeviceRegisterHolder;
+      if (type.Equals("unregister_netdev"))
+        domainSpecificHolder = this.DeviceUnregisterHolder;
+
+      var predecessorCallees = new HashSet<InstrumentationRegion>();
+      var successorCallees = new HashSet<InstrumentationRegion>();
+
+      bool foundCall = false;
+      foreach (var block in domainSpecificHolder.Blocks())
+      {
+        foreach (var call in block.Cmds.OfType<CallCmd>())
+        {
+          if (!foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
+              ((type.Equals("register_netdev") && call.Ins[0].ToString().Equals("true")) ||
+              (type.Equals("unregister_netdev") && call.Ins[0].ToString().Equals("false"))))
+          {
+            foundCall = true;
+          }
+
+          var region = this.AC.InstrumentationRegions.Find(val =>
+            val.Name().Equals(call.callee + "$instrumented"));
+          if (region == null) continue;
+
+          if (foundCall && !predecessorCallees.Contains(region))
+            successorCallees.Add(region);
+          else
+            predecessorCallees.Add(region);
+        }
+      }
+
+      var predecessors = this.EP.CallGraph.NestedPredecessors(domainSpecificHolder);
+      predecessorCallees.UnionWith(predecessors);
+
+      var predSuccs = new HashSet<InstrumentationRegion>();
+      foreach (var pred in predecessorCallees)
+      {
+        var succs = this.EP.CallGraph.NestedSuccessors(pred, domainSpecificHolder);
+        predSuccs.UnionWith(succs);
+      }
+
+      predecessorCallees.UnionWith(predSuccs);
+
+      var successors = this.EP.CallGraph.NestedSuccessors(domainSpecificHolder);
+      successorCallees.UnionWith(successors);
+      successorCallees.RemoveWhere(val => predecessorCallees.Contains(val));
+
+      foreach (var succ in successorCallees)
+      {
+        if (type.Equals("register_netdev"))
+          succ.IsDeviceRegistered = true;
+        if (type.Equals("unregister_netdev"))
+          succ.IsDeviceRegistered = false;
+      }
     }
 
     #endregion

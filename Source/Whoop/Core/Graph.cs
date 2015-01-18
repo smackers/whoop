@@ -113,6 +113,16 @@ namespace Whoop
       return nestedSucc;
     }
 
+    public void Remove(Node node)
+    {
+      if (node == null)
+        return;
+
+      this.Edges.RemoveWhere(val => val.Item1.Equals(node) || val.Item2.Equals(node));
+      this.Nodes.Remove(node);
+      this.IsComputed = false;
+    }
+
     public void Reset()
     {
       this.Edges.Clear();

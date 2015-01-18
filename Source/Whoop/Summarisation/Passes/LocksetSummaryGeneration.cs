@@ -76,7 +76,7 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
-          if (this.ShouldSkipLockset(region, variable))
+          if (this.ShouldSkip(region, variable))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -144,7 +144,7 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (this.ShouldSkipLockset(region, variable))
+              if (this.ShouldSkip(region, variable))
                 continue;
 
               base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
@@ -169,7 +169,7 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
-          if (this.ShouldSkipLockset(region, variable))
+          if (this.ShouldSkip(region, variable))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -200,7 +200,7 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
-          if (this.ShouldSkipLockset(region, variable))
+          if (this.ShouldSkip(region, variable))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -272,7 +272,7 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (this.ShouldSkipLockset(region, variable))
+              if (this.ShouldSkip(region, variable))
                 continue;
 
               base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
@@ -298,7 +298,7 @@ namespace Whoop.Summarisation
         var nonCandidateVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
-          if (this.ShouldSkipLockset(region, variable))
+          if (this.ShouldSkip(region, variable))
           {
             nonCandidateVars.Add(variable);
             continue;
@@ -337,7 +337,7 @@ namespace Whoop.Summarisation
       return cons;
     }
 
-    private bool ShouldSkipLockset(InstrumentationRegion region, Variable var)
+    private bool ShouldSkip(InstrumentationRegion region, Variable var)
     {
       if ((region.IsHoldingRtnlLock && var.Name.StartsWith("lock$rtnl")) ||
           (region.IsHoldingNetLock && var.Name.StartsWith("lock$net")) ||

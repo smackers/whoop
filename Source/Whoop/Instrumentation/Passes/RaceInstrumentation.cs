@@ -205,6 +205,7 @@ namespace Whoop.Instrumentation
               continue;
 
             CallCmd call = null;
+
             if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
               val.Name.Equals(lhs.DeepAssignedIdentifier.Name)))
             {

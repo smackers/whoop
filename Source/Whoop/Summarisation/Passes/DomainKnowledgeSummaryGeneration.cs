@@ -102,13 +102,30 @@ namespace Whoop.Summarisation
 
       if (this.EP.IsChangingDeviceRegistration)
       {
+        var registeredVars = new HashSet<Variable>();
         foreach (var variable in devRegVars)
         {
+          if (region.IsDeviceRegistered && !region.IsChangingDeviceRegistration)
+          {
+            registeredVars.Add(variable);
+            continue;
+          }
+
           base.InstrumentRequiresCandidate(region, variable, false);
           base.InstrumentEnsuresCandidate(region, variable, false);
           foreach (var block in region.LoopHeaders())
           {
             base.InstrumentAssertCandidate(block, variable, false);
+          }
+        }
+
+        foreach (var var in registeredVars)
+        {
+          base.InstrumentRequires(region, var, true);
+          base.InstrumentEnsures(region, var, true);
+          foreach (var block in region.LoopHeaders())
+          {
+            base.InstrumentAssert(block, var, true);
           }
         }
       }
