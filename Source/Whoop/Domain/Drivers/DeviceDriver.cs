@@ -226,6 +226,8 @@ namespace Whoop.Domain.Drivers
           ep.Equals("ndo_validate_addr") ||
           ep.Equals("ndo_change_mtu") ||
           ep.Equals("ndo_get_stats64") || ep.Equals("ndo_get_stats") ||
+          ep.Equals("ndo_poll_controller") || ep.Equals("ndo_netpoll_setup") ||
+          ep.Equals("ndo_netpoll_cleanup") ||
           ep.Equals("ndo_fix_features") || ep.Equals("ndo_set_features") ||
           ep.Equals("ndo_set_mac_address") ||
           ep.Equals("ndo_do_ioctl") ||
