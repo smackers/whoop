@@ -259,6 +259,8 @@ namespace Whoop.Analysis
       {
         var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
           val.Implementation().Name.Equals(call.callee));
+        if (calleeRegion.IsNotAccessingResources)
+          continue;
 
         foreach (var r in calleeRegion.GetResourceAccesses())
         {
