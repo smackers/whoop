@@ -48,6 +48,7 @@ namespace Whoop.Instrumentation
       }
 
       PairCheckingRegion region = new PairCheckingRegion(this.AC, this.EP1, this.EP2);
+      AnalysisContext.RegisterPairEntryPointAnalysisContext(region, this.EP1, this.EP2);
 
       this.AC.TopLevelDeclarations.Add(region.Procedure());
       this.AC.TopLevelDeclarations.Add(region.Implementation());

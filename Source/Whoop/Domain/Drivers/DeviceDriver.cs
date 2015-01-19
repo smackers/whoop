@@ -78,6 +78,9 @@ namespace Whoop.Domain.Drivers
             EntryPoint ep = new EntryPoint(pair[1], pair[0], module);
             module.EntryPoints.Add(ep);
             if (ep.IsInit) continue;
+            if (DeviceDriver.EntryPoints.Any(val => val.Name.Equals(ep.Name)))
+              continue;
+
             DeviceDriver.EntryPoints.Add(ep);
             DeviceDriver.Modules.Add(module);
           }
@@ -100,6 +103,22 @@ namespace Whoop.Domain.Drivers
     public static EntryPoint GetEntryPoint(string name)
     {
       return DeviceDriver.EntryPoints.Find(ep => ep.Name.Equals(name));
+    }
+
+    public static HashSet<EntryPoint> GetPairs(EntryPoint ep)
+    {
+      var pairs = new HashSet<EntryPoint>();
+
+      foreach (var pair in DeviceDriver.EntryPointPairs.FindAll(val =>
+        val.Item1.Name.Equals(ep.Name) || val.Item2.Name.Equals(ep.Name)))
+      {
+        if (pair.Item1.Name.Equals(ep.Name))
+          pairs.Add(pair.Item2);
+        else if (pair.Item2.Name.Equals(ep.Name))
+          pairs.Add(pair.Item1);
+      }
+
+      return pairs;
     }
 
     #endregion

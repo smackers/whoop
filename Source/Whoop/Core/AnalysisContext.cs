@@ -29,6 +29,9 @@ namespace Whoop
     private static Dictionary<EntryPoint, AnalysisContext> Registry =
       new Dictionary<EntryPoint, AnalysisContext>();
 
+    private static Dictionary<PairCheckingRegion, Tuple<EntryPoint, EntryPoint>> PairRegistry =
+      new Dictionary<PairCheckingRegion, Tuple<EntryPoint, EntryPoint>>();
+
     #endregion
 
     #region fields
@@ -44,6 +47,9 @@ namespace Whoop
     internal List<Lockset> MemoryLocksets;
 
     internal Microsoft.Boogie.Type MemoryModelType;
+
+    internal List<HashSet<string>> MatchedAccessesMap;
+    internal Dictionary<string, HashSet<Expr>> AxiomAccessesMap;
 
     #endregion
 
@@ -64,6 +70,9 @@ namespace Whoop
       this.MemoryLocksets = new List<Lockset>();
 
       this.MemoryModelType = Microsoft.Boogie.Type.Int;
+
+      this.MatchedAccessesMap = new List<HashSet<string>>();
+      this.AxiomAccessesMap = new Dictionary<string, HashSet<Expr>>();
 
       this.ResetToProgramTopLevelDeclarations();
     }
@@ -282,6 +291,31 @@ namespace Whoop
         AnalysisContext.Registry[ep] = ac;
       else
         AnalysisContext.Registry.Add(ep, ac);
+    }
+
+    internal static PairCheckingRegion GetPairAnalysisContext(EntryPoint ep1, EntryPoint ep2)
+    {
+      if (AnalysisContext.PairRegistry.Any(val =>
+        (val.Value.Item1.Equals(ep1) && val.Value.Item2.Equals(ep2)) ||
+        (val.Value.Item1.Equals(ep2) && val.Value.Item2.Equals(ep1))))
+      {
+        return AnalysisContext.PairRegistry.First(val =>
+          (val.Value.Item1.Equals(ep1) && val.Value.Item2.Equals(ep2)) ||
+        (val.Value.Item1.Equals(ep2) && val.Value.Item2.Equals(ep1))).Key;
+      }
+      else
+      {
+        return null;
+      }
+    }
+
+    internal static void RegisterPairEntryPointAnalysisContext(PairCheckingRegion region,
+      EntryPoint ep1, EntryPoint ep2)
+    {
+      if (AnalysisContext.PairRegistry.ContainsKey(region))
+        AnalysisContext.PairRegistry[region] = new Tuple<EntryPoint, EntryPoint>(ep1, ep2);
+      else
+        AnalysisContext.PairRegistry.Add(region, new Tuple<EntryPoint, EntryPoint>(ep1, ep2));
     }
 
     #endregion

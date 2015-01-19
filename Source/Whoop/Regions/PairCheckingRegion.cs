@@ -34,7 +34,9 @@ namespace Whoop.Regions
     private Block RegionHeader;
     private List<Block> RegionBlocks;
 
-    Dictionary<int, Variable> InParamMatcher;
+    private Dictionary<int, Variable> InParamMatcher;
+    internal Dictionary<string, IdentifierExpr> InParamMapEP1;
+    internal Dictionary<string, IdentifierExpr> InParamMapEP2;
 
     private EntryPoint EP1;
     private EntryPoint EP2;
@@ -60,6 +62,8 @@ namespace Whoop.Regions
 
       this.RegionBlocks = new List<Block>();
       this.InParamMatcher = new Dictionary<int, Variable>();
+      this.InParamMapEP1 = new Dictionary<string, IdentifierExpr>();
+      this.InParamMapEP2 = new Dictionary<string, IdentifierExpr>();
 
       Implementation impl1 = this.AC.GetImplementation(ep1.Name);
       Implementation impl2 = this.AC.GetImplementation(ep2.Name);
@@ -68,7 +72,8 @@ namespace Whoop.Regions
       this.CreateImplementation(impl1, impl2);
       this.CreateProcedure(impl1, impl2);
 
-      this.CheckAndRefactorInParamsIfEquals();
+//      this.CreateInParamCache(impl1, impl2);
+      this.CheckAndRefactorInParamsIfEquals(impl1, impl2);
 //      this.InstrumentConflictingAccesses();
 
       this.RegionHeader = this.CreateRegionHeader();
@@ -169,6 +174,44 @@ namespace Whoop.Regions
     public EntryPoint EntryPoint2()
     {
       return this.EP2;
+    }
+
+    public bool TryGetMatchedAccess(EntryPoint ep, Expr access, out Expr matchedAccess)
+    {
+      matchedAccess = null;
+
+      Expr larg = null;
+      Expr rarg = null;
+      IAppliable fun = null;
+
+      if (access is NAryExpr)
+      {
+        larg = (access as NAryExpr).Args[0];
+        rarg = (access as NAryExpr).Args[1];
+        fun = (access as NAryExpr).Fun;
+      }
+      else
+      {
+        larg = access;
+      }
+
+      IdentifierExpr id = null;
+      if (ep.Equals(this.EP1) && this.InParamMapEP1.ContainsKey(larg.ToString()))
+        id = this.InParamMapEP1[larg.ToString()];
+      else if (ep.Equals(this.EP2) && this.InParamMapEP2.ContainsKey(larg.ToString()))
+        id = this.InParamMapEP2[larg.ToString()];
+
+      if (id == null)
+        matchedAccess = access;
+      else if (rarg != null)
+        matchedAccess = new NAryExpr(Token.NoToken, fun, new List<Expr> { id, rarg });
+      else
+        matchedAccess = id;
+
+      if (id == null)
+        return false;
+      else
+        return true;
     }
 
     #endregion
@@ -460,7 +503,20 @@ namespace Whoop.Regions
       }
     }
 
-    private void CheckAndRefactorInParamsIfEquals()
+//    private void CreateInParamCache(Implementation impl1, Implementation impl2)
+//    {
+//      for (int idx = 0; idx < this.CC1.Ins.Count; idx++)
+//      {
+//        this.InParamMapEP1.Add(impl1.InParams[idx].Name, this.CC1.Ins[idx] as IdentifierExpr);
+//      }
+//
+//      for (int idx = 0; idx < this.CC2.Ins.Count; idx++)
+//      {
+//        this.InParamMapEP2.Add(impl2.InParams[idx].Name, this.CC2.Ins[idx] as IdentifierExpr);
+//      }
+//    }
+
+    private void CheckAndRefactorInParamsIfEquals(Implementation impl1, Implementation impl2)
     {
       var inParams = this.InternalImplementation.InParams;
       List<Tuple<int, int>> idxs = new List<Tuple<int, int>>();

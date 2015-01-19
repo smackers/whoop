@@ -30,5 +30,10 @@ namespace Whoop.Analysis
     {
       return new WatchdogInformationAnalysis(ac, ep);
     }
+
+    public static IPairWatchdogInformationAnalysis CreatePairWatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
+    {
+      return new PairWatchdogInformationAnalysis(ac, ep);
+    }
   }
 }

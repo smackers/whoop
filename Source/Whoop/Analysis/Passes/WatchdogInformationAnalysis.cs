@@ -38,9 +38,6 @@ namespace Whoop.Analysis
       this.EP = ep;
 
       this.PtrAnalysisCache = new Dictionary<InstrumentationRegion, PointerArithmeticAnalyser>();
-
-      InstrumentationRegion.AxiomAccessesMap.Add(this.EP, new Dictionary<string, HashSet<Expr>>());
-      InstrumentationRegion.MatchedAccessesMap.Add(this.EP, new List<HashSet<string>>());
     }
 
     public void Run()
@@ -116,7 +113,7 @@ namespace Whoop.Analysis
         if (region.IsNotAccessingResources)
           continue;
 
-        foreach (var resource in InstrumentationRegion.AxiomAccessesMap[this.EP])
+        foreach (var resource in this.AC.AxiomAccessesMap)
         {
           foreach (var access in resource.Value)
           {
@@ -157,12 +154,12 @@ namespace Whoop.Analysis
             {
               if (this.PtrAnalysisCache[region].IsAxiom(ptrExpr))
               {
-                if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(resource))
-                  InstrumentationRegion.AxiomAccessesMap[this.EP].Add(resource, new HashSet<Expr>());
-                if (!InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Any(val =>
+                if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
+                  this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
+                if (!this.AC.AxiomAccessesMap[resource].Any(val =>
                   val.ToString().Equals(ptrExpr.ToString())))
                 {
-                  InstrumentationRegion.AxiomAccessesMap[this.EP][resource].Add(ptrExpr);
+                  this.AC.AxiomAccessesMap[resource].Add(ptrExpr);
                 }
               }
               else
@@ -289,12 +286,12 @@ namespace Whoop.Analysis
 
             if (this.PtrAnalysisCache[region].IsAxiom(computedExpr))
             {
-              if (!InstrumentationRegion.AxiomAccessesMap[this.EP].ContainsKey(r.Key))
-                InstrumentationRegion.AxiomAccessesMap[this.EP].Add(r.Key, new HashSet<Expr>());
-              if (!InstrumentationRegion.AxiomAccessesMap[this.EP][r.Key].Any(val =>
+              if (!this.AC.AxiomAccessesMap.ContainsKey(r.Key))
+                this.AC.AxiomAccessesMap.Add(r.Key, new HashSet<Expr>());
+              if (!this.AC.AxiomAccessesMap[r.Key].Any(val =>
                 val.ToString().Equals(computedExpr.ToString())))
               {
-                InstrumentationRegion.AxiomAccessesMap[this.EP][r.Key].Add(computedExpr);
+                this.AC.AxiomAccessesMap[r.Key].Add(computedExpr);
               }
             }
             else
@@ -479,7 +476,7 @@ namespace Whoop.Analysis
         str2 = str2 + " + 0";
 
       bool foundIt = false;
-      foreach (var matchedSet in InstrumentationRegion.MatchedAccessesMap[this.EP])
+      foreach (var matchedSet in this.AC.MatchedAccessesMap)
       {
         if (matchedSet.Contains(str1) || matchedSet.Contains(str2))
         {
@@ -491,7 +488,7 @@ namespace Whoop.Analysis
 
       if (!foundIt)
       {
-        InstrumentationRegion.MatchedAccessesMap[this.EP].Add(
+        this.AC.MatchedAccessesMap.Add(
           new HashSet<string> { expr1.ToString(), expr2.ToString() });
       }
     }

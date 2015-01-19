@@ -54,15 +54,11 @@ namespace Whoop.Regions
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
     private Dictionary<string, List<Expr>> ExternalResourceAccesses;
     private Dictionary<string, List<Expr>> AxiomResourceAccesses;
+    private Dictionary<string, List<Expr>> NonWatchedResourceAccesses;
     private HashSet<string> ResourcesWithUnidentifiedAccesses;
 
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
     internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAccesses;
-
-    internal static Dictionary<EntryPoint, List<HashSet<string>>> MatchedAccessesMap =
-      new Dictionary<EntryPoint, List<HashSet<string>>>();
-    internal static Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>> AxiomAccessesMap =
-      new Dictionary<EntryPoint, Dictionary<string, HashSet<Expr>>>();
 
     #endregion
 
@@ -95,6 +91,7 @@ namespace Whoop.Regions
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ExternalResourceAccesses = new Dictionary<string, List<Expr>>();
       this.AxiomResourceAccesses = new Dictionary<string, List<Expr>>();
+      this.NonWatchedResourceAccesses = new Dictionary<string, List<Expr>>();
       this.ResourcesWithUnidentifiedAccesses = new HashSet<string>();
 
       this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
@@ -195,6 +192,11 @@ namespace Whoop.Regions
     public Dictionary<string, List<Expr>> GetAxiomResourceAccesses()
     {
       return this.AxiomResourceAccesses;
+    }
+
+    public Dictionary<string, List<Expr>> GetNonWatchedResourceAccesses()
+    {
+      return this.NonWatchedResourceAccesses;
     }
 
     public bool TryAddResourceAccess(string resource, Expr access)
@@ -340,6 +342,25 @@ namespace Whoop.Regions
         if (this.ResourcesWithUnidentifiedAccesses.Contains(resource))
           this.ResourcesWithUnidentifiedAccesses.Remove(resource);
 
+        return true;
+      }
+    }
+
+    public bool TryAddNonWatchedResourceAccesses(string resource, Expr access)
+    {
+      if (!this.NonWatchedResourceAccesses.ContainsKey(resource))
+      {
+        this.NonWatchedResourceAccesses.Add(resource, new List<Expr> { access });
+        return true;
+      }
+      else if (this.NonWatchedResourceAccesses[resource].Any(val =>
+        val.ToString().Equals(access.ToString())))
+      {
+        return false;
+      }
+      else
+      {
+        this.NonWatchedResourceAccesses[resource].Add(access);
         return true;
       }
     }

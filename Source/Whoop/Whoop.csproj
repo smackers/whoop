@@ -100,6 +100,8 @@
     <Compile Include="Core\FunctionPairingMethod.cs" />
     <Compile Include="Core\Outcome.cs" />
     <Compile Include="Utilities\WhoopCommandLineOptions.cs" />
+    <Compile Include="Analysis\Passes\PairWatchdogInformationAnalysis.cs" />
+    <Compile Include="Analysis\Interfaces\IPairWatchdogInformationAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

@@ -22,6 +22,9 @@ namespace Whoop
 {
   public class Program
   {
+    private static List<string> FileList = new List<string>();
+    private static ExecutionTimer Timer = null;
+
     public static void Main(string[] args)
     {
       Contract.Requires(cce.NonNullElements(args));
@@ -43,8 +46,6 @@ namespace Whoop
           Environment.Exit((int)Outcome.FatalError);
         }
 
-        List<string> fileList = new List<string>();
-
         foreach (string file in WhoopEngineCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
@@ -52,10 +53,10 @@ namespace Whoop
           {
             extension = extension.ToLower();
           }
-          fileList.Add(file);
+          Program.FileList.Add(file);
         }
 
-        foreach (string file in fileList)
+        foreach (string file in Program.FileList)
         {
           Contract.Assert(file != null);
           string extension = Path.GetExtension(file);
@@ -70,88 +71,18 @@ namespace Whoop
           }
         }
 
-        DeviceDriver.ParseAndInitialize(fileList);
-        FunctionPointerInformation.ParseAndInitialize(fileList);
-        ExecutionTimer timer = null;
+        DeviceDriver.ParseAndInitialize(Program.FileList);
+        FunctionPointerInformation.ParseAndInitialize(Program.FileList);
 
         if (WhoopEngineCommandLineOptions.Get().PrintPairs)
         {
           DeviceDriver.PrintEntryPointPairs();
         }
 
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          Console.WriteLine("\n[ParsingEngine] runtime");
-          Console.WriteLine(" |");
-          timer = new ExecutionTimer();
-          timer.Start();
-        }
-
-        foreach (var ep in DeviceDriver.EntryPoints)
-        {
-          AnalysisContext ac = null;
-          new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
-          new ParsingEngine(ac, ep).Run();
-        }
-
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          timer.Stop();
-          Console.WriteLine(" |");
-          Console.WriteLine(" |--- [Total] {0}", timer.Result());
-        }
-
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          Console.WriteLine("\n[StaticLocksetAnalysisInstrumentationEngine] runtime");
-          Console.WriteLine(" |");
-          timer = new ExecutionTimer();
-          timer.Start();
-        }
-
-        foreach (var ep in DeviceDriver.EntryPoints)
-        {
-          AnalysisContext ac = null;
-          new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-            ref ac, new List<string> { ep.Name });
-
-          Analysis.SharedStateAnalyser.AnalyseMemoryRegions(ac, ep);
-          AnalysisContext.RegisterEntryPointAnalysisContext(ac, ep);
-        }
-
-        foreach (var ep in DeviceDriver.EntryPoints)
-        {
-          var ac = AnalysisContext.GetAnalysisContext(ep);
-          new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
-        }
-
-        SummaryInformationParser.ToFile(fileList);
-
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          timer.Stop();
-          Console.WriteLine(" |");
-          Console.WriteLine(" |--- [Total] {0}", timer.Result());
-        }
-
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          Console.WriteLine("\n[PairWiseCheckingInstrumentationEngine] runtime");
-          Console.WriteLine(" |");
-          timer = new ExecutionTimer();
-          timer.Start();
-        }
-
-        AnalysisContext analysisContext = null;
-        new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref analysisContext);
-        new PairWiseCheckingInstrumentationEngine(analysisContext).Run();
-
-        if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
-        {
-          timer.Stop();
-          Console.WriteLine(" |");
-          Console.WriteLine(" |--- [Total] {0}\n", timer.Result());
-        }
+        Program.RunParsingEngine();
+        Program.RunStaticLocksetAnalysisInstrumentationEngine();
+        Program.RunPairWiseCheckingInstrumentationEngine();
+        Program.RunSummaryGenerationEngine();
 
         Environment.Exit((int)Outcome.Done);
       }
@@ -160,6 +91,116 @@ namespace Whoop
         Console.Error.Write("Exception thrown in Whoop: ");
         Console.Error.WriteLine(e);
         Environment.Exit((int)Outcome.FatalError);
+      }
+    }
+
+    private static void RunParsingEngine()
+    {
+      Program.StartTimer("ParsingEngine");
+
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        AnalysisContext ac = null;
+        new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1],
+          "bpl").TryParseNew(ref ac);
+        new ParsingEngine(ac, ep).Run();
+      }
+
+      Program.StopTimer();
+    }
+
+    private static void RunStaticLocksetAnalysisInstrumentationEngine()
+    {
+      Program.StartTimer("StaticLocksetAnalysisInstrumentationEngine");
+
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        AnalysisContext ac = null;
+        new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1], "wbpl").TryParseNew(
+          ref ac, new List<string> { ep.Name });
+
+        Analysis.SharedStateAnalyser.AnalyseMemoryRegions(ac, ep);
+        AnalysisContext.RegisterEntryPointAnalysisContext(ac, ep);
+      }
+
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        var ac = AnalysisContext.GetAnalysisContext(ep);
+        new StaticLocksetAnalysisInstrumentationEngine(ac, ep).Run();
+      }
+
+      Program.StopTimer();
+
+      if (!WhoopEngineCommandLineOptions.Get().SkipInference)
+        return;
+
+      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        var ac = AnalysisContext.GetAnalysisContext(ep);
+        Whoop.IO.BoogieProgramEmitter.Emit(ac.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
+          WhoopEngineCommandLineOptions.Get().Files.Count - 1], ep.Name + "_instrumented", "wbpl");
+      }
+
+      SummaryInformationParser.ToFile(Program.FileList);
+    }
+
+    private static void RunSummaryGenerationEngine()
+    {
+      if (WhoopEngineCommandLineOptions.Get().SkipInference)
+        return;
+
+      Program.StartTimer("SummaryGenerationEngine");
+
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        var ac = AnalysisContext.GetAnalysisContext(ep);
+
+        new SummaryGenerationEngine(ac, ep).Run();
+      }
+
+      Program.StopTimer();
+
+      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        var ac = AnalysisContext.GetAnalysisContext(ep);
+        Whoop.IO.BoogieProgramEmitter.Emit(ac.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
+          WhoopEngineCommandLineOptions.Get().Files.Count - 1], ep.Name + "_instrumented", "wbpl");
+      }
+
+      SummaryInformationParser.ToFile(Program.FileList);
+    }
+
+    private static void RunPairWiseCheckingInstrumentationEngine()
+    {
+      Program.StartTimer("PairWiseCheckingInstrumentationEngine");
+
+      AnalysisContext analysisContext = null;
+      new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1], "bpl").TryParseNew(ref analysisContext);
+      new PairWiseCheckingInstrumentationEngine(analysisContext).Run();
+
+      Program.StopTimer();
+    }
+
+    private static void StartTimer(string engineName)
+    {
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Console.WriteLine("\n[" + engineName + "] runtime");
+        Console.WriteLine(" |");
+        Program.Timer = new ExecutionTimer();
+        Program.Timer.Start();
+      }
+    }
+
+    private static void StopTimer()
+    {
+      if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Program.Timer.Stop();
+        Console.WriteLine(" |");
+        Console.WriteLine(" |--- [Total] {0}\n", Program.Timer.Result());
       }
     }
   }

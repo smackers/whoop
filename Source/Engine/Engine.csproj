@@ -57,5 +57,6 @@
     <Compile Include="ParsingEngine.cs" />
     <Compile Include="PairWiseCheckingInstrumentationEngine.cs" />
     <Compile Include="StaticLocksetAnalysisInstrumentationEngine.cs" />
+    <Compile Include="SummaryGenerationEngine.cs" />
   </ItemGroup>
 </Project>

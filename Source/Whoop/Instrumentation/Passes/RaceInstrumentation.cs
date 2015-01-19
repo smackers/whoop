@@ -26,7 +26,7 @@ namespace Whoop.Instrumentation
 {
   internal class RaceInstrumentation : IRaceInstrumentation
   {
-    protected AnalysisContext AC;
+    private AnalysisContext AC;
     private EntryPoint EP;
     private ExecutionTimer Timer;
 

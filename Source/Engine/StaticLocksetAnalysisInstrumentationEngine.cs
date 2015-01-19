@@ -26,8 +26,6 @@ namespace Whoop
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
-    private static HashSet<string> AlreadyInstrumented = new HashSet<string>();
-
     public StaticLocksetAnalysisInstrumentationEngine(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
@@ -37,9 +35,6 @@ namespace Whoop
 
     public void Run()
     {
-      if (StaticLocksetAnalysisInstrumentationEngine.AlreadyInstrumented.Contains(this.EP.Name))
-        return;
-
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         Console.WriteLine(" |------ [{0}]", this.EP.Name);
@@ -72,22 +67,12 @@ namespace Whoop
         WhoopEngineCommandLineOptions.Get().InliningBound)
       {
         this.AC.InlineEntryPoint(this.EP);
-
         Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateDomainKnowledgeSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
       }
       else
       {
-        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.Factory.CreateDomainKnowledgeSummaryGeneration(this.AC, this.EP).Run();
-        Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
-
         ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
+        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
       }
 
       ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
@@ -99,12 +84,6 @@ namespace Whoop
         Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
         Console.WriteLine(" |");
       }
-
-      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
-        WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_instrumented", "wbpl");
-
-      StaticLocksetAnalysisInstrumentationEngine.AlreadyInstrumented.Add(this.EP.Name);
     }
   }
 }
