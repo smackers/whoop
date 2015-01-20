@@ -45,12 +45,6 @@ namespace Whoop.Analysis
       }
 
       this.IdentifyAndCreateUniqueLocks();
-
-//      if (WhoopCommandLineOptions.Get().ModelKernelLocks)
-//      {
-//        this.CreateKernelLocks();
-//      }
-
       this.CreateKernelLocks();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)

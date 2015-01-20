@@ -213,6 +213,9 @@ namespace Whoop.Instrumentation
               call = new CallCmd(Token.NoToken,
                 this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
                 new List<Expr> { ind }, new List<IdentifierExpr>());
+
+              if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
+                region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, true);
             }
             else
             {
@@ -221,9 +224,6 @@ namespace Whoop.Instrumentation
             }
 
             block.Cmds.Insert(idx + 1, call);
-
-            if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
-              region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, true);
           }
 
           foreach (var rhs in (c as AssignCmd).Rhss.OfType<NAryExpr>())
@@ -239,6 +239,9 @@ namespace Whoop.Instrumentation
               call = new CallCmd(Token.NoToken,
                 this.MakeAccessFuncName(AccessType.READ, (rhs.Args[0] as IdentifierExpr).Name),
                 new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
+
+              if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
+                region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, true);
             }
             else
             {
@@ -247,9 +250,6 @@ namespace Whoop.Instrumentation
             }
 
             block.Cmds.Insert(idx + 1, call);
-
-            if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
-              region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, true);
           }
         }
       }

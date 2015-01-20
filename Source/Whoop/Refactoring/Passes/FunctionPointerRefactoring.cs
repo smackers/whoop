@@ -28,8 +28,6 @@ namespace Whoop.Refactoring
     private Implementation Implementation;
     private ExecutionTimer Timer;
 
-    private Graph<Implementation> CallGraph;
-
     private HashSet<Implementation> AlreadyRefactoredFunctions;
     private Dictionary<string, int> NameCounter;
 
@@ -40,7 +38,6 @@ namespace Whoop.Refactoring
       this.EP = ep;
 
       this.Implementation = this.AC.GetImplementation(ep.Name);
-      this.CallGraph = this.BuildCallGraph();
 
       this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
       this.NameCounter = new Dictionary<string, int>();
@@ -193,7 +190,7 @@ namespace Whoop.Refactoring
     private void RefactorFunctionPointersInCallGraph(Implementation impl, int index, Tuple<string, string> macro,
       Dictionary<string, Block> funcPtrBlocks, Stack<Tuple<Implementation, CallCmd>> outcome)
     {
-      var predecessors = this.CallGraph.Predecessors(impl);
+      var predecessors = this.EP.OriginalCallGraph.Predecessors(impl);
       if (predecessors.Count == 0)
         return;
 
@@ -500,27 +497,6 @@ namespace Whoop.Refactoring
       var newCons = new Constant(Token.NoToken, new TypedIdent(Token.NoToken,
         consName, Microsoft.Boogie.Type.Int), true);
       return newCons;
-    }
-
-    private Graph<Implementation> BuildCallGraph()
-    {
-      var callGraph = new Graph<Implementation>();
-
-      foreach (var implementation in this.AC.TopLevelDeclarations.OfType<Implementation>())
-      {
-        foreach (var block in implementation.Blocks)
-        {
-          foreach (var call in block.Cmds.OfType<CallCmd>())
-          {
-            var callee = this.AC.GetImplementation(call.callee);
-            if (callee == null || !Utilities.ShouldAccessFunction(callee.Name))
-              continue;
-            callGraph.AddEdge(implementation, callee);
-          }
-        }
-      }
-
-      return callGraph;
     }
 
     private bool TryGetIndex(Implementation impl, Expr ptrExpr, out int index)

@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 using System;
+using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
 
 namespace Whoop.Refactoring

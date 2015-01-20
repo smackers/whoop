@@ -194,6 +194,9 @@ namespace Whoop.Summarisation
 
     private void InstrumentWriteAccessInvariantsInRegion(InstrumentationRegion region)
     {
+      if (region.IsNotAccessingResources || region.IsNotWriteAccessingResources)
+        return;
+
       foreach (var pair in region.GetResourceAccesses())
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));
@@ -259,6 +262,9 @@ namespace Whoop.Summarisation
 
     private void InstrumentReadAccessInvariantsInRegion(InstrumentationRegion region)
     {
+      if (region.IsNotAccessingResources || region.IsNotReadAccessingResources)
+        return;
+
       foreach (var pair in region.GetResourceAccesses())
       {
         var raVars = base.ReadAccessCheckingVariables.FindAll(val => val.Name.Contains(pair.Key));

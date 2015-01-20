@@ -102,6 +102,8 @@
     <Compile Include="Utilities\WhoopCommandLineOptions.cs" />
     <Compile Include="Analysis\Passes\PairWatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Interfaces\IPairWatchdogInformationAnalysis.cs" />
+    <Compile Include="Analysis\Passes\ParameterAliasAnalysis.cs" />
+    <Compile Include="Analysis\Interfaces\IParameterAliasAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

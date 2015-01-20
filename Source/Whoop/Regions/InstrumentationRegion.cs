@@ -46,9 +46,14 @@ namespace Whoop.Regions
     internal bool IsHoldingPowerLock;
     internal bool IsHoldingRtnlLock;
     internal bool IsHoldingNetLock;
+    internal bool IsNotHoldingNetLock;
+    internal bool IsReleasingNetLock;
     internal bool IsHoldingTxLock;
     internal bool IsDeviceRegistered;
+
     internal bool IsNotAccessingResources;
+    internal bool IsNotWriteAccessingResources;
+    internal bool IsNotReadAccessingResources;
 
     private Dictionary<string, List<Expr>> ResourceAccesses;
     private Dictionary<string, List<Expr>> LocalResourceAccesses;
@@ -83,9 +88,14 @@ namespace Whoop.Regions
       this.IsHoldingPowerLock = false;
       this.IsHoldingRtnlLock = false;
       this.IsHoldingNetLock = false;
+      this.IsNotHoldingNetLock = false;
+      this.IsReleasingNetLock = false;
       this.IsHoldingTxLock = false;
       this.IsDeviceRegistered = true;
+
       this.IsNotAccessingResources = false;
+      this.IsNotWriteAccessingResources = false;
+      this.IsNotReadAccessingResources = false;
 
       this.ResourceAccesses = new Dictionary<string, List<Expr>>();
       this.LocalResourceAccesses = new Dictionary<string, List<Expr>>();

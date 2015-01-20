@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Boogie;
 using Whoop.Regions;
 
 namespace Whoop.Domain.Drivers
@@ -22,6 +23,7 @@ namespace Whoop.Domain.Drivers
 
     public readonly Module Module;
 
+    internal Graph<Implementation> OriginalCallGraph;
     internal Graph<InstrumentationRegion> CallGraph;
 
     public readonly bool IsInit;

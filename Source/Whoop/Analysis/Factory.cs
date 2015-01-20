@@ -26,6 +26,11 @@ namespace Whoop.Analysis
       return new LockAbstraction(ac);
     }
 
+    public static IParameterAliasAnalysis CreateParameterAliasAnalysis(AnalysisContext ac, EntryPoint ep)
+    {
+      return new ParameterAliasAnalysis(ac, ep);
+    }
+
     public static IWatchdogInformationAnalysis CreateWatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
     {
       return new WatchdogInformationAnalysis(ac, ep);

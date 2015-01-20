@@ -52,6 +52,8 @@ namespace Whoop.Refactoring
         this.Timer.Start();
       }
 
+      this.EP.OriginalCallGraph = this.BuildCallGraph();
+
       this.AnalyseAndInstrumentLocks(this.Implementation);
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
@@ -96,6 +98,12 @@ namespace Whoop.Refactoring
               this.EP.IsCallingRtnlLock = true;
               continue;
             }
+            else if (call.callee.Contains("netif_device_attach"))
+            {
+              if (!this.EP.IsNetLocked)
+                this.EP.IsCallingNetLock = true;
+              continue;
+            }
             else if (call.callee.Contains("netif_device_detach"))
             {
               if (!this.EP.IsNetLocked)
@@ -112,7 +120,7 @@ namespace Whoop.Refactoring
             if (call.callee.Contains("mutex_lock") ||
                 call.callee.Contains("mutex_unlock"))
             {
-              Expr lockExpr = PointerArithmeticAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
+              var lockExpr = PointerArithmeticAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
               if (inPtrs != null && (!(lockExpr is LiteralExpr) || (lockExpr is NAryExpr)))
               {
                 if (lockExpr is IdentifierExpr)
@@ -153,7 +161,12 @@ namespace Whoop.Refactoring
                 }
               }
 
-              if (!matched)
+              if (!matched && this.AC.Locks.FindAll(val => !val.IsKernelSpecific).Count == 1)
+              {
+                var l = this.AC.Locks.Find(val => !val.IsKernelSpecific);
+                call.Ins[0] = new IdentifierExpr(l.Id.tok, l.Id);
+              }
+              else if (!matched)
               {
                 call.Ins[0] = lockExpr;
               }
@@ -219,6 +232,27 @@ namespace Whoop.Refactoring
           this.AnalyseAndInstrumentLocks(impl);
         }
       }
+    }
+
+    private Graph<Implementation> BuildCallGraph()
+    {
+      var callGraph = new Graph<Implementation>();
+
+      foreach (var implementation in this.AC.TopLevelDeclarations.OfType<Implementation>())
+      {
+        foreach (var block in implementation.Blocks)
+        {
+          foreach (var call in block.Cmds.OfType<CallCmd>())
+          {
+            var callee = this.AC.GetImplementation(call.callee);
+            if (callee == null || !Utilities.ShouldAccessFunction(callee.Name))
+              continue;
+            callGraph.AddEdge(implementation, callee);
+          }
+        }
+      }
+
+      return callGraph;
     }
   }
 }

@@ -15,7 +15,7 @@ using Whoop.Regions;
 
 namespace Whoop
 {
-  internal class Graph<Node>
+  public class Graph<Node>
   {
     #region fields
 

@@ -291,19 +291,22 @@ namespace Whoop.Regions
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
+        Requires require = null;
+        if (ls.Lock.Name.Equals("lock$net") &&
+            (ls.EntryPoint.KernelFunc.Equals("resume") ||
+            ls.EntryPoint.KernelFunc.Equals("restore") ||
+            ls.EntryPoint.KernelFunc.Equals("runtime_resume")))
+        {
+          require = new Requires(false, new IdentifierExpr(ls.Id.tok,
+            new Duplicator().Visit(ls.Id.Clone()) as Variable));
+        }
+        else
+        {
+          require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
+            new Duplicator().Visit(ls.Id.Clone()) as Variable)));
+        }
 
-//        if (WhoopCommandLineOptions.Get().ModelKernelLocks &&
-//          ls.Lock.Name.Equals("lock$rtnl"))
-//          continue;
-
-
-        var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
-          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
-
-//        Ensures ensure = new Ensures(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
-//                           new Duplicator().Visit(ls.Id.Clone()) as Variable)));
-//        this.InternalImplementation.Proc.Ensures.Add(ensure);
       }
 
       foreach (var ls in this.AC.MemoryLocksets)
@@ -789,6 +792,10 @@ namespace Whoop.Regions
 
     private bool IsLockUsed(Lockset ls)
     {
+      if (ls.Lock.Name.Equals("lock$net") && (ls.EntryPoint.KernelFunc.Equals("resume") ||
+          ls.EntryPoint.KernelFunc.Equals("restore") || ls.EntryPoint.KernelFunc.Equals("runtime_resume")))
+        return true;
+
       if ((ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
         !this.EP1.IsCallingPowerLock && !this.EP1.IsPowerLocked))
         return false;
@@ -813,6 +820,7 @@ namespace Whoop.Regions
       if ((ls.Lock.Name.Equals("lock$tx") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
         !this.EP2.IsCallingTxLock && !this.EP2.IsTxLocked))
         return false;
+
       return true;
     }
 
