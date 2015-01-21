@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Boogie;
 using Whoop.Regions;
 
@@ -23,16 +24,20 @@ namespace Whoop.Domain.Drivers
 
     public readonly Module Module;
 
+    public readonly bool IsInit;
+    public readonly bool IsClone;
+
+    public readonly bool IsGoingToDisableNetwork;
+    public readonly bool IsCalledWithNetworkDisabled;
+
+    public readonly bool IsDeviceLocked;
+    public readonly bool IsPowerLocked;
+    public readonly bool IsRtnlLocked;
+    public readonly bool IsNetLocked;
+    public readonly bool IsTxLocked;
+
     internal Graph<Implementation> OriginalCallGraph;
     internal Graph<InstrumentationRegion> CallGraph;
-
-    public readonly bool IsInit;
-
-    internal readonly bool IsDeviceLocked;
-    internal readonly bool IsPowerLocked;
-    internal readonly bool IsRtnlLocked;
-    internal readonly bool IsNetLocked;
-    internal readonly bool IsTxLocked;
 
     internal bool IsInlined;
     internal bool IsCallingPowerLock;
@@ -45,7 +50,7 @@ namespace Whoop.Domain.Drivers
     internal bool IsHoldingLock;
     internal bool IsChangingDeviceRegistration;
 
-    public EntryPoint(string name, string kernelFunc, Module module)
+    public EntryPoint(string name, string kernelFunc, Module module, bool isClone = false)
     {
       this.Name = name;
       this.KernelFunc = kernelFunc;
@@ -60,6 +65,8 @@ namespace Whoop.Domain.Drivers
       {
         this.IsInit = false;
       }
+
+      this.IsClone = isClone;
 
       if (DeviceDriver.HasKernelImposedDeviceLock(kernelFunc))
         this.IsDeviceLocked = true;
@@ -86,6 +93,16 @@ namespace Whoop.Domain.Drivers
       else
         this.IsTxLocked = false;
 
+      if (DeviceDriver.IsGoingToDisableNetwork(kernelFunc))
+        this.IsGoingToDisableNetwork = true;
+      else
+        this.IsGoingToDisableNetwork = false;
+
+      if (DeviceDriver.IsCalledWithNetworkDisabled(kernelFunc))
+        this.IsCalledWithNetworkDisabled = true;
+      else
+        this.IsCalledWithNetworkDisabled = false;
+
       this.IsInlined = false;
       this.IsCallingPowerLock = false;
       this.IsCallingRtnlLock = false;
@@ -96,6 +113,28 @@ namespace Whoop.Domain.Drivers
       this.HasReadAccess = new Dictionary<string, bool>();
       this.IsHoldingLock = false;
       this.IsChangingDeviceRegistration = false;
+    }
+
+    internal void RebuildCallGraph(AnalysisContext ac)
+    {
+      var callGraph = new Graph<InstrumentationRegion>();
+
+      foreach (var region in ac.InstrumentationRegions)
+      {
+        foreach (var block in region.Implementation().Blocks)
+        {
+          foreach (var call in block.Cmds.OfType<CallCmd>())
+          {
+            if (!ac.InstrumentationRegions.Any(val => val.Implementation().Name.Equals(call.callee)))
+              continue;
+            var calleeRegion = ac.InstrumentationRegions.Find(val =>
+              val.Implementation().Name.Equals(call.callee));
+            callGraph.AddEdge(region, calleeRegion);
+          }
+        }
+      }
+
+      this.CallGraph = callGraph;
     }
   }
 }

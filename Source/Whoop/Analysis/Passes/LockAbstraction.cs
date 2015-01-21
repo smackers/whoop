@@ -95,26 +95,20 @@ namespace Whoop.Analysis
       var rtnlLock = new Lock(new Constant(Token.NoToken,
         new TypedIdent(Token.NoToken, "lock$rtnl",
           Microsoft.Boogie.Type.Int), true));
-      var netLock = new Lock(new Constant(Token.NoToken,
-        new TypedIdent(Token.NoToken, "lock$net",
-          Microsoft.Boogie.Type.Int), true));
       var txLock = new Lock(new Constant(Token.NoToken,
         new TypedIdent(Token.NoToken, "lock$tx",
           Microsoft.Boogie.Type.Int), true));
 
       powerLock.Id.AddAttribute("lock", new object[] { });
       rtnlLock.Id.AddAttribute("lock", new object[] { });
-      netLock.Id.AddAttribute("lock", new object[] { });
       txLock.Id.AddAttribute("lock", new object[] { });
 
       this.AC.TopLevelDeclarations.Add(powerLock.Id);
       this.AC.TopLevelDeclarations.Add(rtnlLock.Id);
-      this.AC.TopLevelDeclarations.Add(netLock.Id);
       this.AC.TopLevelDeclarations.Add(txLock.Id);
 
       this.AC.Locks.Add(powerLock);
       this.AC.Locks.Add(rtnlLock);
-      this.AC.Locks.Add(netLock);
       this.AC.Locks.Add(txLock);
     }
   }

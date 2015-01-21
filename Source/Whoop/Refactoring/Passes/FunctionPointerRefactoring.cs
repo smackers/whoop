@@ -37,7 +37,15 @@ namespace Whoop.Refactoring
       this.AC = ac;
       this.EP = ep;
 
-      this.Implementation = this.AC.GetImplementation(ep.Name);
+      if (ep.IsClone && (ep.IsCalledWithNetworkDisabled || ep.IsGoingToDisableNetwork))
+      {
+        var name = ep.Name.Remove(ep.Name.IndexOf("#net"));
+        this.Implementation = this.AC.GetImplementation(name);
+      }
+      else
+      {
+        this.Implementation = this.AC.GetImplementation(ep.Name);
+      }
 
       this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
       this.NameCounter = new Dictionary<string, int>();

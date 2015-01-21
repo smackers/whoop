@@ -65,8 +65,11 @@ namespace Whoop.Regions
       this.InParamMapEP1 = new Dictionary<string, IdentifierExpr>();
       this.InParamMapEP2 = new Dictionary<string, IdentifierExpr>();
 
-      Implementation impl1 = this.AC.GetImplementation(ep1.Name);
-      Implementation impl2 = this.AC.GetImplementation(ep2.Name);
+      var ac1 = AnalysisContext.GetAnalysisContext(ep1);
+      var ac2 = AnalysisContext.GetAnalysisContext(ep2);
+
+      Implementation impl1 = ac1.GetImplementation(ep1.Name);
+      Implementation impl2 = ac2.GetImplementation(ep2.Name);
 
       this.CreateInParamMatcher(impl1, impl2);
       this.CreateImplementation(impl1, impl2);
@@ -291,21 +294,8 @@ namespace Whoop.Regions
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
-        Requires require = null;
-        if (ls.Lock.Name.Equals("lock$net") &&
-            (ls.EntryPoint.KernelFunc.Equals("resume") ||
-            ls.EntryPoint.KernelFunc.Equals("restore") ||
-            ls.EntryPoint.KernelFunc.Equals("runtime_resume")))
-        {
-          require = new Requires(false, new IdentifierExpr(ls.Id.tok,
-            new Duplicator().Visit(ls.Id.Clone()) as Variable));
-        }
-        else
-        {
-          require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
-            new Duplicator().Visit(ls.Id.Clone()) as Variable)));
-        }
-
+        var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok,
+          new Duplicator().Visit(ls.Id.Clone()) as Variable)));
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
@@ -651,8 +641,6 @@ namespace Whoop.Regions
       Expr checkExpr = null;
       foreach (var l in this.AC.Locks)
       {
-        if (l.Name.Equals("lock$net") && !this.EP1.IsNetLocked && !this.EP2.IsNetLocked)
-          continue;
         if (l.Name.Equals("lock$tx") && !this.EP1.IsTxLocked && !this.EP2.IsTxLocked)
           continue;
 
@@ -716,11 +704,25 @@ namespace Whoop.Regions
       List<Expr> insEp1 = new List<Expr>();
       List<Expr> insEp2 = new List<Expr>();
 
+      string name1 = null;
+      if (this.EP1.IsClone &&
+        (this.EP1.IsCalledWithNetworkDisabled || this.EP1.IsGoingToDisableNetwork))
+        name1 = impl1.Name.Remove(impl1.Name.IndexOf("#net"));
+      else
+        name1 = impl1.Name;
+
+      string name2 = null;
+      if (this.EP2.IsClone &&
+        (this.EP2.IsCalledWithNetworkDisabled || this.EP2.IsGoingToDisableNetwork))
+        name2 = impl2.Name.Remove(impl2.Name.IndexOf("#net"));
+      else
+        name2 = impl2.Name;
+
       foreach (Block block in initFunc.Blocks)
       {
         foreach (CallCmd call in block.Cmds.OfType<CallCmd>())
         {
-          if (call.callee.Equals(impl1.Name))
+          if (call.callee.Equals(name1))
           {
             foreach (var inParam in call.Ins)
             {
@@ -737,7 +739,7 @@ namespace Whoop.Regions
             }
           }
 
-          if (call.callee.Equals(impl2.Name))
+          if (call.callee.Equals(name2))
           {
             foreach (var inParam in call.Ins)
             {
@@ -792,10 +794,6 @@ namespace Whoop.Regions
 
     private bool IsLockUsed(Lockset ls)
     {
-      if (ls.Lock.Name.Equals("lock$net") && (ls.EntryPoint.KernelFunc.Equals("resume") ||
-          ls.EntryPoint.KernelFunc.Equals("restore") || ls.EntryPoint.KernelFunc.Equals("runtime_resume")))
-        return true;
-
       if ((ls.Lock.Name.Equals("lock$power") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
         !this.EP1.IsCallingPowerLock && !this.EP1.IsPowerLocked))
         return false;
@@ -807,12 +805,6 @@ namespace Whoop.Regions
         return false;
       if ((ls.Lock.Name.Equals("lock$rtnl") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
         !this.EP2.IsCallingRtnlLock && !this.EP2.IsRtnlLocked))
-        return false;
-      if ((ls.Lock.Name.Equals("lock$net") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
-        !this.EP1.IsCallingNetLock && !this.EP1.IsNetLocked))
-        return false;
-      if ((ls.Lock.Name.Equals("lock$net") && ls.EntryPoint.Name.Equals(this.EP2.Name) &&
-        !this.EP2.IsCallingNetLock && !this.EP2.IsNetLocked))
         return false;
       if ((ls.Lock.Name.Equals("lock$tx") && ls.EntryPoint.Name.Equals(this.EP1.Name) &&
         !this.EP1.IsCallingTxLock && !this.EP1.IsTxLocked))

@@ -68,7 +68,6 @@ namespace Whoop
           Console.WriteLine(" |");
         }
 
-        WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
         Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations,
           WhoopEngineCommandLineOptions.Get().Files[
             WhoopEngineCommandLineOptions.Get().Files.Count - 1], "check_" +

@@ -36,5 +36,15 @@ namespace Whoop.Refactoring
     {
       return new FunctionPointerRefactoring(ac, ep);
     }
+
+    public static INetDisableProgramSlicing CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    {
+      return new NetDisableProgramSlicing(ac, ep);
+    }
+
+    public static INetEnableProgramSlicing CreateNetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    {
+      return new NetEnableProgramSlicing(ac, ep);
+    }
   }
 }

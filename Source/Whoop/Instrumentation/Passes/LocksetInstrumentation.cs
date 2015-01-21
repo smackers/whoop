@@ -54,6 +54,8 @@ namespace Whoop.Instrumentation
 
       this.AddUpdateLocksetFunc();
       this.AddNonCheckedFunc();
+      this.AddEnableNetworkFunc();
+      this.AddDisableNetworkFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -146,6 +148,28 @@ namespace Whoop.Instrumentation
       this.AC.ResContext.AddProcedure(proc);
     }
 
+    private void AddEnableNetworkFunc()
+    {
+      Procedure proc = new Procedure(Token.NoToken, "_ENABLE_NETWORK_$" + this.EP.Name,
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
+        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      this.AC.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
+    }
+
+    private void AddDisableNetworkFunc()
+    {
+      Procedure proc = new Procedure(Token.NoToken, "_DISABLE_NETWORK_$" + this.EP.Name,
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
+        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      this.AC.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
+    }
+
     #endregion
 
     #region lockset instrumentation
@@ -210,13 +234,9 @@ namespace Whoop.Instrumentation
         {
           if (!this.EP.IsNetLocked)
           {
-            c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            c.callee = "_ENABLE_NETWORK_$" + this.EP.Name;
             c.Ins.Clear();
             c.Outs.Clear();
-
-            var net = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$net"));
-            c.Ins.Add(new IdentifierExpr(net.tok, net));
-            c.Ins.Add(Expr.False);
 
             if (this.NetworkLockReleaser == null)
               this.NetworkLockReleaser = region;
@@ -234,13 +254,9 @@ namespace Whoop.Instrumentation
         {
           if (!this.EP.IsNetLocked)
           {
-            c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+            c.callee = "_DISABLE_NETWORK_$" + this.EP.Name;
             c.Ins.Clear();
             c.Outs.Clear();
-
-            var net = this.AC.GetLockVariables().Find(val => val.Name.Equals("lock$net"));
-            c.Ins.Add(new IdentifierExpr(net.tok, net));
-            c.Ins.Add(Expr.True);
 
             if (this.NetworkLockHolder == null)
               this.NetworkLockHolder = region;
@@ -314,17 +330,7 @@ namespace Whoop.Instrumentation
         if (this.ShouldSkipLockset(ls))
           continue;
 
-        Requires require = null;
-        if (ls.Lock.Name.Equals("lock$net") && (ls.EntryPoint.KernelFunc.Equals("resume") ||
-            ls.EntryPoint.KernelFunc.Equals("restore") || ls.EntryPoint.KernelFunc.Equals("runtime_resume")))
-        {
-          require = new Requires(false, new IdentifierExpr(ls.Id.tok, ls.Id));
-        }
-        else
-        {
-          require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
-        }
-
+        var require = new Requires(false, Expr.Not(new IdentifierExpr(ls.Id.tok, ls.Id)));
         region.Procedure().Requires.Add(require);
       }
 
@@ -418,10 +424,13 @@ namespace Whoop.Instrumentation
       foreach (var succ in successorCallees)
       {
         if (type.Equals("net"))
-          succ.IsHoldingNetLock = true;
+          succ.IsDisablingNetwork = true;
         if (type.Equals("tx"))
           succ.IsHoldingTxLock = true;
       }
+
+      if (type.Equals("net"))
+        lockHolder.IsChangingNetAvailability = true;
     }
 
     private void AnalyseLocksetFuncBackwardsUsage(string type)
@@ -516,24 +525,24 @@ namespace Whoop.Instrumentation
         predecessorCallees.UnionWith(succs);
       }
 
-//      foreach (var pred in predecessorCallees)
-//      {
-//        if (pred.Equals(lockHolder))
-//          continue;
-//        if (type.Equals("net"))
-//          pred.IsHoldingNetLock = true;
-//      }
+      foreach (var pred in predecessorCallees)
+      {
+        if (pred.Equals(lockHolder))
+          continue;
+        if (type.Equals("net"))
+          pred.IsDisablingNetwork = true;
+      }
 
-//      foreach (var succ in successorCallees)
-//      {
-//        if (succ.Equals(lockHolder))
-//          continue;
-//        if (type.Equals("net"))
-//          succ.IsNotHoldingNetLock = true;
-//      }
-//
-//      if (type.Equals("net"))
-//        lockHolder.IsReleasingNetLock = true;
+      foreach (var succ in successorCallees)
+      {
+        if (succ.Equals(lockHolder))
+          continue;
+        if (type.Equals("net"))
+          succ.IsEnablingNetwork = true;
+      }
+
+      if (type.Equals("net"))
+        lockHolder.IsChangingNetAvailability = true;
     }
 
     private bool ShouldSkipLockset(Lockset ls)
@@ -541,8 +550,6 @@ namespace Whoop.Instrumentation
       if (ls.Lock.Name.Equals("lock$power") && !this.EP.IsCallingPowerLock)
         return true;
       else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
-        return true;
-      else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
         return true;
       else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
         return true;

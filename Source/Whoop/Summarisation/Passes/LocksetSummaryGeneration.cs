@@ -74,26 +74,11 @@ namespace Whoop.Summarisation
       if (this.EP.IsHoldingLock)
       {
         var lockVars = new HashSet<Variable>();
-        var unlockVars = new HashSet<Variable>();
-        var releaseVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
           if (this.ShouldLock(region, variable))
           {
             lockVars.Add(variable);
-            continue;
-          }
-          else if (this.ShouldUnlock(region, variable))
-          {
-            unlockVars.Add(variable);
-            continue;
-          }
-          else if (this.IsReleasingLock(region, variable))
-          {
-            releaseVars.Add(variable);
-            foreach (var block in region.LoopHeaders())
-              base.InstrumentAssertCandidate(block, variable, true);
-
             continue;
           }
 
@@ -107,18 +92,6 @@ namespace Whoop.Summarisation
           base.InstrumentEnsures(region, lockVar, true);
           foreach (var block in region.LoopHeaders())
             base.InstrumentAssert(block, lockVar, true);
-        }
-
-        foreach (var lockVar in unlockVars)
-        {
-          base.InstrumentEnsures(region, lockVar, false);
-          foreach (var block in region.LoopHeaders())
-            base.InstrumentAssert(block, lockVar, false);
-        }
-
-        foreach (var lockVar in releaseVars)
-        {
-          base.InstrumentEnsures(region, lockVar, false);
         }
       }
       else
@@ -163,8 +136,7 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (this.ShouldLock(region, variable) || this.ShouldUnlock(region, variable) ||
-                  this.IsReleasingLock(region, variable))
+              if (this.ShouldLock(region, variable))
                 continue;
 
               base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
@@ -185,26 +157,11 @@ namespace Whoop.Summarisation
         }
 
         var lockVars = new HashSet<Variable>();
-        var unlockVars = new HashSet<Variable>();
-        var releaseVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
           if (this.ShouldLock(region, variable))
           {
             lockVars.Add(variable);
-            continue;
-          }
-          else if (this.ShouldUnlock(region, variable))
-          {
-            unlockVars.Add(variable);
-            continue;
-          }
-          else if (this.IsReleasingLock(region, variable))
-          {
-            releaseVars.Add(variable);
-            foreach (var block in region.LoopHeaders())
-              base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, true, true);
-
             continue;
           }
 
@@ -219,18 +176,6 @@ namespace Whoop.Summarisation
           foreach (var block in region.LoopHeaders())
             base.InstrumentAssert(block, lockVar, true);
         }
-
-        foreach (var lockVar in unlockVars)
-        {
-          base.InstrumentEnsures(region, lockVar, false);
-          foreach (var block in region.LoopHeaders())
-            base.InstrumentAssert(block, lockVar, false);
-        }
-
-        foreach (var lockVar in releaseVars)
-        {
-          base.InstrumentEnsures(region, lockVar, false);
-        }
       }
     }
 
@@ -239,26 +184,11 @@ namespace Whoop.Summarisation
       if (this.EP.IsHoldingLock)
       {
         var lockVars = new HashSet<Variable>();
-        var unlockVars = new HashSet<Variable>();
-        var releaseVars = new HashSet<Variable>();
         foreach (var variable in base.CurrentLocksetVariables)
         {
           if (this.ShouldLock(region, variable))
           {
             lockVars.Add(variable);
-            continue;
-          }
-          else if (this.ShouldUnlock(region, variable))
-          {
-            unlockVars.Add(variable);
-            continue;
-          }
-          else if (this.IsReleasingLock(region, variable))
-          {
-            releaseVars.Add(variable);
-            foreach (var block in region.LoopHeaders())
-              base.InstrumentAssertCandidate(block, variable, true);
-
             continue;
           }
 
@@ -274,20 +204,6 @@ namespace Whoop.Summarisation
           base.InstrumentEnsures(region, lockVar, true);
           foreach (var block in region.LoopHeaders())
             base.InstrumentAssert(block, lockVar, true);
-        }
-
-        foreach (var lockVar in unlockVars)
-        {
-          base.InstrumentRequires(region, lockVar, false);
-          base.InstrumentEnsures(region, lockVar, false);
-          foreach (var block in region.LoopHeaders())
-            base.InstrumentAssert(block, lockVar, false);
-        }
-
-        foreach (var lockVar in releaseVars)
-        {
-          base.InstrumentRequires(region, lockVar, true);
-          base.InstrumentEnsures(region, lockVar, false);
         }
       }
       else
@@ -334,8 +250,7 @@ namespace Whoop.Summarisation
 
             foreach (var variable in memLsVars)
             {
-              if (this.ShouldLock(region, variable) || this.ShouldUnlock(region, variable) ||
-                  this.IsReleasingLock(region, variable))
+              if (this.ShouldLock(region, variable))
                 continue;
 
               base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
@@ -357,26 +272,11 @@ namespace Whoop.Summarisation
         }
 
         var lockVars = new HashSet<Variable>();
-        var unlockVars = new HashSet<Variable>();
-        var releaseVars = new HashSet<Variable>();
         foreach (var variable in memLsVars)
         {
           if (this.ShouldLock(region, variable))
           {
             lockVars.Add(variable);
-            continue;
-          }
-          else if (this.ShouldUnlock(region, variable))
-          {
-            unlockVars.Add(variable);
-            continue;
-          }
-          else if (this.IsReleasingLock(region, variable))
-          {
-            releaseVars.Add(variable);
-            foreach (var block in region.LoopHeaders())
-              base.InstrumentImpliesAssertCandidate(block, nonWatchedExpr, variable, true, true);
-
             continue;
           }
 
@@ -392,20 +292,6 @@ namespace Whoop.Summarisation
           base.InstrumentEnsures(region, lockVar, true);
           foreach (var block in region.LoopHeaders())
             base.InstrumentAssert(block, lockVar, true);
-        }
-
-        foreach (var lockVar in unlockVars)
-        {
-          base.InstrumentRequires(region, lockVar, false);
-          base.InstrumentEnsures(region, lockVar, false);
-          foreach (var block in region.LoopHeaders())
-            base.InstrumentAssert(block, lockVar, false);
-        }
-
-        foreach (var lockVar in releaseVars)
-        {
-          base.InstrumentRequires(region, lockVar, true);
-          base.InstrumentEnsures(region, lockVar, false);
         }
       }
     }
@@ -423,25 +309,10 @@ namespace Whoop.Summarisation
       return cons;
     }
 
-    private bool IsReleasingLock(InstrumentationRegion region, Variable var)
-    {
-      if (region.IsReleasingNetLock && var.Name.StartsWith("lock$net"))
-        return true;
-      return false;
-    }
-
     private bool ShouldLock(InstrumentationRegion region, Variable var)
     {
       if ((region.IsHoldingRtnlLock && var.Name.StartsWith("lock$rtnl")) ||
-          (region.IsHoldingNetLock && var.Name.StartsWith("lock$net")) ||
           (region.IsHoldingTxLock && var.Name.StartsWith("lock$tx")))
-        return true;
-      return false;
-    }
-
-    private bool ShouldUnlock(InstrumentationRegion region, Variable var)
-    {
-      if (region.IsNotHoldingNetLock && var.Name.StartsWith("lock$net"))
         return true;
       return false;
     }

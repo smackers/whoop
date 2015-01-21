@@ -52,35 +52,13 @@ namespace Whoop.Instrumentation
         this.AC.InstrumentationRegions.Add(region);
       }
 
-      this.EP.CallGraph = this.BuildCallGraph();
+      this.EP.RebuildCallGraph(this.AC);
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
         Console.WriteLine(" |  |------ [InstrumentationRegionsConstructor] {0}", this.Timer.Result());
       }
-    }
-
-    private Graph<InstrumentationRegion> BuildCallGraph()
-    {
-      var callGraph = new Graph<InstrumentationRegion>();
-
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        foreach (var block in region.Implementation().Blocks)
-        {
-          foreach (var call in block.Cmds.OfType<CallCmd>())
-          {
-            if (!this.AC.InstrumentationRegions.Any(val => val.Implementation().Name.Equals(call.callee)))
-              continue;
-            var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
-              val.Implementation().Name.Equals(call.callee));
-            callGraph.AddEdge(region, calleeRegion);
-          }
-        }
-      }
-
-      return callGraph;
     }
 
     private bool SkipFromAnalysis(Implementation impl)

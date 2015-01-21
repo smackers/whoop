@@ -16,7 +16,7 @@ using System.Diagnostics.Contracts;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Instrumentation;
-using Whoop.Summarisation;
+using Whoop.Refactoring;
 
 namespace Whoop
 {
@@ -54,6 +54,11 @@ namespace Whoop
 
       Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();
 
+      if (this.EP.IsClone && this.EP.IsGoingToDisableNetwork)
+        Refactoring.Factory.CreateNetDisableProgramSlicing(this.AC, this.EP).Run();
+      else if (this.EP.IsClone && this.EP.IsCalledWithNetworkDisabled)
+        Refactoring.Factory.CreateNetEnableProgramSlicing(this.AC, this.EP).Run();
+
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
       if (WhoopEngineCommandLineOptions.Get().SkipInference)
@@ -67,12 +72,10 @@ namespace Whoop
         WhoopEngineCommandLineOptions.Get().InliningBound)
       {
         this.AC.InlineEntryPoint(this.EP);
-        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
       }
       else
       {
         ModelCleaner.RemoveInlineFromHelperFunctions(this.AC, this.EP);
-        Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
       }
 
       ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
@@ -83,6 +86,12 @@ namespace Whoop
         Console.WriteLine(" |  |");
         Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
         Console.WriteLine(" |");
+      }
+
+      if (WhoopEngineCommandLineOptions.Get().SkipInference)
+      {
+        Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
+          WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "$instrumented", "wbpl");
       }
     }
   }

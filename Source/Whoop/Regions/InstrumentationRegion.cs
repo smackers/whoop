@@ -42,14 +42,15 @@ namespace Whoop.Regions
     internal Dictionary<string, bool> HasReadAccess;
 
     internal bool IsChangingDeviceRegistration;
+    internal bool IsDeviceRegistered;
+
+    internal bool IsChangingNetAvailability;
+    internal bool IsEnablingNetwork;
+    internal bool IsDisablingNetwork;
 
     internal bool IsHoldingPowerLock;
     internal bool IsHoldingRtnlLock;
-    internal bool IsHoldingNetLock;
-    internal bool IsNotHoldingNetLock;
-    internal bool IsReleasingNetLock;
     internal bool IsHoldingTxLock;
-    internal bool IsDeviceRegistered;
 
     internal bool IsNotAccessingResources;
     internal bool IsNotWriteAccessingResources;
@@ -84,14 +85,15 @@ namespace Whoop.Regions
       this.HasReadAccess = new Dictionary<string, bool>();
 
       this.IsChangingDeviceRegistration = false;
+      this.IsDeviceRegistered = true;
+
+      this.IsChangingNetAvailability = false;
+      this.IsEnablingNetwork = false;
+      this.IsDisablingNetwork = false;
 
       this.IsHoldingPowerLock = false;
       this.IsHoldingRtnlLock = false;
-      this.IsHoldingNetLock = false;
-      this.IsNotHoldingNetLock = false;
-      this.IsReleasingNetLock = false;
       this.IsHoldingTxLock = false;
-      this.IsDeviceRegistered = true;
 
       this.IsNotAccessingResources = false;
       this.IsNotWriteAccessingResources = false;

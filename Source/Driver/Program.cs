@@ -88,9 +88,9 @@ namespace Whoop
             {
               string extension = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
-                extension = "_summarised";
+                extension = "$summarised";
               else
-                extension = "_instrumented";
+                extension = "$instrumented";
 
               parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
                 pair.Item2.Name, pair.Item1.Name + extension });
@@ -99,15 +99,15 @@ namespace Whoop
             {
               string extension1 = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
-                extension1 = "_summarised";
+                extension1 = "$summarised";
               else
-                extension1 = "_instrumented";
+                extension1 = "$instrumented";
 
               string extension2 = null;
               if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item2.Name))
-                extension2 = "_summarised";
+                extension2 = "$summarised";
               else
-                extension2 = "_instrumented";
+                extension2 = "$instrumented";
 
               parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
                 pair.Item2.Name, pair.Item1.Name + extension1, pair.Item2.Name + extension2 });

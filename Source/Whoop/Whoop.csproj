@@ -104,6 +104,10 @@
     <Compile Include="Analysis\Interfaces\IPairWatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Passes\ParameterAliasAnalysis.cs" />
     <Compile Include="Analysis\Interfaces\IParameterAliasAnalysis.cs" />
+    <Compile Include="Refactoring\Interfaces\INetDisableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Interfaces\INetEnableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Passes\NetDisableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Passes\NetEnableProgramSlicing.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

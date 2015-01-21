@@ -317,8 +317,6 @@ namespace Whoop.Instrumentation
         return true;
       else if (ls.Lock.Name.Equals("lock$rtnl") && !this.EP.IsCallingRtnlLock)
         return true;
-      else if (ls.Lock.Name.Equals("lock$net") && !this.EP.IsCallingNetLock)
-        return true;
       else if (ls.Lock.Name.Equals("lock$tx") && !this.EP.IsCallingTxLock)
         return true;
       return false;

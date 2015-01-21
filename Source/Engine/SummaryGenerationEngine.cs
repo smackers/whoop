@@ -15,7 +15,6 @@ using System.Diagnostics.Contracts;
 
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
-using Whoop.Instrumentation;
 using Whoop.Summarisation;
 
 namespace Whoop
@@ -49,6 +48,7 @@ namespace Whoop
       Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
       Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();
       Summarisation.Factory.CreateDomainKnowledgeSummaryGeneration(this.AC, this.EP).Run();
+
       Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
@@ -58,6 +58,9 @@ namespace Whoop
         Console.WriteLine(" |  |--- [Total] {0}", this.Timer.Result());
         Console.WriteLine(" |");
       }
+
+      Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
+        WhoopEngineCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "$instrumented", "wbpl");
     }
   }
 }

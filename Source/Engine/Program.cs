@@ -34,6 +34,7 @@ namespace Whoop
       try
       {
         WhoopEngineCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
 
         if (!WhoopEngineCommandLineOptions.Get().Parse(args))
         {
@@ -134,14 +135,6 @@ namespace Whoop
       if (!WhoopEngineCommandLineOptions.Get().SkipInference)
         return;
 
-      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      foreach (var ep in DeviceDriver.EntryPoints)
-      {
-        var ac = AnalysisContext.GetAnalysisContext(ep);
-        Whoop.IO.BoogieProgramEmitter.Emit(ac.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
-          WhoopEngineCommandLineOptions.Get().Files.Count - 1], ep.Name + "_instrumented", "wbpl");
-      }
-
       SummaryInformationParser.ToFile(Program.FileList);
     }
 
@@ -155,20 +148,16 @@ namespace Whoop
       foreach (var ep in DeviceDriver.EntryPoints)
       {
         var ac = AnalysisContext.GetAnalysisContext(ep);
+        new WatchdogAnalysisEngine(ac, ep).Run();
+      }
 
+      foreach (var ep in DeviceDriver.EntryPoints)
+      {
+        var ac = AnalysisContext.GetAnalysisContext(ep);
         new SummaryGenerationEngine(ac, ep).Run();
       }
 
       Program.StopTimer();
-
-      WhoopEngineCommandLineOptions.Get().PrintUnstructured = 2;
-      foreach (var ep in DeviceDriver.EntryPoints)
-      {
-        var ac = AnalysisContext.GetAnalysisContext(ep);
-        Whoop.IO.BoogieProgramEmitter.Emit(ac.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
-          WhoopEngineCommandLineOptions.Get().Files.Count - 1], ep.Name + "_instrumented", "wbpl");
-      }
-
       SummaryInformationParser.ToFile(Program.FileList);
     }
 

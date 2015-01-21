@@ -81,9 +81,8 @@ namespace Whoop
         Console.WriteLine(" |");
       }
 
-      WhoopCruncherCommandLineOptions.Get().PrintUnstructured = 2;
       Whoop.IO.BoogieProgramEmitter.Emit(this.PostAC.TopLevelDeclarations, WhoopCruncherCommandLineOptions.Get().Files[
-        WhoopCruncherCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "_summarised", "wbpl");
+        WhoopCruncherCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "$summarised", "wbpl");
     }
 
     private void PerformHoudini()

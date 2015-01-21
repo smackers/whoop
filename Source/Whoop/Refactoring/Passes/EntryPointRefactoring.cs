@@ -24,7 +24,8 @@ namespace Whoop.Refactoring
   internal class EntryPointRefactoring : IEntryPointRefactoring
   {
     private AnalysisContext AC;
-    private Implementation EP;
+    private EntryPoint EP;
+    private Implementation Implementation;
     private ExecutionTimer Timer;
 
     private HashSet<Implementation> FunctionsToRefactor;
@@ -34,7 +35,18 @@ namespace Whoop.Refactoring
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
-      this.EP = this.AC.GetImplementation(ep.Name);
+      this.EP = ep;
+
+      if (ep.IsClone && (ep.IsCalledWithNetworkDisabled || ep.IsGoingToDisableNetwork))
+      {
+        var name = ep.Name.Remove(ep.Name.IndexOf("#net"));
+        this.Implementation = this.AC.GetImplementation(name);
+      }
+      else
+      {
+        this.Implementation = this.AC.GetImplementation(ep.Name);
+      }
+
       this.FunctionsToRefactor = new HashSet<Implementation>();
       this.AlreadyRefactoredFunctions = new HashSet<Implementation>();
     }
@@ -51,7 +63,7 @@ namespace Whoop.Refactoring
       this.RefactorEntryPointResult();
       this.RefactorGlobalVariables();
 
-      this.ParseAndRenameNestedFunctions(this.EP);
+      this.ParseAndRenameNestedFunctions(this.Implementation);
 
       this.RefactorNestedFunctions();
       this.CleanUp();
@@ -65,18 +77,25 @@ namespace Whoop.Refactoring
 
     private void RefactorEntryPointAttributes()
     {
-      this.EP.Proc.Attributes = new QKeyValue(Token.NoToken,
+      var constant = this.AC.TopLevelDeclarations.OfType<Constant>().First(val =>
+        val.Name.Equals(this.Implementation.Name));
+      this.AC.TopLevelDeclarations.Remove(constant);
+
+      this.Implementation.Name = this.EP.Name;
+      this.Implementation.Proc.Name = this.EP.Name;
+
+      this.Implementation.Proc.Attributes = new QKeyValue(Token.NoToken,
         "entrypoint", new List<object>(), null);
-      this.EP.Attributes = new QKeyValue(Token.NoToken,
+      this.Implementation.Attributes = new QKeyValue(Token.NoToken,
         "entrypoint", new List<object>(), null);
     }
 
     private void RefactorEntryPointResult()
     {
-      this.EP.OutParams.Clear();
-      this.EP.Proc.OutParams.Clear();
+      this.Implementation.OutParams.Clear();
+      this.Implementation.Proc.OutParams.Clear();
 
-      foreach (var b in this.EP.Blocks)
+      foreach (var b in this.Implementation.Blocks)
       {
         b.Cmds.RemoveAll(cmd => (cmd is AssignCmd) && (cmd as AssignCmd).
           Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"));

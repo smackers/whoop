@@ -27,8 +27,6 @@ namespace Whoop.Domain.Drivers
     #region fields
 
     public static List<EntryPoint> EntryPoints;
-    public static List<Module> Modules;
-
     public static List<Tuple<EntryPoint, EntryPoint>> EntryPointPairs;
 
     public static string InitEntryPoint
@@ -60,7 +58,6 @@ namespace Whoop.Domain.Drivers
         files[files.Count - 1].IndexOf(".")) + ".info";
 
       DeviceDriver.EntryPoints = new List<EntryPoint>();
-      DeviceDriver.Modules = new List<Module>();
 
       using(StreamReader file = new StreamReader(driverInfoFile))
       {
@@ -75,14 +72,22 @@ namespace Whoop.Domain.Drivers
           {
             if (line.Equals("</>")) break;
             string[] pair = line.Split(new string[] { "::" }, StringSplitOptions.None);
-            EntryPoint ep = new EntryPoint(pair[1], pair[0], module);
+
+            var ep = new EntryPoint(pair[1], pair[0], module);
             module.EntryPoints.Add(ep);
+
             if (ep.IsInit) continue;
             if (DeviceDriver.EntryPoints.Any(val => val.Name.Equals(ep.Name)))
               continue;
 
             DeviceDriver.EntryPoints.Add(ep);
-            DeviceDriver.Modules.Add(module);
+
+            if (ep.IsCalledWithNetworkDisabled || ep.IsGoingToDisableNetwork)
+            {
+              var epClone = new EntryPoint(pair[1] + "#net", pair[0], module, true);
+              module.EntryPoints.Add(epClone);
+              DeviceDriver.EntryPoints.Add(epClone);
+            }
           }
         }
       }
@@ -93,6 +98,7 @@ namespace Whoop.Domain.Drivers
       {
         foreach (var ep2 in DeviceDriver.EntryPoints)
         {
+          if (!DeviceDriver.CanBePaired(ep1, ep2)) continue;
           if (!DeviceDriver.IsNewPair(ep1.Name, ep2.Name)) continue;
           if (!DeviceDriver.CanRunConcurrently(ep1.KernelFunc, ep2.KernelFunc)) continue;
           DeviceDriver.EntryPointPairs.Add(new Tuple<EntryPoint, EntryPoint>(ep1, ep2));
@@ -154,6 +160,44 @@ namespace Whoop.Domain.Drivers
       {
         return false;
       }
+
+      return true;
+    }
+
+    /// <summary>
+    /// Checks if the given entry points can be paired.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep1">first entry point</param>
+    /// <param name="ep2">second entry point</param>
+    private static bool CanBePaired(EntryPoint ep1, EntryPoint ep2)
+    {
+      if (ep1.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep2.KernelFunc))
+      {
+        if (ep1.IsClone) return true;
+        else return false;
+      }
+
+      if (ep2.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep1.KernelFunc))
+      {
+        if (ep2.IsClone) return true;
+        else return false;
+      }
+
+      if (ep1.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep2.KernelFunc))
+      {
+        if (ep1.IsClone) return true;
+        else return false;
+      }
+
+      if (ep2.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep1.KernelFunc))
+      {
+        if (ep2.IsClone) return true;
+        else return false;
+      }
+
+      if (ep1.IsClone || ep2.IsClone)
+        return false;
 
       return true;
     }
@@ -307,6 +351,9 @@ namespace Whoop.Domain.Drivers
     {
       if (DeviceDriver.HasKernelImposedRTNL(ep))
         return true;
+      if (ep.Equals("ndo_tx_timeout"))
+        return true;
+
       return false;
     }
 
@@ -326,6 +373,33 @@ namespace Whoop.Domain.Drivers
         ep.Equals("runtime_idle"))
         return true;
 
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the entry point will disable network.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsGoingToDisableNetwork(string ep)
+    {
+      if (ep.Equals("suspend") || ep.Equals("freeze") ||
+          ep.Equals("poweroff") || ep.Equals("runtime_suspend") ||
+          ep.Equals("shutdown"))
+        return true;
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the entry point has been called with network disabled.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsCalledWithNetworkDisabled(string ep)
+    {
+      if (ep.Equals("resume") || ep.Equals("restore") ||
+        ep.Equals("thaw") || ep.Equals("runtime_resume"))
+        return true;
       return false;
     }
 

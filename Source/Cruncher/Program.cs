@@ -26,6 +26,7 @@ namespace Whoop
       Contract.Requires(cce.NonNullElements(args));
 
       CommandLineOptions.Install(new WhoopCruncherCommandLineOptions());
+      WhoopCruncherCommandLineOptions.Get().PrintUnstructured = 2;
 
       try
       {
@@ -92,9 +93,9 @@ namespace Whoop
           AnalysisContext ac = null;
           AnalysisContext acPost = null;
           new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-            ref ac, new List<string> { ep.Name + "_instrumented" });
+            ref ac, new List<string> { ep.Name + "$instrumented" });
           new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl").TryParseNew(
-            ref acPost, new List<string> { ep.Name + "_instrumented" });
+            ref acPost, new List<string> { ep.Name + "$instrumented" });
           new InvariantInferrer(ac, acPost, ep).Run();
 
           alreadyCrunched.Add(ep.Name);
