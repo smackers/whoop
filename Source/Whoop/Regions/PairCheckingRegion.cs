@@ -341,6 +341,16 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
+      foreach (var inParam in this.InternalImplementation.Proc.InParams)
+      {
+        foreach (var address in this.AC.GetAllocatedAddressConstants())
+        {
+          this.InternalImplementation.Proc.Requires.Add(new Requires(
+            false, Expr.Neq(new IdentifierExpr(inParam.tok, inParam),
+            new IdentifierExpr(address.tok, address))));
+        }
+      }
+
       foreach (var ie in initProc.Modifies)
       {
         if (!ie.Name.Equals("$Alloc") && !ie.Name.Equals("$CurrAddr") &&

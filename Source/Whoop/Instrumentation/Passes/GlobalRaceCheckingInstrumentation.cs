@@ -54,6 +54,7 @@ namespace Whoop.Instrumentation
       this.AddAccessCheckingVariables();
       this.AddDomainKnowledgeVariables();
       this.AddAccessWatchdogConstants();
+      this.AddAllocatedAddressConstants();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -66,7 +67,7 @@ namespace Whoop.Instrumentation
     {
       foreach (var l in this.AC.GetLockVariables())
       {
-        Variable ls = new GlobalVariable(Token.NoToken,
+        var ls = new GlobalVariable(Token.NoToken,
                         new TypedIdent(Token.NoToken, l.Name + "_in_CLS_$" + this.EP.Name,
                           Microsoft.Boogie.Type.Bool));
         ls.AddAttribute("current_lockset", new object[] { });
@@ -81,7 +82,7 @@ namespace Whoop.Instrumentation
       {
         foreach (var l in this.AC.GetLockVariables())
         {
-          Variable ls = new GlobalVariable(Token.NoToken,
+          var ls = new GlobalVariable(Token.NoToken,
                           new TypedIdent(Token.NoToken, l.Name + "_in_LS_" + mr.Name +
                           "_$" + this.EP.Name, Microsoft.Boogie.Type.Bool));
           ls.AddAttribute("lockset", new object[] { });
@@ -95,11 +96,11 @@ namespace Whoop.Instrumentation
     {
       for (int i = 0; i < this.MemoryRegions.Count; i++)
       {
-        Variable wavar = new GlobalVariable(Token.NoToken,
+        var wavar = new GlobalVariable(Token.NoToken,
           new TypedIdent(Token.NoToken, "WRITTEN_" +
             this.MemoryRegions[i].Name + "_$" + this.EP.Name,
             Microsoft.Boogie.Type.Bool));
-        Variable ravar = new GlobalVariable(Token.NoToken,
+        var ravar = new GlobalVariable(Token.NoToken,
           new TypedIdent(Token.NoToken, "READ_" +
             this.MemoryRegions[i].Name + "_$" + this.EP.Name,
             Microsoft.Boogie.Type.Bool));
@@ -116,7 +117,7 @@ namespace Whoop.Instrumentation
 
     private void AddDomainKnowledgeVariables()
     {
-      Variable devReg = new GlobalVariable(Token.NoToken,
+      var devReg = new GlobalVariable(Token.NoToken,
         new TypedIdent(Token.NoToken, "DEVICE_IS_REGISTERED_$" + this.EP.Name,
           Microsoft.Boogie.Type.Bool));
       devReg.AddAttribute("domain_specific", new object[] { });
@@ -129,14 +130,23 @@ namespace Whoop.Instrumentation
     {
       for (int i = 0; i < this.MemoryRegions.Count; i++)
       {
-        TypedIdent ti = new TypedIdent(Token.NoToken,
+        var ti = new TypedIdent(Token.NoToken,
                           this.AC.GetAccessWatchdogConstantName(this.MemoryRegions[i].Name),
                           this.AC.MemoryModelType);
-        Variable watchdog = new Constant(Token.NoToken, ti, false);
+        var watchdog = new Constant(Token.NoToken, ti, false);
         watchdog.AddAttribute("watchdog", new object[] { });
 
         if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(watchdog.Name)))
           this.AC.TopLevelDeclarations.Add(watchdog);
+      }
+    }
+
+    private void AddAllocatedAddressConstants()
+    {
+      var ac = AnalysisContext.GetAnalysisContext(this.EP);
+      foreach (var addr in ac.GetAllocatedAddressConstants())
+      {
+        this.AC.TopLevelDeclarations.Add(addr);
       }
     }
   }

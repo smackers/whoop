@@ -33,6 +33,8 @@ namespace Whoop.Instrumentation
     private InstrumentationRegion DeviceRegisterHolder;
     private InstrumentationRegion DeviceUnregisterHolder;
 
+    private int AddressCounter;
+
     public DomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
@@ -41,6 +43,8 @@ namespace Whoop.Instrumentation
 
       this.DeviceRegisterHolder = null;
       this.DeviceUnregisterHolder = null;
+
+      this.AddressCounter = 0;
     }
 
     public void Run()
@@ -81,12 +85,12 @@ namespace Whoop.Instrumentation
 
     private void AddRegisterDeviceFunc()
     {
-      List<Variable> inParams = new List<Variable>();
-      Variable inParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+      var inParams = new List<Variable>();
+      var inParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
         "isRegistered", Microsoft.Boogie.Type.Bool));
       inParams.Add(inParam);
 
-      Procedure proc = new Procedure(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
+      var proc = new Procedure(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
         new List<TypeVariable>(), inParams, new List<Variable>(),
         new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
@@ -100,18 +104,18 @@ namespace Whoop.Instrumentation
       this.AC.TopLevelDeclarations.Add(proc);
       this.AC.ResContext.AddProcedure(proc);
 
-      Block b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
+      var b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
 
-      List<AssignLhs> newLhss = new List<AssignLhs>();
-      List<Expr> newRhss = new List<Expr>();
+      var newLhss = new List<AssignLhs>();
+      var newRhss = new List<Expr>();
 
       newLhss.Add(new SimpleAssignLhs(devReg.tok, new IdentifierExpr(devReg.tok, devReg)));
       newRhss.Add(new IdentifierExpr(inParam.tok, inParam));
 
-      AssignCmd assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
+      var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
       b.Cmds.Add(assign);
 
-      Implementation impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
+      var impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
         new List<TypeVariable>(), inParams, new List<Variable>(),
         new List<Variable>(), new List<Block>());
       impl.Blocks.Add(b);
@@ -127,31 +131,64 @@ namespace Whoop.Instrumentation
 
     private void InstrumentImplementation(InstrumentationRegion region)
     {
-      foreach (var c in region.Cmds().OfType<CallCmd>())
+      foreach (var block in region.Blocks())
       {
-        if (c.callee.Equals("register_netdev"))
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
         {
-          c.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
-          c.Ins.Clear();
-          c.Ins.Add(Expr.True);
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+          var call = block.Cmds[idx] as CallCmd;
+          if (call.callee.Equals("register_netdev"))
+          {
+            call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
+            call.Ins.Clear();
+            call.Ins.Add(Expr.True);
 
-          if (this.DeviceRegisterHolder == null)
-            this.DeviceRegisterHolder = region;
+            if (this.DeviceRegisterHolder == null)
+              this.DeviceRegisterHolder = region;
 
-          region.IsChangingDeviceRegistration = true;
-          this.EP.IsChangingDeviceRegistration = true;
-        }
-        else if (c.callee.Equals("unregister_netdev"))
-        {
-          c.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
-          c.Ins.Clear();
-          c.Ins.Add(Expr.False);
+            region.IsChangingDeviceRegistration = true;
+            this.EP.IsChangingDeviceRegistration = true;
+          }
+          else if (call.callee.Equals("unregister_netdev"))
+          {
+            call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
+            call.Ins.Clear();
+            call.Ins.Add(Expr.False);
 
-          if (this.DeviceUnregisterHolder == null)
-            this.DeviceUnregisterHolder = region;
+            if (this.DeviceUnregisterHolder == null)
+              this.DeviceUnregisterHolder = region;
 
-          region.IsChangingDeviceRegistration = true;
-          this.EP.IsChangingDeviceRegistration = true;
+            region.IsChangingDeviceRegistration = true;
+            this.EP.IsChangingDeviceRegistration = true;
+          }
+          else if (call.callee.Equals("$alloca"))
+          {
+            var address = this.CreateNewAddressConstant();
+
+            var newLhss = new List<AssignLhs>();
+            var newRhss = new List<Expr>();
+
+            newLhss.Add(new SimpleAssignLhs(call.Outs[0].tok, call.Outs[0]));
+            newRhss.Add(new IdentifierExpr(address.tok, address));
+
+            block.Cmds[idx] = new AssignCmd(Token.NoToken, newLhss, newRhss);
+
+            if (!WhoopCommandLineOptions.Get().SkipInference &&
+                WhoopCommandLineOptions.Get().InliningBound > 0 &&
+                this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
+                WhoopCommandLineOptions.Get().InliningBound)
+            {
+              continue;
+            }
+
+            foreach (var inParam in region.Procedure().InParams)
+            {
+              region.Procedure().Requires.Add(new Requires(false, Expr.Neq(
+                new IdentifierExpr(inParam.tok, inParam),
+                new IdentifierExpr(address.tok, address))));
+            }
+          }
         }
       }
     }
@@ -297,6 +334,18 @@ namespace Whoop.Instrumentation
         if (type.Equals("unregister_netdev"))
           succ.IsDeviceRegistered = false;
       }
+    }
+
+    private Constant CreateNewAddressConstant()
+    {
+      var address = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "addr$" +
+        this.EP.Name + "$" + this.AddressCounter, Microsoft.Boogie.Type.Int), true);
+
+      address.AddAttribute("alloc_addr", new object[] { });
+      this.AC.TopLevelDeclarations.Add(address);
+      this.AddressCounter++;
+
+      return address;
     }
 
     #endregion

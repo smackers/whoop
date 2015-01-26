@@ -63,11 +63,11 @@ struct netdev_hw_addr_list {
 
 #define netdev_hw_addr_list_count(l) ((l)->count)
 #define netdev_hw_addr_list_for_each(ha, l) \
-	list_for_each_entry(ha, &(l)->list, list)
+	while (true)
 
 #define netdev_mc_count(dev) netdev_hw_addr_list_count(&(dev)->mc)
 #define netdev_for_each_mc_addr(ha, dev) \
-	netdev_hw_addr_list_for_each(ha, &(dev)->mc)
+while (true)
 
 struct net_device {
 	char name[IFNAMSIZ];
