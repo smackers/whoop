@@ -110,6 +110,8 @@
     <Compile Include="Refactoring\Passes\NetEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\DeviceEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Interfaces\IDeviceEnableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Interfaces\IDeviceDisableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

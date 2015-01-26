@@ -22,7 +22,7 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal class DeviceEnableProgramSlicing : IDeviceEnableProgramSlicing
+  internal class DeviceDisableProgramSlicing : IDeviceDisableProgramSlicing
   {
     private AnalysisContext AC;
     private EntryPoint EP;
@@ -31,7 +31,7 @@ namespace Whoop.Refactoring
     private InstrumentationRegion ChangingRegion;
     private HashSet<InstrumentationRegion> SlicedRegions;
 
-    public DeviceEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public DeviceDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
@@ -68,7 +68,7 @@ namespace Whoop.Refactoring
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
-        Console.WriteLine(" |  |------ [DeviceEnableProgramSlicing] {0}", this.Timer.Result());
+        Console.WriteLine(" |  |------ [DeviceDisableProgramSlicing] {0}", this.Timer.Result());
       }
     }
 
@@ -95,7 +95,7 @@ namespace Whoop.Refactoring
 
     private void SimplifyAccessesInChangingRegion()
     {
-      var blockGraph = Graph<Block>.BuildBlockGraph(this.ChangingRegion.Blocks());
+      var blockGraph = this.BuildBlockGraph(this.ChangingRegion.Blocks());
 
       Block devBlock = null;
       CallCmd devCall = null;
@@ -104,7 +104,7 @@ namespace Whoop.Refactoring
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (devBlock == null && call.callee.StartsWith("_REGISTER_DEVICE_"))
+          if (devBlock == null && call.callee.StartsWith("_UNREGISTER_DEVICE_"))
           {
             devBlock = block;
             devCall = call;
@@ -123,7 +123,7 @@ namespace Whoop.Refactoring
     {
       foreach (var region in predecessors)
       {
-        var blockGraph = Graph<Block>.BuildBlockGraph(region.Blocks());
+        var blockGraph = this.BuildBlockGraph(region.Blocks());
 
         Block devBlock = null;
         CallCmd devCall = null;
@@ -154,10 +154,10 @@ namespace Whoop.Refactoring
     {
       var predecessorBlocks = blockGraph.NestedPredecessors(devBlock);
       var successorBlocks = blockGraph.NestedSuccessors(devBlock);
-      predecessorBlocks.RemoveWhere(val =>
-        successorBlocks.Contains(val) || val.Equals(devBlock));
+      successorBlocks.RemoveWhere(val =>
+        predecessorBlocks.Contains(val) || val.Equals(devBlock));
 
-      foreach (var block in predecessorBlocks)
+      foreach (var block in successorBlocks)
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
@@ -171,12 +171,20 @@ namespace Whoop.Refactoring
         }
       }
 
-      if (!successorBlocks.Contains(devBlock))
+      if (!predecessorBlocks.Contains(devBlock))
       {
+        bool foundCall = false;
         foreach (var call in devBlock.Cmds.OfType<CallCmd>())
         {
-          if (call.Equals(devCall))
-            break;
+          if (!foundCall && call.Equals(devCall))
+          {
+            foundCall = true;
+            continue;
+          }
+
+          if (!foundCall)
+            continue;
+
           if (!(call.callee.StartsWith("_WRITE_LS_$M.") ||
             call.callee.StartsWith("_READ_LS_$M.")))
             continue;
@@ -196,6 +204,29 @@ namespace Whoop.Refactoring
         (val is Constant && (val as Constant).Name.Equals(region.Implementation().Name)));
       this.AC.InstrumentationRegions.Remove(region);
       this.EP.CallGraph.Remove(region);
+    }
+
+    #endregion
+
+    #region helper functions
+
+    private Graph<Block> BuildBlockGraph(List<Block> blocks)
+    {
+      var blockGraph = new Graph<Block>();
+
+      foreach (var block in blocks)
+      {
+        if (!(block.TransferCmd is GotoCmd))
+          continue;
+
+        var gotoCmd = block.TransferCmd as GotoCmd;
+        foreach (var target in gotoCmd.labelTargets)
+        {
+          blockGraph.AddEdge(block, target);
+        }
+      }
+
+      return blockGraph;
     }
 
     #endregion

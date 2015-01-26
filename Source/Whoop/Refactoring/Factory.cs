@@ -42,14 +42,19 @@ namespace Whoop.Refactoring
       return new DeviceEnableProgramSlicing(ac, ep);
     }
 
-    public static INetDisableProgramSlicing CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public static IDeviceDisableProgramSlicing CreateDeviceDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
-      return new NetDisableProgramSlicing(ac, ep);
+      return new DeviceDisableProgramSlicing(ac, ep);
     }
 
     public static INetEnableProgramSlicing CreateNetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new NetEnableProgramSlicing(ac, ep);
+    }
+
+    public static INetDisableProgramSlicing CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    {
+      return new NetDisableProgramSlicing(ac, ep);
     }
   }
 }

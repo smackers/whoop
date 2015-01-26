@@ -70,7 +70,7 @@ namespace Whoop.Instrumentation
 
       this.AnalyseDomainSpecificEnableUsage("network");
 
-      this.SliceEntryPoint();
+//      this.SliceEntryPoint();
 
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
@@ -311,7 +311,7 @@ namespace Whoop.Instrumentation
     {
       foreach (var region in this.AC.InstrumentationRegions)
       {
-        if (!region.IsDeviceRegistered && !region.IsChangingDeviceRegistration)
+        if (!region.IsDeviceRegistered || !region.IsChangingDeviceRegistration)
           continue;
 
         foreach (var c in region.Cmds().OfType<CallCmd>())
@@ -361,7 +361,8 @@ namespace Whoop.Instrumentation
       var successorCallees = new HashSet<InstrumentationRegion>();
 
       if (type.Equals("unregister_netdev"))
-        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, false, predecessorCallees, successorCallees);
+        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, false,
+          predecessorCallees, successorCallees);
 
       var predecessors = this.EP.CallGraph.NestedPredecessors(hotRegion);
       predecessorCallees.UnionWith(predecessors);
@@ -403,7 +404,8 @@ namespace Whoop.Instrumentation
       var successorCallees = new HashSet<InstrumentationRegion>();
 
       if (type.Equals("register_netdev"))
-        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, true, predecessorCallees, successorCallees);
+        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, true,
+          predecessorCallees, successorCallees);
 
       var checkedPredecessors = new HashSet<InstrumentationRegion>();
       bool foundCall = false;
@@ -490,13 +492,11 @@ namespace Whoop.Instrumentation
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (type && !foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
-            call.Ins[0].ToString().Equals("true"))
+          if (type && !foundCall && call.callee.StartsWith("_REGISTER_DEVICE_"))
           {
             foundCall = true;
           }
-          else if (!type && !foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
-            call.Ins[0].ToString().Equals("false"))
+          else if (!type && !foundCall && call.callee.StartsWith("_UNREGISTER_DEVICE_"))
           {
             foundCall = true;
           }
