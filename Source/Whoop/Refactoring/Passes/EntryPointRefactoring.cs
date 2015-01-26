@@ -236,9 +236,11 @@ namespace Whoop.Refactoring
       this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Constant) && (val as Constant).Name.Equals(DeviceDriver.InitEntryPoint));
       this.AC.TopLevelDeclarations.RemoveAll(val =>
-        (val is Procedure) && (val as Procedure).Name.Equals(DeviceDriver.InitEntryPoint));
+        (val is Procedure) && (val as Procedure).Name.Equals(DeviceDriver.InitEntryPoint) &&
+        !(val as Procedure).Equals(this.Implementation.Proc));
       this.AC.TopLevelDeclarations.RemoveAll(val =>
-        (val is Implementation) && (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint));
+        (val is Implementation) && (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint) &&
+        !(val as Implementation).Equals(this.Implementation));
     }
 
     #region helper functions

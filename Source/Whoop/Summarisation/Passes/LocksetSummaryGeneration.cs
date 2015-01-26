@@ -109,7 +109,8 @@ namespace Whoop.Summarisation
     {
       foreach (var pair in region.GetResourceAccesses())
       {
-        var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
+        var memLsVars = base.MemoryLocksetVariables.FindAll(val =>
+          val.Name.Contains(pair.Key + "_$"));
 
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
           !this.EP.HasReadAccess.ContainsKey(pair.Key))
@@ -127,7 +128,7 @@ namespace Whoop.Summarisation
         Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
-          if (!watchedVar.Name.Contains(pair.Key))
+          if (!watchedVar.Name.EndsWith(pair.Key))
             continue;
 
           foreach (var access in pair.Value)
@@ -222,7 +223,8 @@ namespace Whoop.Summarisation
     {
       foreach (var pair in region.GetResourceAccesses())
       {
-        var memLsVars = base.MemoryLocksetVariables.FindAll(val => val.Name.Contains(pair.Key));
+        var memLsVars = base.MemoryLocksetVariables.FindAll(val =>
+          val.Name.Contains(pair.Key + "_$"));
 
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
             !this.EP.HasReadAccess.ContainsKey(pair.Key))
@@ -241,7 +243,7 @@ namespace Whoop.Summarisation
         Expr nonWatchedExpr = null;
         foreach (var watchedVar in base.AccessWatchdogConstants)
         {
-          if (!watchedVar.Name.Contains(pair.Key))
+          if (!watchedVar.Name.EndsWith(pair.Key))
             continue;
 
           foreach (var access in pair.Value)

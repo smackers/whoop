@@ -22,7 +22,7 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal class NetEnableProgramSlicing : INetEnableProgramSlicing
+  internal class DeviceEnableProgramSlicing : IDeviceEnableProgramSlicing
   {
     private AnalysisContext AC;
     private EntryPoint EP;
@@ -31,13 +31,13 @@ namespace Whoop.Refactoring
     private InstrumentationRegion ChangingRegion;
     private HashSet<InstrumentationRegion> SlicedRegions;
 
-    public NetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public DeviceEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
       this.EP = ep;
 
-      this.ChangingRegion = this.AC.InstrumentationRegions.Find(val => val.IsChangingNetAvailability);
+      this.ChangingRegion = this.AC.InstrumentationRegions.Find(val => val.IsChangingDeviceRegistration);
       this.SlicedRegions = new HashSet<InstrumentationRegion>();
     }
 
@@ -68,7 +68,7 @@ namespace Whoop.Refactoring
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
-        Console.WriteLine(" |  |------ [NetEnableProgramSlicing] {0}", this.Timer.Result());
+        Console.WriteLine(" |  |------ [DeviceEnableProgramSlicing] {0}", this.Timer.Result());
       }
     }
 
@@ -82,7 +82,7 @@ namespace Whoop.Refactoring
           val.Implementation().Name.Equals(call.callee));
         if (calleeRegion == null)
           continue;
-        if (calleeRegion.IsEnablingNetwork || calleeRegion.IsChangingNetAvailability)
+        if (calleeRegion.IsDeviceRegistered || calleeRegion.IsChangingDeviceRegistration)
           continue;
 
         call.callee = "_NO_OP_$" + this.EP.Name;
@@ -97,26 +97,26 @@ namespace Whoop.Refactoring
     {
       var blockGraph = Graph<Block>.BuildBlockGraph(this.ChangingRegion.Blocks());
 
-      Block netBlock = null;
-      CallCmd netCall = null;
+      Block devBlock = null;
+      CallCmd devCall = null;
 
       foreach (var block in this.ChangingRegion.Blocks())
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (netBlock == null && call.callee.StartsWith("_ENABLE_NETWORK_"))
+          if (devBlock == null && call.callee.StartsWith("_REGISTER_DEVICE_"))
           {
-            netBlock = block;
-            netCall = call;
+            devBlock = block;
+            devCall = call;
             break;
           }
         }
 
-        if (netBlock != null)
+        if (devBlock != null)
           break;
       }
 
-      this.SimplifyAccessInBlocks(blockGraph, netBlock, netCall);
+      this.SimplifyAccessInBlocks(blockGraph, devBlock, devCall);
     }
 
     private void SimplifyAccessesInPredecessors(HashSet<InstrumentationRegion> predecessors)
@@ -125,37 +125,37 @@ namespace Whoop.Refactoring
       {
         var blockGraph = Graph<Block>.BuildBlockGraph(region.Blocks());
 
-        Block netBlock = null;
-        CallCmd netCall = null;
+        Block devBlock = null;
+        CallCmd devCall = null;
 
         foreach (var block in region.Blocks())
         {
           foreach (var call in block.Cmds.OfType<CallCmd>())
           {
-            if (netBlock == null && (predecessors.Any(val =>
+            if (devBlock == null && (predecessors.Any(val =>
               val.Implementation().Name.Equals(call.callee)) ||
               this.ChangingRegion.Implementation().Name.Equals(call.callee)))
             {
-              netBlock = block;
-              netCall = call;
+              devBlock = block;
+              devCall = call;
               break;
             }
           }
 
-          if (netBlock != null)
+          if (devBlock != null)
             break;
         }
 
-        this.SimplifyAccessInBlocks(blockGraph, netBlock, netCall);
+        this.SimplifyAccessInBlocks(blockGraph, devBlock, devCall);
       }
     }
 
-    private void SimplifyAccessInBlocks(Graph<Block> blockGraph, Block netBlock, CallCmd netCall)
+    private void SimplifyAccessInBlocks(Graph<Block> blockGraph, Block devBlock, CallCmd devCall)
     {
-      var predecessorBlocks = blockGraph.NestedPredecessors(netBlock);
-      var successorBlocks = blockGraph.NestedSuccessors(netBlock);
-      predecessorBlocks.RemoveWhere(val =>
-        successorBlocks.Contains(val) || val.Equals(netBlock));
+      var predecessorBlocks = blockGraph.NestedPredecessors(devBlock);
+      var successorBlocks = blockGraph.NestedSuccessors(devBlock);
+//      predecessorBlocks.RemoveWhere(val =>
+//        successorBlocks.Contains(val) || val.Equals(devBlock));
 
       foreach (var block in predecessorBlocks)
       {
@@ -171,11 +171,11 @@ namespace Whoop.Refactoring
         }
       }
 
-      if (!successorBlocks.Contains(netBlock))
+      if (!successorBlocks.Contains(devBlock))
       {
-        foreach (var call in netBlock.Cmds.OfType<CallCmd>())
+        foreach (var call in devBlock.Cmds.OfType<CallCmd>())
         {
-          if (call.Equals(netCall))
+          if (call.Equals(devCall))
             break;
           if (!(call.callee.StartsWith("_WRITE_LS_$M.") ||
             call.callee.StartsWith("_READ_LS_$M.")))

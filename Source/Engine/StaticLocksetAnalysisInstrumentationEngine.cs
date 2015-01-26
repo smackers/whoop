@@ -54,6 +54,9 @@ namespace Whoop
 
       Analysis.Factory.CreateSharedStateAbstraction(this.AC).Run();
 
+      if (this.EP.IsEnablingDevice)
+        Refactoring.Factory.CreateDeviceEnableProgramSlicing(this.AC, this.EP).Run();
+
       if (this.EP.IsClone && this.EP.IsGoingToDisableNetwork)
         Refactoring.Factory.CreateNetDisableProgramSlicing(this.AC, this.EP).Run();
       else if (this.EP.IsClone && this.EP.IsCalledWithNetworkDisabled)

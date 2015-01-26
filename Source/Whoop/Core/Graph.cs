@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Boogie;
 using Whoop.Regions;
 
 namespace Whoop
@@ -134,6 +135,29 @@ namespace Whoop
 
     #endregion
 
+    #region public static API
+
+    public static Graph<Block> BuildBlockGraph(List<Block> blocks)
+    {
+      var blockGraph = new Graph<Block>();
+
+      foreach (var block in blocks)
+      {
+        if (!(block.TransferCmd is GotoCmd))
+          continue;
+
+        var gotoCmd = block.TransferCmd as GotoCmd;
+        foreach (var target in gotoCmd.labelTargets)
+        {
+          blockGraph.AddEdge(block, target);
+        }
+      }
+
+      return blockGraph;
+    }
+
+    #endregion
+
     #region helper functions
 
     private void ComputePredSuccCaches()
@@ -168,9 +192,6 @@ namespace Whoop
 
     private void ComputeNestedPredecessors(Node node, HashSet<Node> nestedPred)
     {
-      if (nestedPred.Contains(node))
-        return;
-
       var predecessors = this.PredCache[node];
       foreach (var pred in predecessors)
       {
@@ -187,9 +208,6 @@ namespace Whoop
 
     private void ComputeNestedPredecessors(Node node, HashSet<Node> nestedPred, Node skipNode)
     {
-      if (nestedPred.Contains(node))
-        return;
-
       var predecessors = this.PredCache[node];
       foreach (var pred in predecessors)
       {
@@ -224,9 +242,6 @@ namespace Whoop
 
     private void ComputeNestedSuccessors(Node node, HashSet<Node> nestedSucc, Node skipNode)
     {
-      if (nestedSucc.Contains(node))
-        return;
-
       var successors = this.SuccCache[node];
       foreach (var succ in successors)
       {

@@ -48,7 +48,8 @@ namespace Whoop.Domain.Drivers
     internal Dictionary<string, bool> HasWriteAccess;
     internal Dictionary<string, bool> HasReadAccess;
     internal bool IsHoldingLock;
-    internal bool IsChangingDeviceRegistration;
+    public bool IsEnablingDevice;
+    public bool IsDisablingDevice;
 
     public EntryPoint(string name, string kernelFunc, Module module, bool isClone = false)
     {
@@ -112,7 +113,8 @@ namespace Whoop.Domain.Drivers
       this.HasWriteAccess = new Dictionary<string, bool>();
       this.HasReadAccess = new Dictionary<string, bool>();
       this.IsHoldingLock = false;
-      this.IsChangingDeviceRegistration = false;
+      this.IsEnablingDevice = false;
+      this.IsDisablingDevice = false;
     }
 
     internal void RebuildCallGraph(AnalysisContext ac)

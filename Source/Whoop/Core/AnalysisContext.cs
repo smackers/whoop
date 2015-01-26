@@ -203,7 +203,7 @@ namespace Whoop
         name.Contains("_NO_OP_") ||
         name.Contains("_DISABLE_NETWORK_") || name.Contains("_ENABLE_NETWORK_") ||
         name.Contains("_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED") ||
-        name.Contains("_REGISTER_DEVICE_"))
+        name.Contains("_REGISTER_DEVICE_") || name.Contains("_UNREGISTER_DEVICE_"))
         return true;
       return false;
     }

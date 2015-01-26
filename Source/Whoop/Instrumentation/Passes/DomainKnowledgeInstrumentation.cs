@@ -58,13 +58,16 @@ namespace Whoop.Instrumentation
       }
 
       this.AddRegisterDeviceFunc();
+      this.AddUnregisterDeviceFunc();
 
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
       }
 
+      this.AnalyseDomainSpecificEnableUsage("register_netdev");
       this.AnalyseDomainSpecificDisableUsage("unregister_netdev");
+
       this.AnalyseDomainSpecificEnableUsage("network");
 
       this.SliceEntryPoint();
@@ -72,7 +75,7 @@ namespace Whoop.Instrumentation
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
       {
-        if (!this.EP.IsChangingDeviceRegistration)
+        if (!this.EP.IsEnablingDevice && !this.EP.IsDisablingDevice)
           break;
 
         this.InstrumentProcedure(region);
@@ -89,14 +92,14 @@ namespace Whoop.Instrumentation
 
     private void AddRegisterDeviceFunc()
     {
-      var inParams = new List<Variable>();
-      var inParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
-        "isRegistered", Microsoft.Boogie.Type.Bool));
-      inParams.Add(inParam);
+      var outParams = new List<Variable>();
+      var outParam = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+        "r", Microsoft.Boogie.Type.Int));
+      outParams.Add(outParam);
 
       var proc = new Procedure(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
-        new List<TypeVariable>(), inParams, new List<Variable>(),
-        new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
+        new List<TypeVariable>(), new List<Variable>(), outParams, new List<Requires>(),
+        new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
       var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
@@ -114,13 +117,50 @@ namespace Whoop.Instrumentation
       var newRhss = new List<Expr>();
 
       newLhss.Add(new SimpleAssignLhs(devReg.tok, new IdentifierExpr(devReg.tok, devReg)));
-      newRhss.Add(new IdentifierExpr(inParam.tok, inParam));
+      newRhss.Add(Expr.True);
 
       var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
       b.Cmds.Add(assign);
 
       var impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
-        new List<TypeVariable>(), inParams, new List<Variable>(),
+        new List<TypeVariable>(), new List<Variable>(), outParams, new List<Variable>(),
+        new List<Block>());
+      impl.Blocks.Add(b);
+      impl.Proc = proc;
+      impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      this.AC.TopLevelDeclarations.Add(impl);
+    }
+
+    private void AddUnregisterDeviceFunc()
+    {
+      var proc = new Procedure(Token.NoToken, "_UNREGISTER_DEVICE_$" + this.EP.Name,
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(), new List<Requires>(),
+        new List<IdentifierExpr>(), new List<Ensures>());
+      proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+
+      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
+        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
+      Contract.Requires(devReg != null);
+
+      proc.Modifies.Add(new IdentifierExpr(devReg.tok, devReg));
+
+      this.AC.TopLevelDeclarations.Add(proc);
+      this.AC.ResContext.AddProcedure(proc);
+
+      var b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
+
+      var newLhss = new List<AssignLhs>();
+      var newRhss = new List<Expr>();
+
+      newLhss.Add(new SimpleAssignLhs(devReg.tok, new IdentifierExpr(devReg.tok, devReg)));
+      newRhss.Add(Expr.False);
+
+      var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
+      b.Cmds.Add(assign);
+
+      var impl = new Implementation(Token.NoToken, "_UNREGISTER_DEVICE_$" + this.EP.Name,
+        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
         new List<Variable>(), new List<Block>());
       impl.Blocks.Add(b);
       impl.Proc = proc;
@@ -146,25 +186,24 @@ namespace Whoop.Instrumentation
           {
             call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
-            call.Ins.Add(Expr.True);
 
             if (this.DeviceRegisterRegion == null)
               this.DeviceRegisterRegion = region;
 
             region.IsChangingDeviceRegistration = true;
-            this.EP.IsChangingDeviceRegistration = true;
+            this.EP.IsEnablingDevice = true;
           }
           else if (call.callee.Equals("unregister_netdev"))
           {
-            call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
+            call.callee = "_UNREGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
-            call.Ins.Add(Expr.False);
+            call.Outs.Clear();
 
             if (this.DeviceUnregisterRegion == null)
               this.DeviceUnregisterRegion = region;
 
             region.IsChangingDeviceRegistration = true;
-            this.EP.IsChangingDeviceRegistration = true;
+            this.EP.IsDisablingDevice = true;
           }
           else if (call.callee.Equals("netif_device_attach"))
           {
@@ -236,7 +275,7 @@ namespace Whoop.Instrumentation
 
     private void InstrumentProcedure(InstrumentationRegion region)
     {
-      if (!this.EP.IsChangingDeviceRegistration)
+      if (!this.EP.IsEnablingDevice && !this.EP.IsDisablingDevice)
         return;
 
       var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
@@ -322,7 +361,7 @@ namespace Whoop.Instrumentation
       var successorCallees = new HashSet<InstrumentationRegion>();
 
       if (type.Equals("unregister_netdev"))
-        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, predecessorCallees, successorCallees);
+        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, false, predecessorCallees, successorCallees);
 
       var predecessors = this.EP.CallGraph.NestedPredecessors(hotRegion);
       predecessorCallees.UnionWith(predecessors);
@@ -364,7 +403,7 @@ namespace Whoop.Instrumentation
       var successorCallees = new HashSet<InstrumentationRegion>();
 
       if (type.Equals("register_netdev"))
-        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, predecessorCallees, successorCallees);
+        this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, true, predecessorCallees, successorCallees);
 
       var checkedPredecessors = new HashSet<InstrumentationRegion>();
       bool foundCall = false;
@@ -443,7 +482,7 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private void AnalyseBlocksForDeviceRegisterRegion(InstrumentationRegion hotRegion,
+    private void AnalyseBlocksForDeviceRegisterRegion(InstrumentationRegion hotRegion, bool type,
       HashSet<InstrumentationRegion> predecessorCallees, HashSet<InstrumentationRegion> successorCallees)
     {
       bool foundCall = false;
@@ -451,7 +490,12 @@ namespace Whoop.Instrumentation
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (!foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
+          if (type && !foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
+            call.Ins[0].ToString().Equals("true"))
+          {
+            foundCall = true;
+          }
+          else if (!type && !foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
             call.Ins[0].ToString().Equals("false"))
           {
             foundCall = true;

@@ -404,9 +404,9 @@ namespace Whoop.Regions
       {
         if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
           continue;
-        if (dsv.Name.Contains(this.EP1.Name) && !this.EP1.IsChangingDeviceRegistration)
+        if (dsv.Name.Contains(this.EP1.Name) && !this.EP1.IsEnablingDevice && !this.EP1.IsDisablingDevice)
           continue;
-        if (dsv.Name.Contains(this.EP2.Name) && !this.EP2.IsChangingDeviceRegistration)
+        if (dsv.Name.Contains(this.EP2.Name) && !this.EP2.IsEnablingDevice && !this.EP2.IsDisablingDevice)
           continue;
 
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(

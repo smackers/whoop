@@ -37,6 +37,11 @@ namespace Whoop.Refactoring
       return new FunctionPointerRefactoring(ac, ep);
     }
 
+    public static IDeviceEnableProgramSlicing CreateDeviceEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    {
+      return new DeviceEnableProgramSlicing(ac, ep);
+    }
+
     public static INetDisableProgramSlicing CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new NetDisableProgramSlicing(ac, ep);

@@ -71,7 +71,7 @@ namespace Whoop.Summarisation
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-      if (this.EP.IsChangingDeviceRegistration)
+      if (this.EP.IsEnablingDevice || this.EP.IsDisablingDevice)
       {
         foreach (var variable in devRegVars)
         {
@@ -100,7 +100,7 @@ namespace Whoop.Summarisation
       var devRegVars = base.DomainSpecificVariables.FindAll(val =>
         val.Name.Contains("DEVICE_IS_REGISTERED_$"));
 
-      if (this.EP.IsChangingDeviceRegistration)
+      if (this.EP.IsEnablingDevice || this.EP.IsDisablingDevice)
       {
         var registeredVars = new HashSet<Variable>();
         foreach (var variable in devRegVars)
