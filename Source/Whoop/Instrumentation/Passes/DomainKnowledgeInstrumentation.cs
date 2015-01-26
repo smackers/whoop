@@ -30,8 +30,11 @@ namespace Whoop.Instrumentation
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
-    private InstrumentationRegion DeviceRegisterHolder;
-    private InstrumentationRegion DeviceUnregisterHolder;
+    private InstrumentationRegion DeviceRegisterRegion;
+    private InstrumentationRegion DeviceUnregisterRegion;
+
+    private InstrumentationRegion NetworkEnableRegion;
+    private InstrumentationRegion NetworkDisableRegion;
 
     private int AddressCounter;
 
@@ -41,8 +44,11 @@ namespace Whoop.Instrumentation
       this.AC = ac;
       this.EP = ep;
 
-      this.DeviceRegisterHolder = null;
-      this.DeviceUnregisterHolder = null;
+      this.DeviceRegisterRegion = null;
+      this.DeviceUnregisterRegion = null;
+
+      this.NetworkEnableRegion = null;
+      this.NetworkDisableRegion = null;
 
       this.AddressCounter = 0;
     }
@@ -63,6 +69,7 @@ namespace Whoop.Instrumentation
       }
 
       this.AnalyseDeviceRegistrationFuncUsage();
+      this.AnalyseNetworkEnablingFuncUsage();
       this.SliceEntryPoint();
 
       this.InstrumentEntryPointProcedure();
@@ -144,8 +151,8 @@ namespace Whoop.Instrumentation
             call.Ins.Clear();
             call.Ins.Add(Expr.True);
 
-            if (this.DeviceRegisterHolder == null)
-              this.DeviceRegisterHolder = region;
+            if (this.DeviceRegisterRegion == null)
+              this.DeviceRegisterRegion = region;
 
             region.IsChangingDeviceRegistration = true;
             this.EP.IsChangingDeviceRegistration = true;
@@ -156,11 +163,51 @@ namespace Whoop.Instrumentation
             call.Ins.Clear();
             call.Ins.Add(Expr.False);
 
-            if (this.DeviceUnregisterHolder == null)
-              this.DeviceUnregisterHolder = region;
+            if (this.DeviceUnregisterRegion == null)
+              this.DeviceUnregisterRegion = region;
 
             region.IsChangingDeviceRegistration = true;
             this.EP.IsChangingDeviceRegistration = true;
+          }
+          else if (call.callee.Equals("netif_device_attach"))
+          {
+            if (!this.EP.IsNetLocked)
+            {
+              call.callee = "_ENABLE_NETWORK_$" + this.EP.Name;
+              call.Ins.Clear();
+              call.Outs.Clear();
+
+              if (this.NetworkEnableRegion == null)
+                this.NetworkEnableRegion = region;
+
+              region.IsChangingNetAvailability = true;
+            }
+            else
+            {
+              call.callee = "_NO_OP_$" + this.EP.Name;
+              call.Ins.Clear();
+              call.Outs.Clear();
+            }
+          }
+          else if (call.callee.Equals("netif_device_detach"))
+          {
+            if (!this.EP.IsNetLocked)
+            {
+              call.callee = "_DISABLE_NETWORK_$" + this.EP.Name;
+              call.Ins.Clear();
+              call.Outs.Clear();
+
+              if (this.NetworkDisableRegion == null)
+                this.NetworkDisableRegion = region;
+
+              region.IsChangingNetAvailability = true;
+            }
+            else
+            {
+              call.callee = "_NO_OP_$" + this.EP.Name;
+              call.Ins.Clear();
+              call.Outs.Clear();
+            }
           }
           else if (call.callee.Equals("$alloca"))
           {
@@ -270,32 +317,78 @@ namespace Whoop.Instrumentation
 
     private void AnalyseDeviceRegistrationFuncUsage()
     {
-      if (!this.EP.IsChangingDeviceRegistration)
-        return;
-
-      if (this.DeviceUnregisterHolder != null)
-        this.AnalyseDomainSpecificFuncUsage("unregister_netdev");
+      this.AnalyseDomainSpecificDisableUsage("unregister_netdev");
     }
 
-    private void AnalyseDomainSpecificFuncUsage(string type)
+    private void AnalyseNetworkEnablingFuncUsage()
     {
-      InstrumentationRegion domainSpecificHolder = null;
-      if (type.Equals("register_netdev"))
-        domainSpecificHolder = this.DeviceRegisterHolder;
+      this.AnalyseDomainSpecificDisableUsage("network");
+      this.AnalyseDomainSpecificEnableUsage("network");
+    }
+
+    private void AnalyseDomainSpecificDisableUsage(string type)
+    {
+      if (type.Equals("unregister_netdev") && this.DeviceUnregisterRegion == null)
+        return;
+      if (type.Equals("network") && this.NetworkDisableRegion == null)
+        return;
+
+      InstrumentationRegion hotRegion = null;
       if (type.Equals("unregister_netdev"))
-        domainSpecificHolder = this.DeviceUnregisterHolder;
+        hotRegion = this.DeviceUnregisterRegion;
+      if (type.Equals("network"))
+        hotRegion = this.NetworkDisableRegion;
+
+      var predecessorCallees = new HashSet<InstrumentationRegion>();
+      var successorCallees = new HashSet<InstrumentationRegion>();
+
+      if (type.Equals("unregister_netdev"))
+        this.AnalyseBlocksForDeviceUnregisterRegion(hotRegion, predecessorCallees, successorCallees);
+
+      var predecessors = this.EP.CallGraph.NestedPredecessors(hotRegion);
+      predecessorCallees.UnionWith(predecessors);
+
+      var predSuccs = new HashSet<InstrumentationRegion>();
+      foreach (var pred in predecessorCallees)
+      {
+        var succs = this.EP.CallGraph.NestedSuccessors(pred, hotRegion);
+        predSuccs.UnionWith(succs);
+      }
+
+      predecessorCallees.UnionWith(predSuccs);
+
+      var successors = this.EP.CallGraph.NestedSuccessors(hotRegion);
+      successorCallees.UnionWith(successors);
+      successorCallees.RemoveWhere(val => predecessorCallees.Contains(val));
+
+      foreach (var succ in successorCallees)
+      {
+        if (type.Equals("unregister_netdev"))
+          succ.IsDeviceRegistered = false;
+        if (type.Equals("network"))
+          succ.IsDisablingNetwork = true;
+      }
+    }
+
+    private void AnalyseDomainSpecificEnableUsage(string type)
+    {
+      if (type.Equals("network") && this.NetworkEnableRegion == null)
+        return;
+
+      InstrumentationRegion lockHolder = null;
+      if (type.Equals("network"))
+        lockHolder = this.NetworkEnableRegion;
 
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
       bool foundCall = false;
-      foreach (var block in domainSpecificHolder.Blocks())
+      foreach (var block in lockHolder.Blocks())
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (!foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
-              ((type.Equals("register_netdev") && call.Ins[0].ToString().Equals("true")) ||
-              (type.Equals("unregister_netdev") && call.Ins[0].ToString().Equals("false"))))
+          if (!foundCall && call.callee.StartsWith("_UPDATE_CLS_") &&
+            call.Ins[0].ToString().Equals("lock$" + type))
           {
             foundCall = true;
           }
@@ -311,28 +404,107 @@ namespace Whoop.Instrumentation
         }
       }
 
-      var predecessors = this.EP.CallGraph.NestedPredecessors(domainSpecificHolder);
-      predecessorCallees.UnionWith(predecessors);
+      var checkedPredecessors = new HashSet<InstrumentationRegion>();
+      foundCall = false;
 
-      var predSuccs = new HashSet<InstrumentationRegion>();
-      foreach (var pred in predecessorCallees)
+      var predecessors = this.EP.CallGraph.Predecessors(lockHolder);
+      while (predecessors.Count > 0)
       {
-        var succs = this.EP.CallGraph.NestedSuccessors(pred, domainSpecificHolder);
-        predSuccs.UnionWith(succs);
+        var newPredecessors = new HashSet<InstrumentationRegion>();
+        foreach (var pred in predecessors)
+        {
+          if (checkedPredecessors.Contains(pred))
+            continue;
+
+          checkedPredecessors.Add(pred);
+
+          foreach (var block in pred.Blocks())
+          {
+            foreach (var call in block.Cmds.OfType<CallCmd>())
+            {
+              if (!foundCall && call.callee.Equals(lockHolder.Implementation().Name))
+              {
+                foundCall = true;
+              }
+
+              var region = this.AC.InstrumentationRegions.Find(val =>
+                val.Name().Equals(call.callee + "$instrumented"));
+              if (region == null) continue;
+
+              if (foundCall && !predecessorCallees.Contains(region))
+                successorCallees.Add(region);
+              else
+                predecessorCallees.Add(region);
+            }
+          }
+
+          foreach (var nestedPred in this.EP.CallGraph.Predecessors(pred))
+          {
+            if (!checkedPredecessors.Contains(nestedPred))
+              newPredecessors.Add(nestedPred);
+          }
+
+          foundCall = false;
+        }
+
+        predecessors.Clear();
+        predecessors = checkedPredecessors;
       }
 
-      predecessorCallees.UnionWith(predSuccs);
-
-      var successors = this.EP.CallGraph.NestedSuccessors(domainSpecificHolder);
+      var successors = this.EP.CallGraph.NestedSuccessors(lockHolder);
       successorCallees.UnionWith(successors);
-      successorCallees.RemoveWhere(val => predecessorCallees.Contains(val));
+      predecessorCallees.RemoveWhere(val => successorCallees.Contains(val));
+
+      foreach (var pred in predecessorCallees.ToList())
+      {
+        var succs = this.EP.CallGraph.NestedSuccessors(pred);
+        succs.RemoveWhere(val => successorCallees.Contains(val));
+        predecessorCallees.UnionWith(succs);
+      }
+
+      foreach (var pred in predecessorCallees)
+      {
+        if (pred.Equals(lockHolder))
+          continue;
+        if (type.Equals("network"))
+          pred.IsDisablingNetwork = true;
+      }
 
       foreach (var succ in successorCallees)
       {
-        if (type.Equals("register_netdev"))
-          succ.IsDeviceRegistered = true;
-        if (type.Equals("unregister_netdev"))
-          succ.IsDeviceRegistered = false;
+        if (succ.Equals(lockHolder))
+          continue;
+        if (type.Equals("network"))
+          succ.IsEnablingNetwork = true;
+      }
+
+      if (type.Equals("network"))
+        lockHolder.IsChangingNetAvailability = true;
+    }
+
+    private void AnalyseBlocksForDeviceUnregisterRegion(InstrumentationRegion hotRegion,
+      HashSet<InstrumentationRegion> predecessorCallees, HashSet<InstrumentationRegion> successorCallees)
+    {
+      bool foundCall = false;
+      foreach (var block in hotRegion.Blocks())
+      {
+        foreach (var call in block.Cmds.OfType<CallCmd>())
+        {
+          if (!foundCall && call.callee.StartsWith("_REGISTER_DEVICE_") &&
+            call.Ins[0].ToString().Equals("false"))
+          {
+            foundCall = true;
+          }
+
+          var region = this.AC.InstrumentationRegions.Find(val =>
+            val.Name().Equals(call.callee + "$instrumented"));
+          if (region == null) continue;
+
+          if (foundCall && !predecessorCallees.Contains(region))
+            successorCallees.Add(region);
+          else
+            predecessorCallees.Add(region);
+        }
       }
     }
 

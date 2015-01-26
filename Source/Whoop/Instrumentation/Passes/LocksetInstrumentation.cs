@@ -29,8 +29,6 @@ namespace Whoop.Instrumentation
     private EntryPoint EP;
     private ExecutionTimer Timer;
 
-    private InstrumentationRegion NetworkLockHolder;
-    private InstrumentationRegion NetworkLockReleaser;
     private InstrumentationRegion TransmitLockHolder;
 
     public LocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
@@ -39,8 +37,6 @@ namespace Whoop.Instrumentation
       this.AC = ac;
       this.EP = ep;
 
-      this.NetworkLockHolder = null;
-      this.NetworkLockReleaser = null;
       this.TransmitLockHolder = null;
     }
 
@@ -230,46 +226,6 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("netif_device_attach"))
-        {
-          if (!this.EP.IsNetLocked)
-          {
-            c.callee = "_ENABLE_NETWORK_$" + this.EP.Name;
-            c.Ins.Clear();
-            c.Outs.Clear();
-
-            if (this.NetworkLockReleaser == null)
-              this.NetworkLockReleaser = region;
-
-            this.EP.IsHoldingLock = true;
-          }
-          else
-          {
-            c.callee = "_NO_OP_$" + this.EP.Name;
-            c.Ins.Clear();
-            c.Outs.Clear();
-          }
-        }
-        else if (c.callee.Equals("netif_device_detach"))
-        {
-          if (!this.EP.IsNetLocked)
-          {
-            c.callee = "_DISABLE_NETWORK_$" + this.EP.Name;
-            c.Ins.Clear();
-            c.Outs.Clear();
-
-            if (this.NetworkLockHolder == null)
-              this.NetworkLockHolder = region;
-
-            this.EP.IsHoldingLock = true;
-          }
-          else
-          {
-            c.callee = "_NO_OP_$" + this.EP.Name;
-            c.Ins.Clear();
-            c.Outs.Clear();
-          }
-        }
         else if (c.callee.Equals("netif_stop_queue"))
         {
           if (!this.EP.IsTxLocked)
@@ -362,21 +318,15 @@ namespace Whoop.Instrumentation
 
     private void AnalyseDomainSpecificLockUsage()
     {
-      this.AnalyseLocksetFuncForwardsUsage("net");
-      this.AnalyseLocksetFuncBackwardsUsage("net");
       this.AnalyseLocksetFuncForwardsUsage("tx");
     }
 
     private void AnalyseLocksetFuncForwardsUsage(string type)
     {
-      if (type.Equals("net") && this.NetworkLockHolder == null)
-        return;
       if (type.Equals("tx") && this.TransmitLockHolder == null)
         return;
 
       InstrumentationRegion lockHolder = null;
-      if (type.Equals("net"))
-        lockHolder = this.NetworkLockHolder;
       if (type.Equals("tx"))
         lockHolder = this.TransmitLockHolder;
 
@@ -423,126 +373,9 @@ namespace Whoop.Instrumentation
 
       foreach (var succ in successorCallees)
       {
-        if (type.Equals("net"))
-          succ.IsDisablingNetwork = true;
         if (type.Equals("tx"))
           succ.IsHoldingTxLock = true;
       }
-
-      if (type.Equals("net"))
-        lockHolder.IsChangingNetAvailability = true;
-    }
-
-    private void AnalyseLocksetFuncBackwardsUsage(string type)
-    {
-      if (type.Equals("net") && this.NetworkLockReleaser == null)
-        return;
-
-      InstrumentationRegion lockHolder = null;
-      if (type.Equals("net"))
-        lockHolder = this.NetworkLockReleaser;
-
-      var predecessorCallees = new HashSet<InstrumentationRegion>();
-      var successorCallees = new HashSet<InstrumentationRegion>();
-
-      bool foundCall = false;
-      foreach (var block in lockHolder.Blocks())
-      {
-        foreach (var call in block.Cmds.OfType<CallCmd>())
-        {
-          if (!foundCall && call.callee.StartsWith("_UPDATE_CLS_") &&
-            call.Ins[0].ToString().Equals("lock$" + type))
-          {
-            foundCall = true;
-          }
-
-          var region = this.AC.InstrumentationRegions.Find(val =>
-            val.Name().Equals(call.callee + "$instrumented"));
-          if (region == null) continue;
-
-          if (foundCall && !predecessorCallees.Contains(region))
-            successorCallees.Add(region);
-          else
-            predecessorCallees.Add(region);
-        }
-      }
-
-      var checkedPredecessors = new HashSet<InstrumentationRegion>();
-      foundCall = false;
-
-      var predecessors = this.EP.CallGraph.Predecessors(lockHolder);
-      while (predecessors.Count > 0)
-      {
-        var newPredecessors = new HashSet<InstrumentationRegion>();
-        foreach (var pred in predecessors)
-        {
-          if (checkedPredecessors.Contains(pred))
-            continue;
-
-          checkedPredecessors.Add(pred);
-
-          foreach (var block in pred.Blocks())
-          {
-            foreach (var call in block.Cmds.OfType<CallCmd>())
-            {
-              if (!foundCall && call.callee.Equals(lockHolder.Implementation().Name))
-              {
-                foundCall = true;
-              }
-
-              var region = this.AC.InstrumentationRegions.Find(val =>
-                val.Name().Equals(call.callee + "$instrumented"));
-              if (region == null) continue;
-
-              if (foundCall && !predecessorCallees.Contains(region))
-                successorCallees.Add(region);
-              else
-                predecessorCallees.Add(region);
-            }
-          }
-
-          foreach (var nestedPred in this.EP.CallGraph.Predecessors(pred))
-          {
-            if (!checkedPredecessors.Contains(nestedPred))
-              newPredecessors.Add(nestedPred);
-          }
-
-          foundCall = false;
-        }
-
-        predecessors.Clear();
-        predecessors = checkedPredecessors;
-      }
-
-      var successors = this.EP.CallGraph.NestedSuccessors(lockHolder);
-      successorCallees.UnionWith(successors);
-      predecessorCallees.RemoveWhere(val => successorCallees.Contains(val));
-
-      foreach (var pred in predecessorCallees.ToList())
-      {
-        var succs = this.EP.CallGraph.NestedSuccessors(pred);
-        succs.RemoveWhere(val => successorCallees.Contains(val));
-        predecessorCallees.UnionWith(succs);
-      }
-
-      foreach (var pred in predecessorCallees)
-      {
-        if (pred.Equals(lockHolder))
-          continue;
-        if (type.Equals("net"))
-          pred.IsDisablingNetwork = true;
-      }
-
-      foreach (var succ in successorCallees)
-      {
-        if (succ.Equals(lockHolder))
-          continue;
-        if (type.Equals("net"))
-          succ.IsEnablingNetwork = true;
-      }
-
-      if (type.Equals("net"))
-        lockHolder.IsChangingNetAvailability = true;
     }
 
     private bool ShouldSkipLockset(Lockset ls)
