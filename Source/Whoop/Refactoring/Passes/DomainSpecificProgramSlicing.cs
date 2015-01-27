@@ -118,13 +118,6 @@ namespace Whoop.Refactoring
         if (this.EP.HasWriteAccess.ContainsKey(targetName))
           continue;
 
-//        var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
-//          val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
-
-        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
-          continue;
-
-//        Console.WriteLine("... " + wacs);
         region.Procedure().Modifies.RemoveAll(val => val.Name.Equals(acv.Name));
       }
 
@@ -136,13 +129,6 @@ namespace Whoop.Refactoring
         if (this.EP.HasReadAccess.ContainsKey(targetName))
           continue;
 
-//        var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
-//          val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, targetName)));
-
-        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
-          continue;
-
-//        Console.WriteLine("... " + racs);
         region.Procedure().Modifies.RemoveAll(val => val.Name.Equals(acv.Name));
       }
     }

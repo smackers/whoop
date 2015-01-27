@@ -240,33 +240,33 @@ namespace Whoop.Instrumentation
               call.Outs.Clear();
             }
           }
-          else if (call.callee.Equals("$alloca"))
-          {
-            var address = this.CreateNewAddressConstant();
-
-            var newLhss = new List<AssignLhs>();
-            var newRhss = new List<Expr>();
-
-            newLhss.Add(new SimpleAssignLhs(call.Outs[0].tok, call.Outs[0]));
-            newRhss.Add(new IdentifierExpr(address.tok, address));
-
-            block.Cmds[idx] = new AssignCmd(Token.NoToken, newLhss, newRhss);
-
-            if (!WhoopCommandLineOptions.Get().SkipInference &&
-                WhoopCommandLineOptions.Get().InliningBound > 0 &&
-                this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
-                WhoopCommandLineOptions.Get().InliningBound)
-            {
-              continue;
-            }
-
-            foreach (var inParam in region.Procedure().InParams)
-            {
-              region.Procedure().Requires.Add(new Requires(false, Expr.Neq(
-                new IdentifierExpr(inParam.tok, inParam),
-                new IdentifierExpr(address.tok, address))));
-            }
-          }
+//          else if (call.callee.Equals("$alloca"))
+//          {
+//            var address = this.CreateNewAddressConstant();
+//
+//            var newLhss = new List<AssignLhs>();
+//            var newRhss = new List<Expr>();
+//
+//            newLhss.Add(new SimpleAssignLhs(call.Outs[0].tok, call.Outs[0]));
+//            newRhss.Add(new IdentifierExpr(address.tok, address));
+//
+//            block.Cmds[idx] = new AssignCmd(Token.NoToken, newLhss, newRhss);
+//
+//            if (!WhoopCommandLineOptions.Get().SkipInference &&
+//                WhoopCommandLineOptions.Get().InliningBound > 0 &&
+//                this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
+//                WhoopCommandLineOptions.Get().InliningBound)
+//            {
+//              continue;
+//            }
+//
+//            foreach (var inParam in region.Procedure().InParams)
+//            {
+//              region.Procedure().Requires.Add(new Requires(false, Expr.Neq(
+//                new IdentifierExpr(inParam.tok, inParam),
+//                new IdentifierExpr(address.tok, address))));
+//            }
+//          }
         }
       }
     }

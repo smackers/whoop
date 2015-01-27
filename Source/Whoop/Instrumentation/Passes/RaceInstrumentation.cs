@@ -285,9 +285,6 @@ namespace Whoop.Instrumentation
         if (!this.EP.HasWriteAccess.ContainsKey(targetName))
           continue;
 
-//        var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
-//          val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
-
         if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
           region.Procedure().Modifies.Add(new IdentifierExpr(acv.tok, acv));
       }
@@ -299,9 +296,6 @@ namespace Whoop.Instrumentation
           continue;
         if (!this.EP.HasReadAccess.ContainsKey(targetName))
           continue;
-
-//        var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
-//          val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, targetName)));
 
         if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
           region.Procedure().Modifies.Add(new IdentifierExpr(acv.tok, acv));
