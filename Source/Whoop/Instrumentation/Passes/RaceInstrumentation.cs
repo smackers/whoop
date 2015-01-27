@@ -215,7 +215,9 @@ namespace Whoop.Instrumentation
                 new List<Expr> { ind }, new List<IdentifierExpr>());
 
               if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
-                region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, true);
+                region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, 0);
+              region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] = 
+                region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] + 1;
             }
             else
             {
@@ -241,7 +243,9 @@ namespace Whoop.Instrumentation
                 new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
 
               if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
-                region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, true);
+                region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, 0);
+              region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] = 
+                region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] + 1;
             }
             else
             {
@@ -257,13 +261,15 @@ namespace Whoop.Instrumentation
       foreach (var write in region.HasWriteAccess)
       {
         if (!this.EP.HasWriteAccess.ContainsKey(write.Key))
-          this.EP.HasWriteAccess.Add(write.Key, true);
+          this.EP.HasWriteAccess.Add(write.Key, 0);
+        this.EP.HasWriteAccess[write.Key] = this.EP.HasWriteAccess[write.Key] + write.Value;
       }
 
       foreach (var read in region.HasReadAccess)
       {
         if (!this.EP.HasReadAccess.ContainsKey(read.Key))
-          this.EP.HasReadAccess.Add(read.Key, true);
+          this.EP.HasReadAccess.Add(read.Key, 0);
+        this.EP.HasReadAccess[read.Key] = this.EP.HasReadAccess[read.Key] + read.Value;
       }
     }
 
@@ -279,11 +285,11 @@ namespace Whoop.Instrumentation
         if (!this.EP.HasWriteAccess.ContainsKey(targetName))
           continue;
 
-        var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
-          val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
+//        var wacs = this.AC.GetWriteAccessCheckingVariables().Find(val =>
+//          val.Name.Contains(this.AC.GetWriteAccessVariableName(this.EP, targetName)));
 
-        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(wacs.Name)))
-          region.Procedure().Modifies.Add(new IdentifierExpr(wacs.tok, wacs));
+        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
+          region.Procedure().Modifies.Add(new IdentifierExpr(acv.tok, acv));
       }
 
       foreach (var acv in this.AC.GetReadAccessCheckingVariables())
@@ -294,11 +300,11 @@ namespace Whoop.Instrumentation
         if (!this.EP.HasReadAccess.ContainsKey(targetName))
           continue;
 
-        var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
-          val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, targetName)));
+//        var racs = this.AC.GetReadAccessCheckingVariables().Find(val =>
+//          val.Name.Contains(this.AC.GetReadAccessVariableName(this.EP, targetName)));
 
-        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(racs.Name)))
-          region.Procedure().Modifies.Add(new IdentifierExpr(racs.tok, racs));
+        if (!region.Procedure().Modifies.Any(mod => mod.Name.Equals(acv.Name)))
+          region.Procedure().Modifies.Add(new IdentifierExpr(acv.tok, acv));
       }
     }
 

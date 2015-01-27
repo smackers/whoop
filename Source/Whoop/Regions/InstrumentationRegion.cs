@@ -38,8 +38,8 @@ namespace Whoop.Regions
     protected List<Block> RegionBlocks;
     private List<Block> RegionLoopHeaders;
 
-    internal Dictionary<string, bool> HasWriteAccess;
-    internal Dictionary<string, bool> HasReadAccess;
+    internal Dictionary<string, int> HasWriteAccess;
+    internal Dictionary<string, int> HasReadAccess;
 
     internal bool IsChangingDeviceRegistration;
     internal bool IsDeviceRegistered;
@@ -81,8 +81,8 @@ namespace Whoop.Regions
 
       this.ComputeLoopHeaders();
 
-      this.HasWriteAccess = new Dictionary<string, bool>();
-      this.HasReadAccess = new Dictionary<string, bool>();
+      this.HasWriteAccess = new Dictionary<string, int>();
+      this.HasReadAccess = new Dictionary<string, int>();
 
       this.IsChangingDeviceRegistration = false;
       this.IsDeviceRegistered = true;

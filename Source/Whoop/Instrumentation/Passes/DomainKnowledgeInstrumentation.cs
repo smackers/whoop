@@ -70,8 +70,6 @@ namespace Whoop.Instrumentation
 
       this.AnalyseDomainSpecificEnableUsage("network");
 
-//      this.SliceEntryPoint();
-
       this.InstrumentEntryPointProcedure();
       foreach (var region in this.AC.InstrumentationRegions)
       {
@@ -305,43 +303,6 @@ namespace Whoop.Instrumentation
       }
 
       region.Procedure().Requires.Add(new Requires(false, expr));
-    }
-
-    private void SliceEntryPoint()
-    {
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        if (!region.IsDeviceRegistered || !region.IsChangingDeviceRegistration)
-          continue;
-
-        foreach (var c in region.Cmds().OfType<CallCmd>())
-        {
-          var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
-            val.Implementation().Name.Equals(c.callee));
-          if (calleeRegion == null)
-            continue;
-
-          if (calleeRegion.IsDeviceRegistered || calleeRegion.IsChangingDeviceRegistration)
-            continue;
-
-          c.callee = "_NO_OP_$" + this.EP.Name;
-          c.Ins.Clear();
-          c.Outs.Clear();
-        }
-      }
-
-      foreach (var region in this.AC.InstrumentationRegions.ToList())
-      {
-        if (region.IsDeviceRegistered || region.IsChangingDeviceRegistration)
-          continue;
-
-        this.AC.TopLevelDeclarations.RemoveAll(val =>
-          (val is Procedure && (val as Procedure).Name.Equals(region.Implementation().Name)) ||
-          (val is Implementation && (val as Implementation).Name.Equals(region.Implementation().Name)) ||
-          (val is Constant && (val as Constant).Name.Equals(region.Implementation().Name)));
-        this.AC.InstrumentationRegions.Remove(region);
-        this.EP.CallGraph.Remove(region);
-      }
     }
 
     #endregion

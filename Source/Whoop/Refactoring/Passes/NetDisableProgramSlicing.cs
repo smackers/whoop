@@ -22,55 +22,53 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal class NetDisableProgramSlicing : INetDisableProgramSlicing
+  internal class NetDisableProgramSlicing : DomainSpecificProgramSlicing, INetDisableProgramSlicing
   {
-    private AnalysisContext AC;
-    private EntryPoint EP;
-    private ExecutionTimer Timer;
-
-    private InstrumentationRegion ChangingRegion;
-    private HashSet<InstrumentationRegion> SlicedRegions;
+    #region public API
 
     public NetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+      : base(ac, ep)
     {
-      Contract.Requires(ac != null && ep != null);
-      this.AC = ac;
-      this.EP = ep;
-
-      this.ChangingRegion = this.AC.InstrumentationRegions.Find(val => val.IsChangingNetAvailability);
-      this.SlicedRegions = new HashSet<InstrumentationRegion>();
+      base.ChangingRegion = base.AC.InstrumentationRegions.Find(val => val.IsChangingNetAvailability);
     }
 
     public void Run()
     {
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
-        this.Timer = new ExecutionTimer();
-        this.Timer.Start();
+        base.Timer = new ExecutionTimer();
+        base.Timer.Start();
       }
 
-      foreach (var region in this.AC.InstrumentationRegions)
+      foreach (var region in base.AC.InstrumentationRegions)
       {
         this.SimplifyCallsInRegion(region);
       }
 
-      foreach (var region in this.SlicedRegions)
+      foreach (var region in base.SlicedRegions)
       {
-        this.SliceRegion(region);
+        base.SliceRegion(region);
       }
 
       this.SimplifyAccessesInChangingRegion();
-      var predecessors = this.EP.CallGraph.NestedPredecessors(this.ChangingRegion);
-      var successors = this.EP.CallGraph.NestedSuccessors(this.ChangingRegion);
+      var predecessors = base.EP.CallGraph.NestedPredecessors(base.ChangingRegion);
+      var successors = base.EP.CallGraph.NestedSuccessors(base.ChangingRegion);
       predecessors.RemoveWhere(val => successors.Contains(val));
       this.SimplifyAccessesInPredecessors(predecessors);
 
+      foreach (var region in base.AC.InstrumentationRegions)
+      {
+        base.CleanReadWriteModsets(region);
+      }
+
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
-        this.Timer.Stop();
-        Console.WriteLine(" |  |------ [NetDisableProgramSlicing] {0}", this.Timer.Result());
+        base.Timer.Stop();
+        Console.WriteLine(" |  |------ [NetDisableProgramSlicing] {0}", base.Timer.Result());
       }
     }
+
+    #endregion
 
     #region net program slicing functions
 
@@ -78,29 +76,29 @@ namespace Whoop.Refactoring
     {
       foreach (var call in region.Cmds().OfType<CallCmd>())
       {
-        var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
+        var calleeRegion = base.AC.InstrumentationRegions.Find(val =>
           val.Implementation().Name.Equals(call.callee));
         if (calleeRegion == null)
           continue;
         if (calleeRegion.IsEnablingNetwork || calleeRegion.IsChangingNetAvailability)
           continue;
 
-        call.callee = "_NO_OP_$" + this.EP.Name;
+        call.callee = "_NO_OP_$" + base.EP.Name;
         call.Ins.Clear();
         call.Outs.Clear();
 
-        this.SlicedRegions.Add(calleeRegion);
+        base.SlicedRegions.Add(calleeRegion);
       }
     }
 
     private void SimplifyAccessesInChangingRegion()
     {
-      var blockGraph = this.BuildBlockGraph(this.ChangingRegion.Blocks());
+      var blockGraph = Graph<Block>.BuildBlockGraph(base.ChangingRegion.Blocks());
 
       Block netBlock = null;
       CallCmd netCall = null;
 
-      foreach (var block in this.ChangingRegion.Blocks())
+      foreach (var block in base.ChangingRegion.Blocks())
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
@@ -116,14 +114,14 @@ namespace Whoop.Refactoring
           break;
       }
 
-      this.SimplifyAccessInBlocks(blockGraph, netBlock, netCall);
+      this.SimplifyAccessInBlocks(base.ChangingRegion, blockGraph, netBlock, netCall);
     }
 
     private void SimplifyAccessesInPredecessors(HashSet<InstrumentationRegion> predecessors)
     {
       foreach (var region in predecessors)
       {
-        var blockGraph = this.BuildBlockGraph(region.Blocks());
+        var blockGraph = Graph<Block>.BuildBlockGraph(region.Blocks());
 
         Block netBlock = null;
         CallCmd netCall = null;
@@ -134,7 +132,7 @@ namespace Whoop.Refactoring
           {
             if (netBlock == null && (predecessors.Any(val =>
               val.Implementation().Name.Equals(call.callee)) ||
-              this.ChangingRegion.Implementation().Name.Equals(call.callee)))
+              base.ChangingRegion.Implementation().Name.Equals(call.callee)))
             {
               netBlock = block;
               netCall = call;
@@ -146,11 +144,12 @@ namespace Whoop.Refactoring
             break;
         }
 
-        this.SimplifyAccessInBlocks(blockGraph, netBlock, netCall);
+        this.SimplifyAccessInBlocks(region, blockGraph, netBlock, netCall);
       }
     }
 
-    private void SimplifyAccessInBlocks(Graph<Block> blockGraph, Block netBlock, CallCmd netCall)
+    private void SimplifyAccessInBlocks(InstrumentationRegion region, Graph<Block> blockGraph,
+      Block netBlock, CallCmd netCall)
     {
       var predecessorBlocks = blockGraph.NestedPredecessors(netBlock);
       var successorBlocks = blockGraph.NestedSuccessors(netBlock);
@@ -165,7 +164,9 @@ namespace Whoop.Refactoring
             call.callee.StartsWith("_READ_LS_$M.")))
             continue;
 
-          call.callee = "_NO_OP_$" + this.EP.Name;
+          this.CleanReadWriteSets(region, call);
+
+          call.callee = "_NO_OP_$" + base.EP.Name;
           call.Ins.Clear();
           call.Outs.Clear();
         }
@@ -189,44 +190,13 @@ namespace Whoop.Refactoring
             call.callee.StartsWith("_READ_LS_$M.")))
             continue;
 
-          call.callee = "_NO_OP_$" + this.EP.Name;
+          this.CleanReadWriteSets(region, call);
+
+          call.callee = "_NO_OP_$" + base.EP.Name;
           call.Ins.Clear();
           call.Outs.Clear();
         }
       }
-    }
-
-    private void SliceRegion(InstrumentationRegion region)
-    {
-      this.AC.TopLevelDeclarations.RemoveAll(val =>
-        (val is Procedure && (val as Procedure).Name.Equals(region.Implementation().Name)) ||
-        (val is Implementation && (val as Implementation).Name.Equals(region.Implementation().Name)) ||
-        (val is Constant && (val as Constant).Name.Equals(region.Implementation().Name)));
-      this.AC.InstrumentationRegions.Remove(region);
-      this.EP.CallGraph.Remove(region);
-    }
-
-    #endregion
-
-    #region helper functions
-
-    private Graph<Block> BuildBlockGraph(List<Block> blocks)
-    {
-      var blockGraph = new Graph<Block>();
-
-      foreach (var block in blocks)
-      {
-        if (!(block.TransferCmd is GotoCmd))
-          continue;
-
-        var gotoCmd = block.TransferCmd as GotoCmd;
-        foreach (var target in gotoCmd.labelTargets)
-        {
-          blockGraph.AddEdge(block, target);
-        }
-      }
-
-      return blockGraph;
     }
 
     #endregion

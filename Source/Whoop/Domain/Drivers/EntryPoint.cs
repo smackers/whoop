@@ -45,8 +45,8 @@ namespace Whoop.Domain.Drivers
     internal bool IsCallingNetLock;
     internal bool IsCallingTxLock;
 
-    internal Dictionary<string, bool> HasWriteAccess;
-    internal Dictionary<string, bool> HasReadAccess;
+    internal Dictionary<string, int> HasWriteAccess;
+    internal Dictionary<string, int> HasReadAccess;
     internal bool IsHoldingLock;
     public bool IsEnablingDevice;
     public bool IsDisablingDevice;
@@ -110,8 +110,8 @@ namespace Whoop.Domain.Drivers
       this.IsCallingNetLock = false;
       this.IsCallingTxLock = false;
 
-      this.HasWriteAccess = new Dictionary<string, bool>();
-      this.HasReadAccess = new Dictionary<string, bool>();
+      this.HasWriteAccess = new Dictionary<string, int>();
+      this.HasReadAccess = new Dictionary<string, int>();
       this.IsHoldingLock = false;
       this.IsEnablingDevice = false;
       this.IsDisablingDevice = false;

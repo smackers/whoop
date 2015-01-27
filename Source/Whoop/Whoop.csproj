@@ -112,6 +112,7 @@
     <Compile Include="Refactoring\Interfaces\IDeviceEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Interfaces\IDeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
+    <Compile Include="Refactoring\Passes\DomainSpecificProgramSlicing.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
