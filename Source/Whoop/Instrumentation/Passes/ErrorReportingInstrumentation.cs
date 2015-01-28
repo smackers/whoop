@@ -82,17 +82,20 @@ namespace Whoop.Instrumentation
           if (call.callee.Contains("_UPDATE_CLS"))
           {
             Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
-            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 1] as AssumeCmd).Attributes);
+            call.Attributes = this.GetSourceLocationAttributes(
+              (b.Cmds[idx - 1] as AssumeCmd).Attributes, call.Attributes);
           }
           else if (call.callee.Contains("_WRITE_LS_"))
           {
             Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
-            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 1] as AssumeCmd).Attributes);
+            call.Attributes = this.GetSourceLocationAttributes(
+              (b.Cmds[idx - 1] as AssumeCmd).Attributes, call.Attributes);
           }
           else if (call.callee.Contains("_READ_LS_"))
           {
             Contract.Requires(idx - 2 != 0 && b.Cmds[idx - 2] is AssumeCmd);
-            call.Attributes = this.GetSourceLocationAttributes((b.Cmds[idx - 2] as AssumeCmd).Attributes);
+            call.Attributes = this.GetSourceLocationAttributes(
+              (b.Cmds[idx - 2] as AssumeCmd).Attributes, call.Attributes);
           }
         }
       }
@@ -226,7 +229,7 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private QKeyValue GetSourceLocationAttributes(QKeyValue attributes)
+    private QKeyValue GetSourceLocationAttributes(QKeyValue attributes, QKeyValue previousAttributes)
     {
       QKeyValue line, col;
       QKeyValue curr = attributes;
@@ -241,7 +244,7 @@ namespace Whoop.Instrumentation
       col = new QKeyValue(Token.NoToken, "column",
         new List<object>() { new LiteralExpr(Token.NoToken,
             BigNum.FromInt(Int32.Parse(string.Format("{0}", curr.Params[2]))))
-        }, null);
+        }, previousAttributes);
       line = new QKeyValue(Token.NoToken, "line",
         new List<object>() { new LiteralExpr(Token.NoToken,
             BigNum.FromInt(Int32.Parse(string.Format("{0}", curr.Params[1]))))

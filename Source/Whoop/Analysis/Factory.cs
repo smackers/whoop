@@ -31,6 +31,11 @@ namespace Whoop.Analysis
       return new ParameterAliasAnalysis(ac, ep);
     }
 
+    public static ILocalMemoryAllocationAnalysis CreateLocalMemoryAllocationAnalysis(AnalysisContext ac, EntryPoint ep)
+    {
+      return new LocalMemoryAllocationAnalysis(ac, ep);
+    }
+
     public static IWatchdogInformationAnalysis CreateWatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
     {
       return new WatchdogInformationAnalysis(ac, ep);

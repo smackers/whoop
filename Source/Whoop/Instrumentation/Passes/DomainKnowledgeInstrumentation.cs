@@ -34,8 +34,6 @@ namespace Whoop.Instrumentation
     private InstrumentationRegion DeviceUnregisterRegion;
     private InstrumentationRegion NetworkEnableRegion;
 
-    private int AddressCounter;
-
     public DomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
@@ -45,8 +43,6 @@ namespace Whoop.Instrumentation
       this.DeviceRegisterRegion = null;
       this.DeviceUnregisterRegion = null;
       this.NetworkEnableRegion = null;
-
-      this.AddressCounter = 0;
     }
 
     public void Run()
@@ -240,33 +236,6 @@ namespace Whoop.Instrumentation
               call.Outs.Clear();
             }
           }
-//          else if (call.callee.Equals("$alloca"))
-//          {
-//            var address = this.CreateNewAddressConstant();
-//
-//            var newLhss = new List<AssignLhs>();
-//            var newRhss = new List<Expr>();
-//
-//            newLhss.Add(new SimpleAssignLhs(call.Outs[0].tok, call.Outs[0]));
-//            newRhss.Add(new IdentifierExpr(address.tok, address));
-//
-//            block.Cmds[idx] = new AssignCmd(Token.NoToken, newLhss, newRhss);
-//
-//            if (!WhoopCommandLineOptions.Get().SkipInference &&
-//                WhoopCommandLineOptions.Get().InliningBound > 0 &&
-//                this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) <=
-//                WhoopCommandLineOptions.Get().InliningBound)
-//            {
-//              continue;
-//            }
-//
-//            foreach (var inParam in region.Procedure().InParams)
-//            {
-//              region.Procedure().Requires.Add(new Requires(false, Expr.Neq(
-//                new IdentifierExpr(inParam.tok, inParam),
-//                new IdentifierExpr(address.tok, address))));
-//            }
-//          }
         }
       }
     }
@@ -472,18 +441,6 @@ namespace Whoop.Instrumentation
             predecessorCallees.Add(region);
         }
       }
-    }
-
-    private Constant CreateNewAddressConstant()
-    {
-      var address = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, "addr$" +
-        this.EP.Name + "$" + this.AddressCounter, Microsoft.Boogie.Type.Int), true);
-
-      address.AddAttribute("alloc_addr", new object[] { });
-      this.AC.TopLevelDeclarations.Add(address);
-      this.AddressCounter++;
-
-      return address;
     }
 
     #endregion

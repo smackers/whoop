@@ -22,13 +22,12 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal abstract class DomainSpecificProgramSlicing
+  internal abstract class ProgramSlicing
   {
     #region fields
 
     protected AnalysisContext AC;
     protected EntryPoint EP;
-    protected ExecutionTimer Timer;
 
     protected InstrumentationRegion ChangingRegion;
     protected HashSet<InstrumentationRegion> SlicedRegions;
@@ -37,7 +36,7 @@ namespace Whoop.Refactoring
 
     #region public API
 
-    public DomainSpecificProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public ProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       Contract.Requires(ac != null && ep != null);
       this.AC = ac;
@@ -48,7 +47,7 @@ namespace Whoop.Refactoring
 
     #endregion
 
-    #region helper functions
+    #region program slicing functions
 
     protected void SliceRegion(InstrumentationRegion region)
     {
@@ -76,61 +75,6 @@ namespace Whoop.Refactoring
         (val is Constant && (val as Constant).Name.Equals(region.Implementation().Name)));
       this.AC.InstrumentationRegions.Remove(region);
       this.EP.CallGraph.Remove(region);
-    }
-
-    protected void CleanReadWriteSets(InstrumentationRegion region, CallCmd call)
-    {
-      if (call.callee.StartsWith("_WRITE_LS_$M."))
-      {
-        var write = call.callee.Split(new string[] { "_" }, StringSplitOptions.None)[3];
-
-        region.HasWriteAccess[write] = region.HasWriteAccess[write] - 1;
-        this.EP.HasWriteAccess[write] = this.EP.HasWriteAccess[write] - 1;
-
-        if (region.HasWriteAccess[write] <= 0)
-          region.HasWriteAccess.Remove(write);
-        if (this.EP.HasWriteAccess[write] <= 0)
-          this.EP.HasWriteAccess.Remove(write);
-      }
-      else
-      {
-        var read = call.callee.Split(new string[] { "_" }, StringSplitOptions.None)[3];
-
-        region.HasReadAccess[read] = region.HasReadAccess[read] - 1;
-        this.EP.HasReadAccess[read] = this.EP.HasReadAccess[read] - 1;
-
-        if (region.HasReadAccess[read] <= 0)
-          region.HasReadAccess.Remove(read);
-        if (this.EP.HasReadAccess[read] <= 0)
-          this.EP.HasReadAccess.Remove(read);
-      }
-    }
-
-    protected void CleanReadWriteModsets(InstrumentationRegion region)
-    {
-      var vars = SharedStateAnalyser.GetMemoryRegions(this.EP);
-
-      foreach (var acv in this.AC.GetWriteAccessCheckingVariables())
-      {
-        string targetName = acv.Name.Split('_')[1];
-        if (!vars.Any(val => val.Name.Equals(targetName)))
-          continue;
-        if (this.EP.HasWriteAccess.ContainsKey(targetName))
-          continue;
-
-        region.Procedure().Modifies.RemoveAll(val => val.Name.Equals(acv.Name));
-      }
-
-      foreach (var acv in this.AC.GetReadAccessCheckingVariables())
-      {
-        string targetName = acv.Name.Split('_')[1];
-        if (!vars.Any(val => val.Name.Equals(targetName)))
-          continue;
-        if (this.EP.HasReadAccess.ContainsKey(targetName))
-          continue;
-
-        region.Procedure().Modifies.RemoveAll(val => val.Name.Equals(acv.Name));
-      }
     }
 
     #endregion

@@ -59,7 +59,7 @@ namespace Whoop.Analysis
       }
     }
 
-    #region watchdog information analysis
+    #region parameter alias analysis
 
     private void InstrumentParameterAliasInformationInRegion(InstrumentationRegion region)
     {

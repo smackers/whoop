@@ -112,7 +112,10 @@
     <Compile Include="Refactoring\Interfaces\IDeviceEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Interfaces\IDeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
-    <Compile Include="Refactoring\Passes\DomainSpecificProgramSlicing.cs" />
+    <Compile Include="Refactoring\ReadWriteSlicing.cs" />
+    <Compile Include="Refactoring\ProgramSlicing.cs" />
+    <Compile Include="Analysis\Interfaces\ILocalMemoryAllocationAnalysis.cs" />
+    <Compile Include="Analysis\Passes\LocalMemoryAllocationAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

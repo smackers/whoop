@@ -22,8 +22,14 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal class NetEnableProgramSlicing : DomainSpecificProgramSlicing, INetEnableProgramSlicing
+  internal class NetEnableProgramSlicing : ProgramSlicing, INetEnableProgramSlicing
   {
+    #region public API
+
+    private ExecutionTimer Timer;
+
+    #endregion
+
     #region public API
 
     public NetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
@@ -36,8 +42,8 @@ namespace Whoop.Refactoring
     {
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
-        base.Timer = new ExecutionTimer();
-        base.Timer.Start();
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
       }
 
       foreach (var region in base.AC.InstrumentationRegions)
@@ -58,13 +64,13 @@ namespace Whoop.Refactoring
 
       foreach (var region in base.AC.InstrumentationRegions)
       {
-        base.CleanReadWriteModsets(region);
+        ReadWriteSlicing.CleanReadWriteModsets(base.AC, base.EP, region);
       }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
-        base.Timer.Stop();
-        Console.WriteLine(" |  |------ [NetEnableProgramSlicing] {0}", base.Timer.Result());
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [NetEnableProgramSlicing] {0}", this.Timer.Result());
       }
     }
 
@@ -164,7 +170,7 @@ namespace Whoop.Refactoring
             call.callee.StartsWith("_READ_LS_$M.")))
             continue;
 
-          this.CleanReadWriteSets(region, call);
+          ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
 
           call.callee = "_NO_OP_$" + base.EP.Name;
           call.Ins.Clear();
@@ -182,7 +188,7 @@ namespace Whoop.Refactoring
             call.callee.StartsWith("_READ_LS_$M.")))
             continue;
 
-          this.CleanReadWriteSets(region, call);
+          ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
 
           call.callee = "_NO_OP_$" + base.EP.Name;
           call.Ins.Clear();

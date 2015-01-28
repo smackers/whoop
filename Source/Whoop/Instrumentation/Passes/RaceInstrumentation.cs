@@ -198,63 +198,72 @@ namespace Whoop.Instrumentation
           Cmd c = block.Cmds[idx];
           if (!(c is AssignCmd)) continue;
 
-          foreach (var lhs in (c as AssignCmd).Lhss.OfType<MapAssignLhs>())
+          var lhss = (c as AssignCmd).Lhss.OfType<MapAssignLhs>();
+          var rhss = (c as AssignCmd).Rhss.OfType<NAryExpr>();
+
+          CallCmd call = null;
+          if (lhss.Count() == 1)
           {
-            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
-              !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
-              continue;
-
-            CallCmd call = null;
-
-            if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
-              val.Name.Equals(lhs.DeepAssignedIdentifier.Name)))
+            var lhs = lhss.First();
+            if (lhs.DeepAssignedIdentifier.Name.Contains("$M.") &&
+              lhs.Map is SimpleAssignLhs && lhs.Indexes.Count == 1)
             {
-              var ind = lhs.Indexes[0];
-              call = new CallCmd(Token.NoToken,
-                this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
-                new List<Expr> { ind }, new List<IdentifierExpr>());
+              if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+                val.Name.Equals(lhs.DeepAssignedIdentifier.Name)))
+              {
+                var ind = lhs.Indexes[0];
+                call = new CallCmd(Token.NoToken,
+                  this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
+                  new List<Expr> { ind }, new List<IdentifierExpr>());
 
-              if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
-                region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, 0);
-              region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] = 
-                region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] + 1;
+                if (rhss.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
+                  (c as AssignCmd).Rhss[0].ToString().StartsWith("$p"))
+                {
+                  call.Attributes = new QKeyValue(Token.NoToken, "rhs",
+                    new List<object>() { (c as AssignCmd).Rhss[0]
+                  }, call.Attributes);
+                }
+
+                if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
+                  region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, 0);
+                region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] = 
+                  region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] + 1;
+              }
+              else
+              {
+                call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
+                  new List<Expr>(), new List<IdentifierExpr>());
+              }
             }
-            else
+          }
+          else if (rhss.Count() == 1)
+          {
+            var rhs = rhss.First();
+            if (rhs.Fun is MapSelect && rhs.Args.Count == 2 &&
+              (rhs.Args[0] as IdentifierExpr).Name.Contains("$M."))
             {
-              call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
-                new List<Expr>(), new List<IdentifierExpr>());
-            }
+              if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+                val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name)))
+              {
+                call = new CallCmd(Token.NoToken,
+                  this.MakeAccessFuncName(AccessType.READ, (rhs.Args[0] as IdentifierExpr).Name),
+                  new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
 
-            block.Cmds.Insert(idx + 1, call);
+                if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
+                  region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, 0);
+                region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] = 
+                  region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] + 1;
+              }
+              else
+              {
+                call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
+                  new List<Expr>(), new List<IdentifierExpr>());
+              }
+            }
           }
 
-          foreach (var rhs in (c as AssignCmd).Rhss.OfType<NAryExpr>())
-          {
-            if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
-              !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
-              continue;
-
-            CallCmd call = null;
-            if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
-              val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name)))
-            {
-              call = new CallCmd(Token.NoToken,
-                this.MakeAccessFuncName(AccessType.READ, (rhs.Args[0] as IdentifierExpr).Name),
-                new List<Expr> { rhs.Args[1] }, new List<IdentifierExpr>());
-
-              if (!region.HasReadAccess.ContainsKey((rhs.Args[0] as IdentifierExpr).Name))
-                region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, 0);
-              region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] = 
-                region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] + 1;
-            }
-            else
-            {
-              call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
-                new List<Expr>(), new List<IdentifierExpr>());
-            }
-
+          if (call != null)
             block.Cmds.Insert(idx + 1, call);
-          }
         }
       }
 
