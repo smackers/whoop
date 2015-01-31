@@ -208,15 +208,15 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
         {
-          foreach (var variable in waVars)
-          {
-            base.InstrumentRequires(region, variable, false);
-            base.InstrumentEnsures(region, variable, false);
-            foreach (var block in region.LoopHeaders())
-            {
-              base.InstrumentAssert(block, variable, false);
-            }
-          }
+//          foreach (var variable in waVars)
+//          {
+//            base.InstrumentRequires(region, variable, false);
+//            base.InstrumentEnsures(region, variable, false);
+//            foreach (var block in region.LoopHeaders())
+//            {
+//              base.InstrumentAssert(block, variable, false);
+//            }
+//          }
 
           continue;
         }
@@ -288,15 +288,15 @@ namespace Whoop.Summarisation
 
         if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
-          foreach (var variable in raVars)
-          {
-            base.InstrumentRequires(region, variable, false);
-            base.InstrumentEnsures(region, variable, false);
-            foreach (var block in region.LoopHeaders())
-            {
-              base.InstrumentAssert(block, variable, false);
-            }
-          }
+//          foreach (var variable in raVars)
+//          {
+//            base.InstrumentRequires(region, variable, false);
+//            base.InstrumentEnsures(region, variable, false);
+//            foreach (var block in region.LoopHeaders())
+//            {
+//              base.InstrumentAssert(block, variable, false);
+//            }
+//          }
 
           continue;
         }
