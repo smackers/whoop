@@ -75,9 +75,8 @@ namespace Whoop.Regions
       this.CreateImplementation(impl1, impl2);
       this.CreateProcedure(impl1, impl2);
 
-//      this.CreateInParamCache(impl1, impl2);
+      this.CreateInParamCache(impl1, impl2);
       this.CheckAndRefactorInParamsIfEquals(impl1, impl2);
-//      this.InstrumentConflictingAccesses();
 
       this.RegionHeader = this.CreateRegionHeader();
     }
@@ -341,15 +340,23 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
-      foreach (var inParam in this.InternalImplementation.Proc.InParams)
-      {
-        foreach (var address in this.AC.GetAllocatedAddressConstants())
-        {
-          this.InternalImplementation.Proc.Requires.Add(new Requires(
-            false, Expr.Neq(new IdentifierExpr(inParam.tok, inParam),
-            new IdentifierExpr(address.tok, address))));
-        }
-      }
+//      Expr inParamExprs = null;
+//      foreach (var inParam in this.InternalImplementation.Proc.InParams)
+//      {
+//        if (inParamExprs == null)
+//        {
+//          inParamExprs = Expr.Ge(new IdentifierExpr(inParam.tok, inParam),
+//            new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
+//        }
+//        else
+//        {
+//          inParamExprs = Expr.And(inParamExprs, Expr.Ge(new IdentifierExpr(inParam.tok, inParam),
+//            new LiteralExpr(Token.NoToken, BigNum.FromInt(0))));
+//        }
+//      }
+//
+//      if (inParamExprs != null)
+//        this.InternalImplementation.Proc.Requires.Add(new Requires(false, inParamExprs));
 
       foreach (var ie in initProc.Modifies)
       {
@@ -414,110 +421,21 @@ namespace Whoop.Regions
       }
     }
 
-    private void InstrumentConflictingAccesses()
+    private void CreateInParamCache(Implementation impl1, Implementation impl2)
     {
-      var conflicts = new List<Requires>();
-
-      if (!this.EP1.Name.Equals(this.EP2.Name))
+      for (int idx = 0; idx < this.CC1.Ins.Count; idx++)
       {
-        var ep1Region = AnalysisContext.GetAnalysisContext(this.EP1).InstrumentationRegions.
-          Find(val => val.Implementation().Name.Equals(this.EP1.Name));
-        var ep2Region = AnalysisContext.GetAnalysisContext(this.EP2).InstrumentationRegions.
-          Find(val => val.Implementation().Name.Equals(this.EP2.Name));
+        this.InParamMapEP1.Add(impl1.InParams[idx].Name, this.CC1.Ins[idx] as IdentifierExpr);
+      }
 
-        foreach (var resource1 in ep1Region.GetResourceAccesses())
-        {
-          foreach (var resource2 in ep2Region.GetResourceAccesses())
-          {
-            if (!resource2.Key.Equals(resource1.Key))
-              continue;
+      if (this.CC2 == null)
+        return;
 
-            foreach (var access1 in resource1.Value)
-            {
-              IdentifierExpr accessExpr1 = null;
-              if (access1 is NAryExpr)
-                accessExpr1 = (access1 as NAryExpr).Args[0] as IdentifierExpr;
-              else
-                accessExpr1 = access1 as IdentifierExpr;
-
-              var trueAccess1 = access1;
-              var trueVar1 = this.InternalImplementation.Proc.InParams.FirstOrDefault(val =>
-                val.TypedIdent.Name.Equals(accessExpr1.Name + "$1"));
-              if (trueVar1 != null)
-              {
-                var id1 = new IdentifierExpr(trueVar1.tok, new Duplicator().
-                  Visit(trueVar1.Clone()) as Variable);
-                id1.Name = id1.Name + "$1";
-
-                if (access1 is NAryExpr)
-                {
-                  trueAccess1 = new NAryExpr(Token.NoToken, (access1 as NAryExpr).Fun,
-                    new List<Expr> { id1, (access1 as NAryExpr).Args[1]
-                    });
-                }
-                else
-                {
-                  trueAccess1 = id1;
-                }
-              }
-
-              foreach (var access2 in resource2.Value)
-              {
-                IdentifierExpr accessExpr2 = null;
-                if (access2 is NAryExpr)
-                  accessExpr2 = (access2 as NAryExpr).Args[0] as IdentifierExpr;
-                else
-                  accessExpr2 = access2 as IdentifierExpr;
-
-                if (accessExpr1.Name.Equals(accessExpr2.Name))
-                  continue;
-
-                var trueAccess2 = access2;
-                var trueVar2 = this.InternalImplementation.Proc.InParams.FirstOrDefault(val =>
-                  val.TypedIdent.Name.Equals(accessExpr2.Name + "$2"));
-                if (trueVar2 != null)
-                {
-                  var id2 = new IdentifierExpr(trueVar2.tok, new Duplicator().
-                    Visit(trueVar2.Clone()) as Variable);
-                  id2.Name = id2.Name + "$2";
-
-                  if (access2 is NAryExpr)
-                  {
-                    trueAccess2 = new NAryExpr(Token.NoToken, (access2 as NAryExpr).Fun,
-                      new List<Expr> { id2, (access2 as NAryExpr).Args[1]
-                      });
-                  }
-                  else
-                  {
-                    trueAccess2 = id2;
-                  }
-                }
-
-                conflicts.Add(new Requires(false, Expr.Neq(trueAccess1, trueAccess2)));
-              }
-            }
-          }
-        }
-
-        foreach (var conflict in conflicts)
-        {
-          this.InternalImplementation.Proc.Requires.Add(conflict);
-        }
+      for (int idx = 0; idx < this.CC2.Ins.Count; idx++)
+      {
+        this.InParamMapEP2.Add(impl2.InParams[idx].Name, this.CC2.Ins[idx] as IdentifierExpr);
       }
     }
-
-//    private void CreateInParamCache(Implementation impl1, Implementation impl2)
-//    {
-//      for (int idx = 0; idx < this.CC1.Ins.Count; idx++)
-//      {
-//        this.InParamMapEP1.Add(impl1.InParams[idx].Name, this.CC1.Ins[idx] as IdentifierExpr);
-//      }
-//
-//      for (int idx = 0; idx < this.CC2.Ins.Count; idx++)
-//      {
-//        this.InParamMapEP2.Add(impl2.InParams[idx].Name, this.CC2.Ins[idx] as IdentifierExpr);
-//      }
-//    }
 
     private void CheckAndRefactorInParamsIfEquals(Implementation impl1, Implementation impl2)
     {

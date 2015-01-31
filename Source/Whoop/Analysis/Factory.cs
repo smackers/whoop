@@ -26,9 +26,19 @@ namespace Whoop.Analysis
       return new LockAbstraction(ac);
     }
 
+    public static IFunctionPointerUseAnalysis CreateFunctionPointerUseAnalysis(AnalysisContext ac, EntryPoint ep)
+    {
+      return new FunctionPointerUseAnalysis(ac, ep);
+    }
+
     public static IParameterAliasAnalysis CreateParameterAliasAnalysis(AnalysisContext ac, EntryPoint ep)
     {
       return new ParameterAliasAnalysis(ac, ep);
+    }
+
+    public static IPairParameterAliasAnalysis CreatePairParameterAliasAnalysis(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    {
+      return new PairParameterAliasAnalysis(ac, ep1, ep2);
     }
 
     public static ILocalMemoryAllocationAnalysis CreateLocalMemoryAllocationAnalysis(AnalysisContext ac, EntryPoint ep)

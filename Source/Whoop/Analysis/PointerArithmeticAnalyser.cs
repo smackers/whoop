@@ -84,7 +84,7 @@ namespace Whoop.Analysis
 
       var identifier = id as IdentifierExpr;
       if (this.InParams.Any(val => val.Name.Equals(identifier.Name)) ||
-        this.IsAxiom(id))
+        this.IsAxiom(identifier))
       {
         var result = Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
         return new HashSet<Expr> { result };
@@ -108,17 +108,11 @@ namespace Whoop.Analysis
       return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
     }
 
-    public bool IsAxiom(Expr expr)
+    public bool IsAxiom(IdentifierExpr expr)
     {
       bool result = false;
       if (expr == null)
         return result;
-
-      Expr e = null;
-      if (expr is NAryExpr)
-        e = (expr as NAryExpr).Args[0];
-      else
-        e = expr;
 
       foreach (var axiom in this.AC.TopLevelDeclarations.OfType<Axiom>())
       {
@@ -128,7 +122,7 @@ namespace Whoop.Analysis
         else
           axiomExpr = axiom.Expr;
 
-        if (axiomExpr.ToString().Equals(e.ToString()))
+        if (axiomExpr.ToString().Equals(expr.Name))
         {
           result = true;
           break;
@@ -136,6 +130,16 @@ namespace Whoop.Analysis
       }
 
       return result;
+    }
+
+    public IdentifierExpr GetIdentifier(Expr expr)
+    {
+      IdentifierExpr id = null;
+      if (expr is NAryExpr)
+        id = (expr as NAryExpr).Args[0] as IdentifierExpr;
+      else
+        id = expr as IdentifierExpr;
+      return id;
     }
 
     #endregion

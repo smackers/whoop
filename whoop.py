@@ -148,6 +148,8 @@ class DefaultCmdLineOptions(object):
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
+    self.checkInParamAliasing = False
+    self.noExistentialOpts = False
     self.verbose = False
     self.silent = False
     self.printPairs = False
@@ -206,6 +208,8 @@ def showHelpAndExit():
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --inline-bound=X        Inline all device driver non-entry point functions during the Whoop instrumentation,
                             for entry points with less or equal than X nested function calls.
+    --inparam-aliasing      Disable assumption that inparams cannot alias.
+    --no-existential-opts   Do not perform existential optimisations.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
@@ -305,6 +309,10 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyDeadlocks = True
     if o == "--no-infer":
       CommandLineOptions.noInfer = True
+    if o == "--inparam-aliasing":
+      CommandLineOptions.checkInParamAliasing = True
+    if o == "--no-existential-opts":
+      CommandLineOptions.noExistentialOpts = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--inline":
@@ -526,6 +534,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
+              'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
               'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
@@ -626,6 +635,11 @@ def startToolChain(argv):
 
   CommandLineOptions.whoopEngineOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
   CommandLineOptions.whoopCruncherOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
+
+  if CommandLineOptions.checkInParamAliasing:
+    CommandLineOptions.whoopEngineOptions += [ "/checkInParamAliasing" ]
+  if CommandLineOptions.noExistentialOpts:
+    CommandLineOptions.whoopEngineOptions += [ "/noExistentialOpts" ]
 
   if CommandLineOptions.analyseOnly != "":
     CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]

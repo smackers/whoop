@@ -82,8 +82,8 @@ namespace Whoop
 
         Program.RunParsingEngine();
         Program.RunStaticLocksetAnalysisInstrumentationEngine();
-        Program.RunPairWiseCheckingInstrumentationEngine();
         Program.RunSummaryGenerationEngine();
+        Program.RunPairWiseCheckingInstrumentationEngine();
 
         Environment.Exit((int)Outcome.Done);
       }

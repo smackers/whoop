@@ -109,6 +109,9 @@ namespace Whoop.Summarisation
     protected void InstrumentAssertCandidate(Block block, Variable variable,
       bool value, bool capture = false)
     {
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
+
       var dict = this.GetExistentialDictionary(value);
 
       Constant cons = null;
@@ -140,6 +143,8 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsInlined)
         return;
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
 
       var dict = this.GetExistentialDictionary(value);
 
@@ -172,6 +177,8 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsInlined)
         return;
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
 
       var dict = this.GetExistentialDictionary(value);
 
@@ -202,6 +209,9 @@ namespace Whoop.Summarisation
     protected void InstrumentImpliesAssertCandidate(Block block, Expr implExpr, Variable variable,
       bool value, bool capture = false)
     {
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
+
       var dict = this.GetExistentialDictionary(value);
 
       Constant cons = null;
@@ -236,6 +246,8 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsInlined)
         return;
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
 
       var dict = this.GetExistentialDictionary(value);
 
@@ -271,6 +283,8 @@ namespace Whoop.Summarisation
     {
       if (this.EP.IsInlined)
         return;
+      if (!WhoopCommandLineOptions.Get().MergeExistentials)
+        capture = false;
 
       var dict = this.GetExistentialDictionary(value);
 

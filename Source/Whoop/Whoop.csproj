@@ -77,7 +77,6 @@
     <Compile Include="Summarisation\Factory.cs" />
     <Compile Include="Summarisation\Interfaces\IAccessCheckingSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
-    <Compile Include="Summarisation\Passes\SummaryGeneration.cs" />
     <Compile Include="Refactoring\Interfaces\IFunctionPointerRefactoring.cs" />
     <Compile Include="Refactoring\Passes\FunctionPointerRefactoring.cs" />
     <Compile Include="Utilities\Utilities.cs" />
@@ -116,6 +115,11 @@
     <Compile Include="Refactoring\ProgramSlicing.cs" />
     <Compile Include="Analysis\Interfaces\ILocalMemoryAllocationAnalysis.cs" />
     <Compile Include="Analysis\Passes\LocalMemoryAllocationAnalysis.cs" />
+    <Compile Include="Analysis\Passes\PairParameterAliasAnalysis.cs" />
+    <Compile Include="Analysis\Interfaces\IPairParameterAliasAnalysis.cs" />
+    <Compile Include="Analysis\Passes\FunctionPointerUseAnalysis.cs" />
+    <Compile Include="Analysis\Interfaces\IFunctionPointerUseAnalysis.cs" />
+    <Compile Include="Summarisation\SummaryGeneration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

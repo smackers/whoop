@@ -64,10 +64,17 @@ namespace Whoop
       }
       else if (error is CallCounterexample)
       {
-        Console.WriteLine((error as CallCounterexample).FailingRequires.Condition);
-        Console.WriteLine((error as CallCounterexample).FailingRequires.Line);
+        CallCounterexample cex = error as CallCounterexample;
+
+        Console.WriteLine(cex.FailingRequires.Condition);
+        Console.WriteLine(cex.FailingRequires.Line);
         errors++;
-        this.ReportRequiresFailure(error as CallCounterexample);
+        this.ReportRequiresFailure(cex);
+        if (WhoopDriverCommandLineOptions.Get().DebugWhoop)
+        {
+          this.PopulateModelWithStatesIfNecessary(cex);
+          Write(cex.Model);
+        }
         Console.WriteLine("Error: CallCounterexample");
       }
       else if (error is ReturnCounterexample)

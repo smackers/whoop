@@ -61,6 +61,7 @@ namespace Whoop
       this.AC.ResetToProgramTopLevelDeclarations();
 
       ModelCleaner.RemoveGenericTopLevelDeclerations(this.PostAC, this.EP);
+      ModelCleaner.RemoveUnusedTopLevelDeclerations(this.AC);
       ModelCleaner.RemoveGlobalLocksets(this.PostAC);
       ModelCleaner.RemoveExistentials(this.PostAC);
 

@@ -165,4 +165,9 @@ struct mii_ioctl_data {
 	__u16 val_out;
 };
 
+static inline struct mii_ioctl_data *if_mii(struct ifreq *rq)
+{
+	return (struct mii_ioctl_data *) &rq->ifr_ifru;
+}
+
 #endif /* __LINUX_MII_H__ */

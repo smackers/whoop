@@ -40,7 +40,7 @@ namespace Whoop.Analysis
 
     public static List<Variable> GetPairMemoryRegions(EntryPoint ep1, EntryPoint ep2)
     {
-      List<Variable> result = new List<Variable>();
+      var result = new List<Variable>();
       result.AddRange(SharedStateAnalyser.GetMemoryRegions(ep1));
 
       foreach (var mr in SharedStateAnalyser.GetMemoryRegions(ep2))

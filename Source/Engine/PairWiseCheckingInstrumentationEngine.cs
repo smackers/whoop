@@ -55,10 +55,13 @@ namespace Whoop
         }
 
         Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair.Item1, pair.Item2).Run();
+        Analysis.Factory.CreatePairParameterAliasAnalysis(this.AC, pair.Item1, pair.Item2).Run();
 
         ModelCleaner.RemoveOriginalInitFunc(this.AC);
         ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
+        ModelCleaner.RemoveUnusedTopLevelDeclerations(this.AC);
         ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
+//        ModelCleaner.RemoveNonPairMemoryRegions(this.AC, pair.Item1, pair.Item2);
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {

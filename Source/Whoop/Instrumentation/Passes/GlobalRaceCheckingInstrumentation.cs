@@ -54,7 +54,6 @@ namespace Whoop.Instrumentation
       this.AddAccessCheckingVariables();
       this.AddDomainKnowledgeVariables();
       this.AddAccessWatchdogConstants();
-      this.AddAllocatedAddressConstants();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -138,15 +137,6 @@ namespace Whoop.Instrumentation
 
         if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(watchdog.Name)))
           this.AC.TopLevelDeclarations.Add(watchdog);
-      }
-    }
-
-    private void AddAllocatedAddressConstants()
-    {
-      var ac = AnalysisContext.GetAnalysisContext(this.EP);
-      foreach (var addr in ac.GetAllocatedAddressConstants())
-      {
-        this.AC.TopLevelDeclarations.Add(addr);
       }
     }
   }

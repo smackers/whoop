@@ -43,7 +43,9 @@ namespace Whoop
       }
 
 //      Analysis.Factory.CreatePairWatchdogInformationAnalysis(this.AC, this.EP).Run();
-//      Analysis.Factory.CreateParameterAliasAnalysis(this.AC, this.EP).Run();
+
+      if (!WhoopEngineCommandLineOptions.Get().CheckInParamAliasing)
+        Analysis.Factory.CreateParameterAliasAnalysis(this.AC, this.EP).Run();
 
       Summarisation.Factory.CreateLocksetSummaryGeneration(this.AC, this.EP).Run();
       Summarisation.Factory.CreateAccessCheckingSummaryGeneration(this.AC, this.EP).Run();

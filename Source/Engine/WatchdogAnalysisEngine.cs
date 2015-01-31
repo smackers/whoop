@@ -41,6 +41,7 @@ namespace Whoop
         this.Timer.Start();
       }
 
+      Analysis.Factory.CreateFunctionPointerUseAnalysis(this.AC, this.EP).Run();
       Analysis.Factory.CreateWatchdogInformationAnalysis(this.AC, this.EP).Run();
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)

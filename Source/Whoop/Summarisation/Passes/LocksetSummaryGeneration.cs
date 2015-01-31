@@ -221,6 +221,8 @@ namespace Whoop.Summarisation
 
     private void InstrumentMemoryLocksetInvariantsInRegion(InstrumentationRegion region)
     {
+      var externals = region.GetExternalResourceAccesses();
+
       foreach (var pair in region.GetResourceAccesses())
       {
         var memLsVars = base.MemoryLocksetVariables.FindAll(val =>
@@ -248,6 +250,11 @@ namespace Whoop.Summarisation
 
           foreach (var access in pair.Value)
           {
+            bool isExternal = false;
+            if (!WhoopCommandLineOptions.Get().DoTopDownExternalAccessInstrumentation &&
+              externals.ContainsKey(pair.Key) && externals[pair.Key].Contains(access))
+              isExternal = true;
+
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
             foreach (var variable in memLsVars)
@@ -255,8 +262,12 @@ namespace Whoop.Summarisation
               if (this.ShouldLock(region, variable))
                 continue;
 
-              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
-              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
+              if (!isExternal)
+              {
+                base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, true, true);
+                base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, true, true);
+              }
+
               foreach (var block in region.LoopHeaders())
                 base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, true, true);
             }

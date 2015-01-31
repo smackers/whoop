@@ -170,7 +170,15 @@ namespace Whoop.Analysis
             var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[0]);
             foreach (var ptrExpr in ptrExprs)
             {
-              if (this.PtrAnalysisCache[region].IsAxiom(ptrExpr))
+              var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);
+              if (!WhoopCommandLineOptions.Get().CheckInParamAliasing &&
+                region.FunctionPointers.Any(val => val.Name.Equals(id.Name)))
+              {
+                call.callee = "_NO_OP_$" + this.EP.Name;
+                call.Ins.Clear();
+                call.Outs.Clear();
+              }
+              else if (this.PtrAnalysisCache[region].IsAxiom(id))
               {
                 if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
                   this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
@@ -371,7 +379,8 @@ namespace Whoop.Analysis
             var calleeExpr = region.CallInformation[call][index];
             var computedExpr = this.ComputeExpr(calleeExpr.Item1, a);
 
-            if (this.PtrAnalysisCache[region].IsAxiom(computedExpr))
+            var id = this.PtrAnalysisCache[region].GetIdentifier(computedExpr);
+            if (this.PtrAnalysisCache[region].IsAxiom(id))
             {
               if (!this.AC.AxiomAccessesMap.ContainsKey(r.Key))
                 this.AC.AxiomAccessesMap.Add(r.Key, new HashSet<Expr>());

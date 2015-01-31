@@ -157,12 +157,6 @@ namespace Whoop
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "watchdog"));
     }
 
-    public List<Variable> GetAllocatedAddressConstants()
-    {
-      return this.TopLevelDeclarations.OfType<Variable>().ToList().
-        FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "alloc_addr"));
-    }
-
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
@@ -188,8 +182,7 @@ namespace Whoop
         QKeyValue.FindBoolAttribute(v.Attributes, "access_checking") ||
         QKeyValue.FindBoolAttribute(v.Attributes, "existential") ||
         QKeyValue.FindBoolAttribute(v.Attributes, "watchdog") ||
-        QKeyValue.FindBoolAttribute(v.Attributes, "domain_specific") ||
-        QKeyValue.FindBoolAttribute(v.Attributes, "alloc_addr"))
+        QKeyValue.FindBoolAttribute(v.Attributes, "domain_specific"))
         return true;
       return false;
     }

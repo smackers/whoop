@@ -199,6 +199,8 @@ namespace Whoop.Summarisation
       if (region.IsNotAccessingResources || region.IsNotWriteAccessingResources)
         return;
 
+      var externals = region.GetExternalResourceAccesses();
+
       foreach (var pair in region.GetResourceAccesses())
       {
         var waVars = base.WriteAccessCheckingVariables.FindAll(val =>
@@ -227,12 +229,21 @@ namespace Whoop.Summarisation
 
           foreach (var access in pair.Value)
           {
+            bool isExternal = false;
+            if (!WhoopCommandLineOptions.Get().DoTopDownExternalAccessInstrumentation &&
+              externals.ContainsKey(pair.Key) && externals[pair.Key].Contains(access))
+              isExternal = true;
+
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
             foreach (var variable in waVars)
             {
-              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
-              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              if (!isExternal)
+              {
+                base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
+                base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              }
+
               foreach (var block in region.LoopHeaders())
               {
                 base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);
@@ -268,6 +279,8 @@ namespace Whoop.Summarisation
       if (region.IsNotAccessingResources || region.IsNotReadAccessingResources)
         return;
 
+      var externals = region.GetExternalResourceAccesses();
+
       foreach (var pair in region.GetResourceAccesses())
       {
         var raVars = base.ReadAccessCheckingVariables.FindAll(val =>
@@ -296,12 +309,21 @@ namespace Whoop.Summarisation
 
           foreach (var access in pair.Value)
           {
+            bool isExternal = false;
+            if (!WhoopCommandLineOptions.Get().DoTopDownExternalAccessInstrumentation &&
+              externals.ContainsKey(pair.Key) && externals[pair.Key].Contains(access))
+              isExternal = true;
+
             var watchedExpr = Expr.Eq(new IdentifierExpr(watchedVar.tok, watchedVar), access);
 
             foreach (var variable in raVars)
             {
-              base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
-              base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              if (!isExternal)
+              {
+                base.InstrumentImpliesRequiresCandidate(region, watchedExpr, variable, false, true);
+                base.InstrumentImpliesEnsuresCandidate(region, watchedExpr, variable, false, true);
+              }
+
               foreach (var block in region.LoopHeaders())
               {
                 base.InstrumentImpliesAssertCandidate(block, watchedExpr, variable, false, true);

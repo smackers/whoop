@@ -65,6 +65,7 @@ namespace Whoop.Regions
 
     internal Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>> CallInformation;
     internal Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>> ExternallyReceivedAccesses;
+    internal HashSet<Variable> FunctionPointers;
 
     #endregion
 
@@ -108,6 +109,7 @@ namespace Whoop.Regions
 
       this.CallInformation = new Dictionary<CallCmd, Dictionary<int, Tuple<Expr, Expr>>>();
       this.ExternallyReceivedAccesses = new Dictionary<CallCmd, Dictionary<string, HashSet<Expr>>>();
+      this.FunctionPointers = new HashSet<Variable>();
     }
 
     #endregion

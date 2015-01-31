@@ -22,6 +22,10 @@ namespace Whoop
     public int InliningBound = 0;
     public int EntryPointFunctionCallComplexity = 80;
 
+    public bool CheckInParamAliasing = false;
+    public bool MergeExistentials = true;
+    public bool DoTopDownExternalAccessInstrumentation = true;
+
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
     public bool SkipInference = false;
@@ -67,6 +71,18 @@ namespace Whoop
         {
           this.InliningBound = Int32.Parse(ps.args[ps.i]);
         }
+        return true;
+      }
+
+      if (option == "checkInParamAliasing")
+      {
+        this.CheckInParamAliasing = true;
+        return true;
+      }
+
+      if (option == "noExistentialOpts")
+      {
+        this.MergeExistentials = false;
         return true;
       }
 
