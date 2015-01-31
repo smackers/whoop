@@ -66,15 +66,6 @@ namespace Whoop.Instrumentation
 
       this.AnalyseDomainSpecificEnableUsage("network");
 
-      this.InstrumentEntryPointProcedure();
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        if (!this.EP.IsEnablingDevice && !this.EP.IsDisablingDevice)
-          break;
-
-        this.InstrumentProcedure(region);
-      }
-
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
@@ -96,34 +87,8 @@ namespace Whoop.Instrumentation
         new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
-        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
-      Contract.Requires(devReg != null);
-
-      proc.Modifies.Add(new IdentifierExpr(devReg.tok, devReg));
-
       this.AC.TopLevelDeclarations.Add(proc);
       this.AC.ResContext.AddProcedure(proc);
-
-      var b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
-
-      var newLhss = new List<AssignLhs>();
-      var newRhss = new List<Expr>();
-
-      newLhss.Add(new SimpleAssignLhs(devReg.tok, new IdentifierExpr(devReg.tok, devReg)));
-      newRhss.Add(Expr.True);
-
-      var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
-      b.Cmds.Add(assign);
-
-      var impl = new Implementation(Token.NoToken, "_REGISTER_DEVICE_$" + this.EP.Name,
-        new List<TypeVariable>(), new List<Variable>(), outParams, new List<Variable>(),
-        new List<Block>());
-      impl.Blocks.Add(b);
-      impl.Proc = proc;
-      impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-
-      this.AC.TopLevelDeclarations.Add(impl);
     }
 
     private void AddUnregisterDeviceFunc()
@@ -133,34 +98,8 @@ namespace Whoop.Instrumentation
         new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
-      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
-        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
-      Contract.Requires(devReg != null);
-
-      proc.Modifies.Add(new IdentifierExpr(devReg.tok, devReg));
-
       this.AC.TopLevelDeclarations.Add(proc);
       this.AC.ResContext.AddProcedure(proc);
-
-      var b = new Block(Token.NoToken, "_UPDATE", new List<Cmd>(), new ReturnCmd(Token.NoToken));
-
-      var newLhss = new List<AssignLhs>();
-      var newRhss = new List<Expr>();
-
-      newLhss.Add(new SimpleAssignLhs(devReg.tok, new IdentifierExpr(devReg.tok, devReg)));
-      newRhss.Add(Expr.False);
-
-      var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
-      b.Cmds.Add(assign);
-
-      var impl = new Implementation(Token.NoToken, "_UNREGISTER_DEVICE_$" + this.EP.Name,
-        new List<TypeVariable>(), new List<Variable>(), new List<Variable>(),
-        new List<Variable>(), new List<Block>());
-      impl.Blocks.Add(b);
-      impl.Proc = proc;
-      impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
-
-      this.AC.TopLevelDeclarations.Add(impl);
     }
 
     #endregion
@@ -238,40 +177,6 @@ namespace Whoop.Instrumentation
           }
         }
       }
-    }
-
-    private void InstrumentProcedure(InstrumentationRegion region)
-    {
-      if (!this.EP.IsEnablingDevice && !this.EP.IsDisablingDevice)
-        return;
-
-      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
-        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
-      Contract.Requires(devReg != null);
-
-      region.Procedure().Modifies.Add(new IdentifierExpr(devReg.tok, devReg));
-    }
-
-    private void InstrumentEntryPointProcedure()
-    {
-      var devReg = this.AC.GetDomainSpecificVariables().FirstOrDefault(v =>
-        v.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
-      Contract.Requires(devReg != null);
-
-      var region = this.AC.InstrumentationRegions.Find(val =>
-        val.Name().Equals(this.EP.Name + "$instrumented"));
-
-      Expr expr = null;
-      if (this.EP.IsInit)
-      {
-        expr = Expr.Not(new IdentifierExpr(devReg.tok, devReg));
-      }
-      else
-      {
-        expr = new IdentifierExpr(devReg.tok, devReg);
-      }
-
-      region.Procedure().Requires.Add(new Requires(false, expr));
     }
 
     #endregion

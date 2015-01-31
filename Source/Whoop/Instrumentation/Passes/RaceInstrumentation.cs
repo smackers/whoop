@@ -158,14 +158,10 @@ namespace Whoop.Instrumentation
           this.AC.MemoryModelType));
         var watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
           val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
-        var devReg = this.AC.GetDomainSpecificVariables().Find(val =>
-          val.Name.Equals("DEVICE_IS_REGISTERED_$" + this.EP.Name));
 
         var ptrExpr = new IdentifierExpr(ptr.tok, ptr);
         var watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
-        var devRegExpr = new IdentifierExpr(devReg.tok, devReg);
-
-        var guardExpr = Expr.And(Expr.Eq(watchdogExpr, ptrExpr), devRegExpr);
+        var guardExpr = Expr.Eq(watchdogExpr, ptrExpr);
 
         var ifStmts = new StmtList(new List<BigBlock> {
           new BigBlock(Token.NoToken, null, cmds, null, null) }, Token.NoToken);

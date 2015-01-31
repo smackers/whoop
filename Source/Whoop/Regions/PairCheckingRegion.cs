@@ -330,16 +330,6 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
-      foreach (var dsv in this.AC.GetDomainSpecificVariables())
-      {
-        if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
-          continue;
-
-        var require = new Requires(false, new IdentifierExpr(dsv.tok,
-          new Duplicator().Visit(dsv.Clone()) as Variable));
-        this.InternalImplementation.Proc.Requires.Add(require);
-      }
-
 //      Expr inParamExprs = null;
 //      foreach (var inParam in this.InternalImplementation.Proc.InParams)
 //      {
@@ -405,19 +395,6 @@ namespace Whoop.Regions
 
         this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
           acs.tok, new Duplicator().Visit(acs.Clone()) as Variable));
-      }
-
-      foreach (var dsv in this.AC.GetDomainSpecificVariables())
-      {
-        if (!dsv.Name.Contains("DEVICE_IS_REGISTERED_$"))
-          continue;
-        if (dsv.Name.Contains(this.EP1.Name) && !this.EP1.IsEnablingDevice && !this.EP1.IsDisablingDevice)
-          continue;
-        if (dsv.Name.Contains(this.EP2.Name) && !this.EP2.IsEnablingDevice && !this.EP2.IsDisablingDevice)
-          continue;
-
-        this.InternalImplementation.Proc.Modifies.Add(new IdentifierExpr(
-          dsv.tok, new Duplicator().Visit(dsv.Clone()) as Variable));
       }
     }
 

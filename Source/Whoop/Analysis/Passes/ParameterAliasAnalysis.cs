@@ -219,7 +219,7 @@ namespace Whoop.Analysis
                 val.Name.Equals(callId1.Name)))
             {
               var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(callId1);
-//              if (ptrExprs.Count == 0) return false;
+              if (ptrExprs.Count == 0) return false;
             }
 
             if (callId2 != null && !this.AC.TopLevelDeclarations.OfType<Constant>().Any(val =>
@@ -227,7 +227,7 @@ namespace Whoop.Analysis
                 val.Name.Equals(callId2.Name)))
             {
               var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(callId2);
-//              if (ptrExprs.Count == 0) return false;
+              if (ptrExprs.Count == 0) return false;
             }
 
             Expr lexpr = Expr.Lt(new NAryExpr(Token.NoToken, new BinaryOperator(Token.NoToken,

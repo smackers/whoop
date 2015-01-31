@@ -52,7 +52,6 @@ namespace Whoop.Instrumentation
       this.AddCurrentLocksets();
       this.AddMemoryLocksets();
       this.AddAccessCheckingVariables();
-      this.AddDomainKnowledgeVariables();
       this.AddAccessWatchdogConstants();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
@@ -112,17 +111,6 @@ namespace Whoop.Instrumentation
         if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(ravar.Name)))
           this.AC.TopLevelDeclarations.Add(ravar);
       }
-    }
-
-    private void AddDomainKnowledgeVariables()
-    {
-      var devReg = new GlobalVariable(Token.NoToken,
-        new TypedIdent(Token.NoToken, "DEVICE_IS_REGISTERED_$" + this.EP.Name,
-          Microsoft.Boogie.Type.Bool));
-      devReg.AddAttribute("domain_specific", new object[] { });
-
-      if (!this.AC.TopLevelDeclarations.OfType<Variable>().Any(val => val.Name.Equals(devReg.Name)))
-        this.AC.TopLevelDeclarations.Add(devReg);
     }
 
     private void AddAccessWatchdogConstants()
