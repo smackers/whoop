@@ -23,7 +23,7 @@ using Whoop.Regions;
 
 namespace Whoop.Summarisation
 {
-  internal class DomainKnowledgeSummaryGeneration : SummaryGeneration, IDomainKnowledgeSummaryGeneration
+  internal class DomainKnowledgeSummaryGeneration : SummaryGeneration, IPass
   {
     public DomainKnowledgeSummaryGeneration(AnalysisContext ac, EntryPoint ep)
       : base(ac, ep)

@@ -24,7 +24,7 @@ using Microsoft.Boogie.GraphUtil;
 
 namespace Whoop.Instrumentation
 {
-  internal class DomainKnowledgeInstrumentation : IDomainKnowledgeInstrumentation
+  internal class DomainKnowledgeInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

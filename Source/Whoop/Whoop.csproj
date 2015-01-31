@@ -47,11 +47,6 @@
     <Compile Include="Instrumentation\Passes\LocksetInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\PairInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\RaceInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\IDeadlockInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\IErrorReportingInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\ILocksetInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\IPairInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\IRaceInstrumentation.cs" />
     <Compile Include="Refactoring\Interfaces\IProgramSimplifier.cs" />
     <Compile Include="Refactoring\Passes\ProgramSimplifier.cs" />
     <Compile Include="Refactoring\Factory.cs" />
@@ -59,34 +54,25 @@
     <Compile Include="Instrumentation\Factory.cs" />
     <Compile Include="Refactoring\Interfaces\IEntryPointRefactoring.cs" />
     <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
-    <Compile Include="Instrumentation\Interfaces\IInstrumentationRegionsConstructor.cs" />
     <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
     <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
-    <Compile Include="Analysis\Interfaces\ISharedStateAbstraction.cs" />
     <Compile Include="Refactoring\Passes\LockRefactoring.cs" />
     <Compile Include="Refactoring\Interfaces\ILockRefactoring.cs" />
     <Compile Include="Analysis\Passes\LockAbstraction.cs" />
-    <Compile Include="Analysis\Interfaces\ILockAbstraction.cs" />
     <Compile Include="Instrumentation\Passes\GlobalRaceCheckingInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\GlobalRaceCheckingInstrumentation.cs" />
     <Compile Include="Analysis\ModelCleaner.cs" />
     <Compile Include="Analysis\SharedStateAnalyser.cs" />
     <Compile Include="Utilities\ExecutionTimer.cs" />
-    <Compile Include="Summarisation\Interfaces\ILocksetSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\LocksetSummaryGeneration.cs" />
     <Compile Include="Summarisation\Factory.cs" />
-    <Compile Include="Summarisation\Interfaces\IAccessCheckingSummaryGeneration.cs" />
     <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
     <Compile Include="Refactoring\Interfaces\IFunctionPointerRefactoring.cs" />
     <Compile Include="Refactoring\Passes\FunctionPointerRefactoring.cs" />
     <Compile Include="Utilities\Utilities.cs" />
     <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
-    <Compile Include="Instrumentation\Interfaces\IDomainKnowledgeInstrumentation.cs" />
     <Compile Include="Summarisation\SummaryInformationParser.cs" />
     <Compile Include="Analysis\Passes\WatchdogInformationAnalysis.cs" />
-    <Compile Include="Analysis\Interfaces\IWatchdogInformationAnalysis.cs" />
     <Compile Include="Summarisation\Passes\DomainKnowledgeSummaryGeneration.cs" />
-    <Compile Include="Summarisation\Interfaces\IDomainKnowledgeSummaryGeneration.cs" />
     <Compile Include="Domain\Drivers\FunctionPointerInformation.cs" />
     <Compile Include="Analysis\PointerArithmeticAnalyser.cs" />
     <Compile Include="Core\Graph.cs" />
@@ -100,9 +86,7 @@
     <Compile Include="Core\Outcome.cs" />
     <Compile Include="Utilities\WhoopCommandLineOptions.cs" />
     <Compile Include="Analysis\Passes\PairWatchdogInformationAnalysis.cs" />
-    <Compile Include="Analysis\Interfaces\IPairWatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Passes\ParameterAliasAnalysis.cs" />
-    <Compile Include="Analysis\Interfaces\IParameterAliasAnalysis.cs" />
     <Compile Include="Refactoring\Interfaces\INetDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\Interfaces\INetEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\NetDisableProgramSlicing.cs" />
@@ -113,13 +97,11 @@
     <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\ReadWriteSlicing.cs" />
     <Compile Include="Refactoring\ProgramSlicing.cs" />
-    <Compile Include="Analysis\Interfaces\ILocalMemoryAllocationAnalysis.cs" />
     <Compile Include="Analysis\Passes\LocalMemoryAllocationAnalysis.cs" />
     <Compile Include="Analysis\Passes\PairParameterAliasAnalysis.cs" />
-    <Compile Include="Analysis\Interfaces\IPairParameterAliasAnalysis.cs" />
     <Compile Include="Analysis\Passes\FunctionPointerUseAnalysis.cs" />
-    <Compile Include="Analysis\Interfaces\IFunctionPointerUseAnalysis.cs" />
     <Compile Include="Summarisation\SummaryGeneration.cs" />
+    <Compile Include="Core\IPass.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
@@ -131,9 +113,7 @@
     <Folder Include="Refactoring\" />
     <Folder Include="Refactoring\Interfaces\" />
     <Folder Include="Refactoring\Passes\" />
-    <Folder Include="Analysis\Interfaces\" />
     <Folder Include="Summarisation\" />
-    <Folder Include="Summarisation\Interfaces\" />
     <Folder Include="Summarisation\Passes\" />
     <Folder Include="Core\" />
   </ItemGroup>

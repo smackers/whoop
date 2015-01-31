@@ -23,7 +23,7 @@ using Whoop.Regions;
 
 namespace Whoop.Summarisation
 {
-  internal class AccessCheckingSummaryGeneration : SummaryGeneration, IAccessCheckingSummaryGeneration
+  internal class AccessCheckingSummaryGeneration : SummaryGeneration, IPass
   {
     public AccessCheckingSummaryGeneration(AnalysisContext ac, EntryPoint ep)
       : base(ac, ep)

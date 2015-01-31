@@ -22,7 +22,7 @@ using Whoop.Domain.Drivers;
 
 namespace Whoop.Analysis
 {
-  internal class LockAbstraction : ILockAbstraction
+  internal class LockAbstraction : IPass
   {
     private AnalysisContext AC;
     private ExecutionTimer Timer;

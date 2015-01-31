@@ -22,7 +22,7 @@ using Whoop.Regions;
 
 namespace Whoop.Instrumentation
 {
-  internal class DeadlockInstrumentation : IDeadlockInstrumentation
+  internal class DeadlockInstrumentation : IPass
   {
     private AnalysisContext AC;
     private Implementation EP;

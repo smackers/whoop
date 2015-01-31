@@ -23,7 +23,7 @@ using System.Reflection.Emit;
 
 namespace Whoop.Analysis
 {
-  internal class PairParameterAliasAnalysis : IPairParameterAliasAnalysis
+  internal class PairParameterAliasAnalysis : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP1;

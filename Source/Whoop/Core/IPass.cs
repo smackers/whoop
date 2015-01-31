@@ -11,9 +11,9 @@
 
 using System;
 
-namespace Whoop.Instrumentation
+namespace Whoop
 {
-  public interface IRaceInstrumentation
+  public interface IPass
   {
     void Run();
   }

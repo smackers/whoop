@@ -24,7 +24,7 @@ using System.Text.RegularExpressions;
 
 namespace Whoop.Analysis
 {
-  internal class ParameterAliasAnalysis : IParameterAliasAnalysis
+  internal class ParameterAliasAnalysis : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

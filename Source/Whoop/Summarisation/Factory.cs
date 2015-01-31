@@ -16,17 +16,17 @@ namespace Whoop.Summarisation
 {
   public static class Factory
   {
-    public static ILocksetSummaryGeneration CreateLocksetSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateLocksetSummaryGeneration(AnalysisContext ac, EntryPoint ep)
     {
       return new LocksetSummaryGeneration(ac, ep);
     }
 
-    public static IAccessCheckingSummaryGeneration CreateAccessCheckingSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateAccessCheckingSummaryGeneration(AnalysisContext ac, EntryPoint ep)
     {
       return new AccessCheckingSummaryGeneration(ac, ep);
     }
 
-    public static IDomainKnowledgeSummaryGeneration CreateDomainKnowledgeSummaryGeneration(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateDomainKnowledgeSummaryGeneration(AnalysisContext ac, EntryPoint ep)
     {
       return new DomainKnowledgeSummaryGeneration(ac, ep);
     }

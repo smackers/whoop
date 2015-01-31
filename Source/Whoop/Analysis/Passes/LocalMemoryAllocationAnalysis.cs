@@ -23,7 +23,7 @@ using Whoop.Regions;
 
 namespace Whoop.Analysis
 {
-  internal class LocalMemoryAllocationAnalysis : ILocalMemoryAllocationAnalysis
+  internal class LocalMemoryAllocationAnalysis : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

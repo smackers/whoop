@@ -24,7 +24,7 @@ using System.Reflection.Emit;
 
 namespace Whoop.Instrumentation
 {
-  internal class GlobalRaceCheckingInstrumentation : IGlobalRaceCheckingInstrumentation
+  internal class GlobalRaceCheckingInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

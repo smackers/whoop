@@ -24,7 +24,7 @@ using System.Diagnostics.SymbolStore;
 
 namespace Whoop.Instrumentation
 {
-  internal class RaceInstrumentation : IRaceInstrumentation
+  internal class RaceInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

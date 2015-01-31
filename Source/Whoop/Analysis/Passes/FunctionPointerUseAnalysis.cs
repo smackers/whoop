@@ -24,7 +24,7 @@ using System.Text.RegularExpressions;
 
 namespace Whoop.Analysis
 {
-  internal class FunctionPointerUseAnalysis : IFunctionPointerUseAnalysis
+  internal class FunctionPointerUseAnalysis : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

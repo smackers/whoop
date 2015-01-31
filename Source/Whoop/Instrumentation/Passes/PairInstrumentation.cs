@@ -21,7 +21,7 @@ using Whoop.Regions;
 
 namespace Whoop.Instrumentation
 {
-  internal class PairInstrumentation : IPairInstrumentation
+  internal class PairInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP1;

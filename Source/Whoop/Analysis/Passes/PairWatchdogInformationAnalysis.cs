@@ -23,7 +23,7 @@ using Whoop.Regions;
 
 namespace Whoop.Analysis
 {
-  internal class PairWatchdogInformationAnalysis : IPairWatchdogInformationAnalysis
+  internal class PairWatchdogInformationAnalysis : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

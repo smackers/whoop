@@ -22,7 +22,7 @@ using Whoop.Regions;
 
 namespace Whoop.Instrumentation
 {
-  internal class ErrorReportingInstrumentation : IErrorReportingInstrumentation
+  internal class ErrorReportingInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

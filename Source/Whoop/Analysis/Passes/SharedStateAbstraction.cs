@@ -20,7 +20,7 @@ using Whoop.Regions;
 
 namespace Whoop.Analysis
 {
-  internal class SharedStateAbstraction : ISharedStateAbstraction
+  internal class SharedStateAbstraction : IPass
   {
     private AnalysisContext AC;
     private ExecutionTimer Timer;

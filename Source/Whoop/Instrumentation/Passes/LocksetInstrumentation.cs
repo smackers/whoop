@@ -23,7 +23,7 @@ using Whoop.Regions;
 
 namespace Whoop.Instrumentation
 {
-  internal class LocksetInstrumentation : ILocksetInstrumentation
+  internal class LocksetInstrumentation : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

@@ -16,42 +16,42 @@ namespace Whoop.Instrumentation
 {
   public static class Factory
   {
-    public static IInstrumentationRegionsConstructor CreateInstrumentationRegionsConstructor(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateInstrumentationRegionsConstructor(AnalysisContext ac, EntryPoint ep)
     {
       return new InstrumentationRegionsConstructor(ac, ep);
     }
 
-    public static ILocksetInstrumentation CreateLocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateLocksetInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new LocksetInstrumentation(ac, ep);
     }
 
-    public static IDomainKnowledgeInstrumentation CreateDomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateDomainKnowledgeInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new DomainKnowledgeInstrumentation(ac, ep);
     }
 
-    public static IRaceInstrumentation CreateRaceInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateRaceInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new RaceInstrumentation(ac, ep);
     }
 
-    public static IDeadlockInstrumentation CreateDeadlockInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateDeadlockInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new DeadlockInstrumentation(ac, ep);
     }
 
-    public static IErrorReportingInstrumentation CreateErrorReportingInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateErrorReportingInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new ErrorReportingInstrumentation(ac, ep);
     }
 
-    public static IGlobalRaceCheckingInstrumentation CreateGlobalRaceCheckingInstrumentation(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateGlobalRaceCheckingInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new GlobalRaceCheckingInstrumentation(ac, ep);
     }
 
-    public static IPairInstrumentation CreatePairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public static IPass CreatePairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
     {
       return new PairInstrumentation(ac, ep1, ep2);
     }

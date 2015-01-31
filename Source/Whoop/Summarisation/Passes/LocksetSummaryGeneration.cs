@@ -24,7 +24,7 @@ using System.Net;
 
 namespace Whoop.Summarisation
 {
-  internal class LocksetSummaryGeneration : SummaryGeneration, ILocksetSummaryGeneration
+  internal class LocksetSummaryGeneration : SummaryGeneration, IPass
   {
     public LocksetSummaryGeneration(AnalysisContext ac, EntryPoint ep)
       : base(ac, ep)
