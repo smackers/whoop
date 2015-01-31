@@ -21,7 +21,7 @@ using Microsoft.Boogie.GraphUtil;
 
 namespace Whoop.Refactoring
 {
-  internal class EntryPointRefactoring : IEntryPointRefactoring
+  internal class EntryPointRefactoring : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

@@ -17,42 +17,42 @@ namespace Whoop.Refactoring
 {
   public static class Factory
   {
-    public static IEntryPointRefactoring CreateEntryPointRefactoring(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateEntryPointRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       return new EntryPointRefactoring(ac, ep);
     }
 
-    public static IProgramSimplifier CreateProgramSimplifier(AnalysisContext ac)
+    public static IPass CreateProgramSimplifier(AnalysisContext ac)
     {
       return new ProgramSimplifier(ac);
     }
 
-    public static ILockRefactoring CreateLockRefactoring(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateLockRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       return new LockRefactoring(ac, ep);
     }
 
-    public static IFunctionPointerRefactoring CreateFunctionPointerRefactoring(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateFunctionPointerRefactoring(AnalysisContext ac, EntryPoint ep)
     {
       return new FunctionPointerRefactoring(ac, ep);
     }
 
-    public static IDeviceEnableProgramSlicing CreateDeviceEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateDeviceEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new DeviceEnableProgramSlicing(ac, ep);
     }
 
-    public static IDeviceDisableProgramSlicing CreateDeviceDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateDeviceDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new DeviceDisableProgramSlicing(ac, ep);
     }
 
-    public static INetEnableProgramSlicing CreateNetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateNetEnableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new NetEnableProgramSlicing(ac, ep);
     }
 
-    public static INetDisableProgramSlicing CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
+    public static IPass CreateNetDisableProgramSlicing(AnalysisContext ac, EntryPoint ep)
     {
       return new NetDisableProgramSlicing(ac, ep);
     }

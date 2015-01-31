@@ -23,7 +23,7 @@ using Whoop.Analysis;
 
 namespace Whoop.Refactoring
 {
-  internal class LockRefactoring : ILockRefactoring
+  internal class LockRefactoring : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;

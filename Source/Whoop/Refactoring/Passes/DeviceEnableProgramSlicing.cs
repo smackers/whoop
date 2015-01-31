@@ -22,7 +22,7 @@ using Whoop.Regions;
 
 namespace Whoop.Refactoring
 {
-  internal class DeviceEnableProgramSlicing : ProgramSlicing, IDeviceEnableProgramSlicing
+  internal class DeviceEnableProgramSlicing : ProgramSlicing, IPass
   {
     #region public API
 

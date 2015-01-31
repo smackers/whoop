@@ -23,7 +23,7 @@ using System.Threading;
 
 namespace Whoop.Refactoring
 {
-  internal class ProgramSimplifier : IProgramSimplifier
+  internal class ProgramSimplifier : IPass
   {
     private AnalysisContext AC;
     private ExecutionTimer Timer;

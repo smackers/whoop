@@ -47,17 +47,14 @@
     <Compile Include="Instrumentation\Passes\LocksetInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\PairInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\RaceInstrumentation.cs" />
-    <Compile Include="Refactoring\Interfaces\IProgramSimplifier.cs" />
     <Compile Include="Refactoring\Passes\ProgramSimplifier.cs" />
     <Compile Include="Refactoring\Factory.cs" />
     <Compile Include="Analysis\Factory.cs" />
     <Compile Include="Instrumentation\Factory.cs" />
-    <Compile Include="Refactoring\Interfaces\IEntryPointRefactoring.cs" />
     <Compile Include="Refactoring\Passes\EntryPointRefactoring.cs" />
     <Compile Include="Instrumentation\Passes\InstrumentationRegionsConstructor.cs" />
     <Compile Include="Analysis\Passes\SharedStateAbstraction.cs" />
     <Compile Include="Refactoring\Passes\LockRefactoring.cs" />
-    <Compile Include="Refactoring\Interfaces\ILockRefactoring.cs" />
     <Compile Include="Analysis\Passes\LockAbstraction.cs" />
     <Compile Include="Instrumentation\Passes\GlobalRaceCheckingInstrumentation.cs" />
     <Compile Include="Analysis\ModelCleaner.cs" />
@@ -66,7 +63,6 @@
     <Compile Include="Summarisation\Passes\LocksetSummaryGeneration.cs" />
     <Compile Include="Summarisation\Factory.cs" />
     <Compile Include="Summarisation\Passes\AccessCheckingSummaryGeneration.cs" />
-    <Compile Include="Refactoring\Interfaces\IFunctionPointerRefactoring.cs" />
     <Compile Include="Refactoring\Passes\FunctionPointerRefactoring.cs" />
     <Compile Include="Utilities\Utilities.cs" />
     <Compile Include="Instrumentation\Passes\DomainKnowledgeInstrumentation.cs" />
@@ -87,13 +83,9 @@
     <Compile Include="Utilities\WhoopCommandLineOptions.cs" />
     <Compile Include="Analysis\Passes\PairWatchdogInformationAnalysis.cs" />
     <Compile Include="Analysis\Passes\ParameterAliasAnalysis.cs" />
-    <Compile Include="Refactoring\Interfaces\INetDisableProgramSlicing.cs" />
-    <Compile Include="Refactoring\Interfaces\INetEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\NetDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\NetEnableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\DeviceEnableProgramSlicing.cs" />
-    <Compile Include="Refactoring\Interfaces\IDeviceEnableProgramSlicing.cs" />
-    <Compile Include="Refactoring\Interfaces\IDeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\ReadWriteSlicing.cs" />
     <Compile Include="Refactoring\ProgramSlicing.cs" />
@@ -111,7 +103,6 @@
     <Folder Include="Instrumentation\" />
     <Folder Include="Analysis\" />
     <Folder Include="Refactoring\" />
-    <Folder Include="Refactoring\Interfaces\" />
     <Folder Include="Refactoring\Passes\" />
     <Folder Include="Summarisation\" />
     <Folder Include="Summarisation\Passes\" />

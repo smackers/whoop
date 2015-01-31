@@ -21,7 +21,7 @@ using Whoop.Domain.Drivers;
 
 namespace Whoop.Refactoring
 {
-  internal class FunctionPointerRefactoring : IFunctionPointerRefactoring
+  internal class FunctionPointerRefactoring : IPass
   {
     private AnalysisContext AC;
     private EntryPoint EP;
