@@ -46,12 +46,12 @@ namespace Whoop
     internal List<Lockset> CurrentLocksets;
     internal List<Lockset> MemoryLocksets;
 
-//    internal Implementation Checker;
-
     internal Microsoft.Boogie.Type MemoryModelType;
 
     internal List<HashSet<string>> MatchedAccessesMap;
     internal Dictionary<string, HashSet<Expr>> AxiomAccessesMap;
+
+    internal Constant DeviceStruct;
 
     internal Implementation Checker
     {
@@ -81,6 +81,8 @@ namespace Whoop
 
       this.MatchedAccessesMap = new List<HashSet<string>>();
       this.AxiomAccessesMap = new Dictionary<string, HashSet<Expr>>();
+
+      this.DeviceStruct = null;
 
       this.ResetToProgramTopLevelDeclarations();
 

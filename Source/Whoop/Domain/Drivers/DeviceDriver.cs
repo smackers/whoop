@@ -76,7 +76,7 @@ namespace Whoop.Domain.Drivers
             var ep = new EntryPoint(pair[1], pair[0], module);
             module.EntryPoints.Add(ep);
 
-            if (ep.IsInit) continue;
+//            if (ep.IsInit) continue;
             if (DeviceDriver.EntryPoints.Any(val => val.Name.Equals(ep.Name)))
               continue;
 

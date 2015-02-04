@@ -289,6 +289,9 @@ namespace Whoop.Analysis
           if (assign.Rhss[0] is IdentifierExpr && this.InParams.Any(val => val.Name.Equals(
             (assign.Rhss[0] as IdentifierExpr).Name)))
             this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+          if (assign.Rhss[0] is IdentifierExpr && this.AC.TopLevelDeclarations.OfType<Constant>().
+            Any(val => val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
+            this.ExpressionMap[id].Add(assign.Rhss[0], 0);
         }
       }
     }
@@ -317,6 +320,8 @@ namespace Whoop.Analysis
           if (identifiers.ContainsKey(exprId) && identifiers[exprId])
             continue;
           if (this.InParams.Any(val => val.Name.Equals(exprId.Name)))
+            continue;
+          if (this.AC.TopLevelDeclarations.OfType<Constant>().Any(val => val.Name.Equals(exprId.Name)))
             continue;
 
           this.ComputeExpressionAndAssignmentMaps(exprId);
@@ -440,6 +445,13 @@ namespace Whoop.Analysis
 
           var id = pair.Key as IdentifierExpr;
           if (this.InParams.Any(val => val.Name.Equals(id.Name)))
+          {
+            var result = Expr.Add(id, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value + value)));
+            if (outcome.Contains(result))
+              return;
+            outcome.Add(result);
+          }
+          else if (this.AC.TopLevelDeclarations.OfType<Constant>().Any(val => val.Name.Equals(id.Name)))
           {
             var result = Expr.Add(id, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value + value)));
             if (outcome.Contains(result))

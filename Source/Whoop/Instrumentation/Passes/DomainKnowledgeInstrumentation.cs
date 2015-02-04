@@ -56,6 +56,9 @@ namespace Whoop.Instrumentation
       this.AddRegisterDeviceFunc();
       this.AddUnregisterDeviceFunc();
 
+      if (this.EP.IsInit)
+        this.CreateDeviceStructConstant();
+
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.InstrumentImplementation(region);
@@ -174,6 +177,17 @@ namespace Whoop.Instrumentation
               call.Ins.Clear();
               call.Outs.Clear();
             }
+          }
+          else if (call.callee.Equals("alloc_etherdev"))
+          {
+            List<AssignLhs> newLhss = new List<AssignLhs>();
+            List<Expr> newRhss = new List<Expr>();
+
+            newLhss.Add(new SimpleAssignLhs(call.Outs[0].tok, call.Outs[0]));
+            newRhss.Add(new IdentifierExpr(this.AC.DeviceStruct.tok, this.AC.DeviceStruct));
+
+            var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
+            block.Cmds[idx] = assign;
           }
         }
       }
@@ -346,6 +360,14 @@ namespace Whoop.Instrumentation
             predecessorCallees.Add(region);
         }
       }
+    }
+
+    private void CreateDeviceStructConstant()
+    {
+      var ti = new TypedIdent(Token.NoToken, "device$struct", Microsoft.Boogie.Type.Int);
+      var constant = new Constant(Token.NoToken, ti, true);
+      this.AC.TopLevelDeclarations.Add(constant);
+      this.AC.DeviceStruct = constant;
     }
 
     #endregion

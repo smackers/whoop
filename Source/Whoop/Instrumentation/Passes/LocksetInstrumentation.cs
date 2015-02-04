@@ -119,7 +119,7 @@ namespace Whoop.Instrumentation
             new IdentifierExpr(in2.tok, in2), new IdentifierExpr(ls.Id.tok, ls.Id)
           })));
 
-        AssignCmd assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
+        var assign = new AssignCmd(Token.NoToken, newLhss, newRhss);
         b.Cmds.Add(assign);
       }
 

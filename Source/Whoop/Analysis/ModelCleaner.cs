@@ -263,6 +263,7 @@ namespace Whoop.Analysis
       {
         if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
           proc.Name.Contains("$memset") ||
+          proc.Name.Equals("alloc_etherdev") ||
           proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
           proc.Name.Equals("ASSERT_RTNL") ||
           proc.Name.Equals("netif_device_attach") || proc.Name.Equals("netif_device_detach") ||
