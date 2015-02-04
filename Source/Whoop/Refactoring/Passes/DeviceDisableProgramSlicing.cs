@@ -56,11 +56,11 @@ namespace Whoop.Refactoring
         base.SliceRegion(region);
       }
 
-      this.SimplifyAccessesInChangingRegion();
+      this.SimplifyChangingRegion();
       var predecessors = base.EP.CallGraph.NestedPredecessors(base.ChangingRegion);
       var successors = base.EP.CallGraph.NestedSuccessors(base.ChangingRegion);
       predecessors.RemoveWhere(val => successors.Contains(val));
-      this.SimplifyAccessesInPredecessors(predecessors);
+      this.SimplifyPredecessors(predecessors);
 
       foreach (var region in base.AC.InstrumentationRegions)
       {
@@ -97,7 +97,7 @@ namespace Whoop.Refactoring
       }
     }
 
-    private void SimplifyAccessesInChangingRegion()
+    private void SimplifyChangingRegion()
     {
       var blockGraph = Graph<Block>.BuildBlockGraph(base.ChangingRegion.Blocks());
 
@@ -120,10 +120,10 @@ namespace Whoop.Refactoring
           break;
       }
 
-      this.SimplifyAccessInBlocks(base.ChangingRegion, blockGraph, devBlock, devCall);
+      this.SimplifyBlocks(base.ChangingRegion, blockGraph, devBlock, devCall);
     }
 
-    private void SimplifyAccessesInPredecessors(HashSet<InstrumentationRegion> predecessors)
+    private void SimplifyPredecessors(HashSet<InstrumentationRegion> predecessors)
     {
       foreach (var region in predecessors)
       {
@@ -150,11 +150,11 @@ namespace Whoop.Refactoring
             break;
         }
 
-        this.SimplifyAccessInBlocks(region, blockGraph, devBlock, devCall);
+        this.SimplifyBlocks(region, blockGraph, devBlock, devCall);
       }
     }
 
-    private void SimplifyAccessInBlocks(InstrumentationRegion region, Graph<Block> blockGraph,
+    private void SimplifyBlocks(InstrumentationRegion region, Graph<Block> blockGraph,
       Block devBlock, CallCmd devCall)
     {
       var predecessorBlocks = blockGraph.NestedPredecessors(devBlock);
@@ -166,15 +166,26 @@ namespace Whoop.Refactoring
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (!(call.callee.StartsWith("_WRITE_LS_$M.") ||
-            call.callee.StartsWith("_READ_LS_$M.")))
-            continue;
+          if (call.callee.StartsWith("_WRITE_LS_$M.") ||
+            call.callee.StartsWith("_READ_LS_$M."))
+          {
+            ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
 
-          ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
+            call.callee = "_NO_OP_$" + base.EP.Name;
+            call.Ins.Clear();
+            call.Outs.Clear();
+          }
+          else
+          {
+            var calleeRegion = base.AC.InstrumentationRegions.Find(val =>
+              val.Implementation().Name.Equals(call.callee));
+            if (calleeRegion == null)
+              continue;
 
-          call.callee = "_NO_OP_$" + base.EP.Name;
-          call.Ins.Clear();
-          call.Outs.Clear();
+            call.callee = "_NO_OP_$" + base.EP.Name;
+            call.Ins.Clear();
+            call.Outs.Clear();
+          }
         }
       }
 
@@ -192,15 +203,26 @@ namespace Whoop.Refactoring
           if (!foundCall)
             continue;
 
-          if (!(call.callee.StartsWith("_WRITE_LS_$M.") ||
-            call.callee.StartsWith("_READ_LS_$M.")))
-            continue;
+          if (call.callee.StartsWith("_WRITE_LS_$M.") ||
+            call.callee.StartsWith("_READ_LS_$M."))
+          {
+            ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
 
-          ReadWriteSlicing.CleanReadWriteSets(base.EP, region, call);
+            call.callee = "_NO_OP_$" + base.EP.Name;
+            call.Ins.Clear();
+            call.Outs.Clear();
+          }
+          else
+          {
+            var calleeRegion = base.AC.InstrumentationRegions.Find(val =>
+              val.Implementation().Name.Equals(call.callee));
+            if (calleeRegion == null)
+              continue;
 
-          call.callee = "_NO_OP_$" + base.EP.Name;
-          call.Ins.Clear();
-          call.Outs.Clear();
+            call.callee = "_NO_OP_$" + base.EP.Name;
+            call.Ins.Clear();
+            call.Outs.Clear();
+          }
         }
       }
     }
