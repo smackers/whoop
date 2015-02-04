@@ -210,9 +210,6 @@ namespace Whoop.Domain.Drivers
     /// <param name="ep2">Name of second entry point</param>
     private static bool CanRunConcurrently(string ep1, string ep2)
     {
-      if (ep1.Equals("probe") || ep2.Equals("probe"))
-        return false;
-
       if (DeviceDriver.HasKernelImposedDeviceLock(ep1) &&
           DeviceDriver.HasKernelImposedDeviceLock(ep2))
         return false;

@@ -48,21 +48,21 @@ namespace Whoop.Analysis
         this.Timer.Start();
       }
 
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
-          this.AC, this.EP, region.Implementation()));
-      }
-
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        this.AnalyseImplementation(region);
-      }
-
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        ReadWriteSlicing.CleanReadWriteModsets(this.AC, this.EP, region);
-      }
+//      foreach (var region in this.AC.InstrumentationRegions)
+//      {
+//        this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
+//          this.AC, this.EP, region.Implementation()));
+//      }
+//
+//      foreach (var region in this.AC.InstrumentationRegions)
+//      {
+//        this.AnalyseImplementation(region);
+//      }
+//
+//      foreach (var region in this.AC.InstrumentationRegions)
+//      {
+//        ReadWriteSlicing.CleanReadWriteModsets(this.AC, this.EP, region);
+//      }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {

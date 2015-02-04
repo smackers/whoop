@@ -215,6 +215,8 @@ namespace Whoop.Refactoring
           continue;
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
           continue;
+        if (impl.Equals(this.AC.Checker))
+          continue;
         if (impl.Name.Equals(this.EP.Name))
           continue;
         if (!Utilities.ShouldAccessFunction(impl.Name))
@@ -240,6 +242,15 @@ namespace Whoop.Refactoring
         !(val as Procedure).Equals(this.Implementation.Proc));
       this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Implementation) && (val as Implementation).Name.Equals(DeviceDriver.InitEntryPoint) &&
+        !(val as Implementation).Equals(this.Implementation));
+
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
+        (val is Constant) && (val as Constant).Name.Equals(this.AC.Checker.Name));
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
+        (val is Procedure) && (val as Procedure).Name.Equals(this.AC.Checker.Name) &&
+        !(val as Procedure).Equals(this.Implementation.Proc));
+      this.AC.TopLevelDeclarations.RemoveAll(val =>
+        (val is Implementation) && (val as Implementation).Name.Equals(this.AC.Checker.Name) &&
         !(val as Implementation).Equals(this.Implementation));
     }
 

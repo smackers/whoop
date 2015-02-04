@@ -289,7 +289,6 @@ namespace Whoop.Regions
 
       List<Variable> varsEp1 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl1.Name));
       List<Variable> varsEp2 = SharedStateAnalyser.GetMemoryRegions(DeviceDriver.GetEntryPoint(impl2.Name));
-      Procedure initProc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint).Proc;
 
       foreach (var ls in this.AC.CurrentLocksets)
       {
@@ -330,25 +329,7 @@ namespace Whoop.Regions
         this.InternalImplementation.Proc.Requires.Add(require);
       }
 
-//      Expr inParamExprs = null;
-//      foreach (var inParam in this.InternalImplementation.Proc.InParams)
-//      {
-//        if (inParamExprs == null)
-//        {
-//          inParamExprs = Expr.Ge(new IdentifierExpr(inParam.tok, inParam),
-//            new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
-//        }
-//        else
-//        {
-//          inParamExprs = Expr.And(inParamExprs, Expr.Ge(new IdentifierExpr(inParam.tok, inParam),
-//            new LiteralExpr(Token.NoToken, BigNum.FromInt(0))));
-//        }
-//      }
-//
-//      if (inParamExprs != null)
-//        this.InternalImplementation.Proc.Requires.Add(new Requires(false, inParamExprs));
-
-      foreach (var ie in initProc.Modifies)
+      foreach (var ie in this.AC.Checker.Proc.Modifies)
       {
         if (!ie.Name.Equals("$Alloc") && !ie.Name.Equals("$CurrAddr") &&
           !varsEp1.Any(val => val.Name.Equals(ie.Name)) &&
@@ -605,7 +586,7 @@ namespace Whoop.Regions
 
     private void CreateInParamMatcher(Implementation impl1, Implementation impl2)
     {
-      Implementation initFunc = this.AC.GetImplementation(DeviceDriver.InitEntryPoint);
+      var initFunc = this.AC.Checker;
       List<Expr> insEp1 = new List<Expr>();
       List<Expr> insEp2 = new List<Expr>();
 
@@ -634,13 +615,9 @@ namespace Whoop.Regions
               Expr resolved = PointerArithmeticAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
-              {
                 insEp1.Add(inParam);
-              }
               else
-              {
                 insEp1.Add(resolved);
-              }
             }
           }
 
@@ -651,13 +628,9 @@ namespace Whoop.Regions
               Expr resolved = PointerArithmeticAnalyser.GetPointerArithmeticExpr(initFunc, inParam);
 
               if (resolved == null)
-              {
                 insEp2.Add(inParam);
-              }
               else
-              {
                 insEp2.Add(resolved);
-              }
             }
           }
         }

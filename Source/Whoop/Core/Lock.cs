@@ -59,6 +59,7 @@ namespace Whoop
         if (impl.InParams[i].Name.Equals(ptr.Name))
           index = i;
       }
+
       if (index == -1)
         return false;
 

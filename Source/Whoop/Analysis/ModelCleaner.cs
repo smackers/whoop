@@ -78,6 +78,8 @@ namespace Whoop.Analysis
       {
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
           continue;
+        if (impl.Equals(ac.Checker))
+          continue;
         if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
           continue;
         if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
@@ -247,6 +249,10 @@ namespace Whoop.Analysis
       ac.TopLevelDeclarations.Remove(ac.GetConstant(DeviceDriver.InitEntryPoint));
       ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint).Proc);
       ac.TopLevelDeclarations.Remove(ac.GetImplementation(DeviceDriver.InitEntryPoint));
+
+      ac.TopLevelDeclarations.Remove(ac.GetConstant(ac.Checker.Name));
+      ac.TopLevelDeclarations.Remove(ac.Checker.Proc);
+      ac.TopLevelDeclarations.Remove(ac.Checker);
     }
 
     public static void RemoveUnecesseryInfoFromSpecialFunctions(AnalysisContext ac)

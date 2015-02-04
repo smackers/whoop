@@ -46,10 +46,18 @@ namespace Whoop
     internal List<Lockset> CurrentLocksets;
     internal List<Lockset> MemoryLocksets;
 
+//    internal Implementation Checker;
+
     internal Microsoft.Boogie.Type MemoryModelType;
 
     internal List<HashSet<string>> MatchedAccessesMap;
     internal Dictionary<string, HashSet<Expr>> AxiomAccessesMap;
+
+    internal Implementation Checker
+    {
+      get;
+      private set;
+    }
 
     #endregion
 
@@ -75,6 +83,9 @@ namespace Whoop
       this.AxiomAccessesMap = new Dictionary<string, HashSet<Expr>>();
 
       this.ResetToProgramTopLevelDeclarations();
+
+      this.Checker = this.TopLevelDeclarations.OfType<Implementation>().ToList().
+        FirstOrDefault(val => val.Name.Equals("whoop$checker"));
     }
 
     public void EliminateDeadVariables()
