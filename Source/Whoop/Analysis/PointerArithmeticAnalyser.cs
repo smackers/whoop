@@ -516,7 +516,6 @@ namespace Whoop.Analysis
       {
         foreach (var call in this.CallMap[rhs])
         {
-          Console.WriteLine(" > call: " + lhs.Name + " " + rhs.Name);
           this.CallMap[lhs].Add(call);
         }
       }
