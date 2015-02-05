@@ -176,8 +176,11 @@ namespace Whoop.Refactoring
             FunctionPointerInformation.TryGetFromMacro(line, out macro);
 
             var rhs = (assign.Rhss[0] as NAryExpr).Args[1];
-            var ptrExpr = new PointerArithmeticAnalyser(this.AC, this.EP, impl).
-              ComputeRootPointers(rhs).FirstOrDefault();
+
+            HashSet<Expr> ptrExprs = null;
+            new PointerArithmeticAnalyser(this.AC, this.EP, impl).TryComputeRootPointers(rhs, out ptrExprs);
+
+            var ptrExpr = ptrExprs.FirstOrDefault();
             if (ptrExpr == null) break;
 
             var index = -1;
@@ -262,8 +265,10 @@ namespace Whoop.Refactoring
             }
             else
             {
-              var ptrExpr = new PointerArithmeticAnalyser(this.AC, this.EP, impl).
-                ComputeRootPointers(callInParam).FirstOrDefault();
+              HashSet<Expr> ptrExprs = null;
+              new PointerArithmeticAnalyser(this.AC, this.EP, impl).TryComputeRootPointers(callInParam, out ptrExprs);
+
+              var ptrExpr = ptrExprs.FirstOrDefault();
               if (ptrExpr == null) continue;
 
               var idx = -1;

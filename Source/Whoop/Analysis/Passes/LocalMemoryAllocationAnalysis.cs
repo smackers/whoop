@@ -48,21 +48,21 @@ namespace Whoop.Analysis
         this.Timer.Start();
       }
 
-//      foreach (var region in this.AC.InstrumentationRegions)
-//      {
-//        this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
-//          this.AC, this.EP, region.Implementation()));
-//      }
-//
-//      foreach (var region in this.AC.InstrumentationRegions)
-//      {
-//        this.AnalyseImplementation(region);
-//      }
-//
-//      foreach (var region in this.AC.InstrumentationRegions)
-//      {
-//        ReadWriteSlicing.CleanReadWriteModsets(this.AC, this.EP, region);
-//      }
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
+          this.AC, this.EP, region.Implementation()));
+      }
+
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        this.AnalyseImplementation(region);
+      }
+
+      foreach (var region in this.AC.InstrumentationRegions)
+      {
+        ReadWriteSlicing.CleanReadWriteModsets(this.AC, this.EP, region);
+      }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -84,6 +84,7 @@ namespace Whoop.Analysis
 
           var addr = call.Outs[0];
           var nonCheckedCalls = new HashSet<CallCmd>();
+
           if (this.IsAddressEscapingLocalContext(region, addr.ToString(),
             nonCheckedCalls, new HashSet<InstrumentationRegion>()))
             continue;
@@ -116,10 +117,20 @@ namespace Whoop.Analysis
 
           if (call.callee.StartsWith("_READ_LS_"))
           {
+            HashSet<Expr> ptrExprs = null;
+            if (this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs) !=
+                PointerArithmeticAnalyser.ResultType.Allocated)
+              continue;
+
             nonCheckedCalls.Add(call);
           }
           else if (call.callee.StartsWith("_WRITE_LS_"))
           {
+            HashSet<Expr> ptrExprs = null;
+            if (this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs) !=
+                PointerArithmeticAnalyser.ResultType.Allocated)
+              continue;
+
             nonCheckedCalls.Add(call);
             var rhs = QKeyValue.FindExprAttribute(call.Attributes, "rhs");
             if (rhs != null && rhs.ToString().Equals(addr))
@@ -142,7 +153,8 @@ namespace Whoop.Analysis
               }
               else
               {
-                var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[idx]);
+                HashSet<Expr> ptrExprs = null;
+                this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[idx], out ptrExprs);
                 foreach (var ptrExpr in ptrExprs)
                 {
                   if (ptrExpr.ToString().Equals(addr))

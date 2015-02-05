@@ -218,7 +218,8 @@ namespace Whoop.Analysis
               val.Name.Equals(callId1.Name)) && !region.Implementation().InParams.Exists(val =>
                 val.Name.Equals(callId1.Name)))
             {
-              var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(callId1);
+              HashSet<Expr> ptrExprs = null;
+              this.PtrAnalysisCache[region].TryComputeRootPointers(callId1, out ptrExprs);
               if (ptrExprs.Count == 0) return false;
             }
 
@@ -226,7 +227,8 @@ namespace Whoop.Analysis
               val.Name.Equals(callId2.Name)) && !region.Implementation().InParams.Exists(val =>
                 val.Name.Equals(callId2.Name)))
             {
-              var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(callId2);
+              HashSet<Expr> ptrExprs = null;
+              this.PtrAnalysisCache[region].TryComputeRootPointers(callId2, out ptrExprs);
               if (ptrExprs.Count == 0) return false;
             }
 

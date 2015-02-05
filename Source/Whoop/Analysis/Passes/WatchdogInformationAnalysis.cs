@@ -167,7 +167,8 @@ namespace Whoop.Analysis
 
           if (isInstrumentedCall && resource != null && accessType != null)
           {
-            var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[0]);
+            HashSet<Expr> ptrExprs = null;
+            this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
             foreach (var ptrExpr in ptrExprs)
             {
               var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);
@@ -246,7 +247,9 @@ namespace Whoop.Analysis
               for (int i = 0; i < call.Ins.Count; i++)
               {
                 var id = calleeRegion.Implementation().InParams[i];
-                var ptrExprs = this.PtrAnalysisCache[region].ComputeRootPointers(call.Ins[i]);
+
+                HashSet<Expr> ptrExprs = null;
+                this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[i], out ptrExprs);
                 foreach (var ptrExpr in ptrExprs)
                 {
                   region.CallInformation[call].Add(i, new Tuple<Expr, Expr>(ptrExpr, new IdentifierExpr(id.tok, id)));

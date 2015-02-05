@@ -35,6 +35,7 @@ namespace Whoop.Analysis
 
     private Dictionary<IdentifierExpr, Dictionary<Expr, int>> ExpressionMap;
     private Dictionary<IdentifierExpr, HashSet<Expr>> AssignmentMap;
+    private Dictionary<IdentifierExpr, HashSet<CallCmd>> CallMap;
 
     private static Dictionary<EntryPoint, Dictionary<Implementation, Dictionary<IdentifierExpr, HashSet<Expr>>>> Cache =
       new Dictionary<EntryPoint, Dictionary<Implementation, Dictionary<IdentifierExpr, HashSet<Expr>>>>();
@@ -42,9 +43,18 @@ namespace Whoop.Analysis
     private enum ArithmeticOperation
     {
       Addition = 0,
-      Subtraction = 1,
-      Multiplication = 2,
-      Division = 3
+      Subtraction,
+      Multiplication,
+      Division
+    }
+
+    public enum ResultType
+    {
+      Unknown = 0,
+      Pointer,
+      Literal,
+      Axiom,
+      Allocated
     }
 
     #endregion
@@ -61,6 +71,7 @@ namespace Whoop.Analysis
 
       this.ExpressionMap = new Dictionary<IdentifierExpr, Dictionary<Expr, int>>();
       this.AssignmentMap = new Dictionary<IdentifierExpr, HashSet<Expr>>();
+      this.CallMap = new Dictionary<IdentifierExpr, HashSet<CallCmd>>();
 
       if (!PointerArithmeticAnalyser.Cache.ContainsKey(ep))
         PointerArithmeticAnalyser.Cache.Add(ep,
@@ -73,30 +84,43 @@ namespace Whoop.Analysis
     /// <summary>
     /// Compute $pa(p, i, s) == p + i * s);
     /// </summary>
-    /// <returns>Root pointers</returns>
+    /// <returns>Result type</returns>
     /// <param name="id">Identifier expression</param>
-    public HashSet<Expr> ComputeRootPointers(Expr id)
+    /// <param name="ptrExprs">Computed ptr expressions</param>
+    public ResultType TryComputeRootPointers(Expr id, out HashSet<Expr> ptrExprs)
     {
+      ptrExprs = new HashSet<Expr>();
+
       if ((id is LiteralExpr) && (id as LiteralExpr).isBigNum)
-        return new HashSet<Expr> { id };
+      {
+        ptrExprs.Add(id);
+        return ResultType.Literal;
+      }
+
       if (!(id is IdentifierExpr))
-        return new HashSet<Expr>();
+      {
+        return ResultType.Unknown;
+      }
 
       var identifier = id as IdentifierExpr;
-      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)) ||
-        this.IsAxiom(identifier))
+      if (this.InParams.Any(val => val.Name.Equals(identifier.Name)))
       {
-        var result = Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
-        return new HashSet<Expr> { result };
+        ptrExprs.Add(Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0))));
+        return ResultType.Pointer;
+      }
+      else if (this.IsAxiom(identifier))
+      {
+        ptrExprs.Add(Expr.Add(identifier, new LiteralExpr(Token.NoToken, BigNum.FromInt(0))));
+        return ResultType.Axiom;
       }
 
       if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(identifier))
       {
-        return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
+        ptrExprs = PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
+        return ResultType.Pointer;
       }
 
-      this.CleanUp();
-      this.ComputeExpressionAndAssignmentMaps(identifier);
+      this.ComputeMapsForIdentifierExpr(identifier);
 
       var identifiers = new Dictionary<IdentifierExpr, bool>();
       identifiers.Add(identifier, false);
@@ -105,7 +129,16 @@ namespace Whoop.Analysis
       this.ComputeAndCacheRootPointers();
       this.CacheMatchedPointers();
 
-      return PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
+      if (this.CallMap.ContainsKey(identifier))
+      {
+        if (this.CallMap[identifier].Any(val => val.callee.Equals("$alloca")))
+        {
+          return ResultType.Allocated;
+        }
+      }
+
+      ptrExprs = PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier];
+      return ResultType.Pointer;
     }
 
     public bool IsAxiom(IdentifierExpr expr)
@@ -261,7 +294,7 @@ namespace Whoop.Analysis
 
     #region pointer arithmetic analysis functions
 
-    private void ComputeExpressionAndAssignmentMaps(IdentifierExpr id)
+    private void ComputeMapsForIdentifierExpr(IdentifierExpr id)
     {
       if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(id))
         return;
@@ -270,28 +303,42 @@ namespace Whoop.Analysis
         this.ExpressionMap.Add(id, new Dictionary<Expr, int>());
       if (!this.AssignmentMap.ContainsKey(id))
         this.AssignmentMap.Add(id, new HashSet<Expr>());
+      if (!this.CallMap.ContainsKey(id))
+        this.CallMap.Add(id, new HashSet<CallCmd>());
 
       foreach (var block in this.Implementation.Blocks)
       {
         for (int i = block.Cmds.Count - 1; i >= 0; i--)
         {
-          if (!(block.Cmds[i] is AssignCmd))
-            continue;
-          var assign = block.Cmds[i] as AssignCmd;
-          if (!(assign.Lhss[0].DeepAssignedIdentifier.Name.Equals(id.Name)))
-            continue;
-          if (this.AssignmentMap[id].Contains(assign.Rhss[0]))
-            continue;
+          if (block.Cmds[i] is AssignCmd)
+          {
+            var assign = block.Cmds[i] as AssignCmd;
+            if (!assign.Lhss[0].DeepAssignedIdentifier.Name.Equals(id.Name))
+              continue;
+            if (this.AssignmentMap[id].Contains(assign.Rhss[0]))
+              continue;
 
-          this.AssignmentMap[id].Add(assign.Rhss[0]);
-          if (assign.Rhss[0].ToString().StartsWith("$pa("))
-            this.ExpressionMap[id].Add(assign.Rhss[0], 0);
-          if (assign.Rhss[0] is IdentifierExpr && this.InParams.Any(val => val.Name.Equals(
-            (assign.Rhss[0] as IdentifierExpr).Name)))
-            this.ExpressionMap[id].Add(assign.Rhss[0], 0);
-          if (assign.Rhss[0] is IdentifierExpr && this.AC.TopLevelDeclarations.OfType<Constant>().
-            Any(val => val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
-            this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+            this.AssignmentMap[id].Add(assign.Rhss[0]);
+            if (assign.Rhss[0].ToString().StartsWith("$pa("))
+              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+            if (assign.Rhss[0] is IdentifierExpr && this.InParams.Any(val =>
+              val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
+              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+            if (assign.Rhss[0] is IdentifierExpr && this.AC.TopLevelDeclarations.OfType<Constant>().
+              Any(val => val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
+              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+          }
+          else if (block.Cmds[i] is CallCmd)
+          {
+            var call = block.Cmds[i] as CallCmd;
+            if (call.callee.Equals("$alloca"))
+            {
+              if (!call.Outs[0].Name.Equals(id.Name))
+                continue;
+
+              this.CallMap[id].Add(call);
+            }
+          }
         }
       }
     }
@@ -324,7 +371,7 @@ namespace Whoop.Analysis
           if (this.AC.TopLevelDeclarations.OfType<Constant>().Any(val => val.Name.Equals(exprId.Name)))
             continue;
 
-          this.ComputeExpressionAndAssignmentMaps(exprId);
+          this.ComputeMapsForIdentifierExpr(exprId);
           if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(exprId) &&
             !identifiers.ContainsKey(exprId))
           {
@@ -346,7 +393,7 @@ namespace Whoop.Analysis
           if (this.InParams.Any(val => val.Name.Equals(exprId.Name)))
             continue;
 
-          this.ComputeExpressionAndAssignmentMaps(exprId);
+          this.ComputeMapsForIdentifierExpr(exprId);
           if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(exprId) &&
             !identifiers.ContainsKey(exprId))
           {
@@ -462,6 +509,15 @@ namespace Whoop.Analysis
           {
             this.MatchExpressions(outcome, rhs, id, pair.Value + value, alreadyMatched);
           }
+        }
+      }
+
+      if (this.CallMap.ContainsKey(rhs))
+      {
+        foreach (var call in this.CallMap[rhs])
+        {
+          Console.WriteLine(" > call: " + lhs.Name + " " + rhs.Name);
+          this.CallMap[lhs].Add(call);
         }
       }
 
@@ -585,12 +641,6 @@ namespace Whoop.Analysis
         expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
         return true;
       return false;
-    }
-
-    private void CleanUp()
-    {
-      this.ExpressionMap.Clear();
-      this.AssignmentMap.Clear();
     }
 
     #endregion
