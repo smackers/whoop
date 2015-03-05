@@ -69,6 +69,9 @@ namespace Whoop.Instrumentation
 
       this.AnalyseDomainSpecificEnableUsage("network");
 
+      this.AnalyseDomainSpecificEnableUsage("misc_register");
+      this.AnalyseDomainSpecificDisableUsage("misc_deregister");
+
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
@@ -118,7 +121,8 @@ namespace Whoop.Instrumentation
           if (!(block.Cmds[idx] is CallCmd))
             continue;
           var call = block.Cmds[idx] as CallCmd;
-          if (call.callee.Equals("register_netdev"))
+          if (call.callee.Equals("register_netdev") ||
+            call.callee.Equals("misc_deregister"))
           {
             call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
@@ -129,7 +133,8 @@ namespace Whoop.Instrumentation
             region.IsChangingDeviceRegistration = true;
             this.EP.IsEnablingDevice = true;
           }
-          else if (call.callee.Equals("unregister_netdev"))
+          else if (call.callee.Equals("unregister_netdev") ||
+            call.callee.Equals("misc_deregister"))
           {
             call.callee = "_UNREGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
@@ -199,17 +204,18 @@ namespace Whoop.Instrumentation
 
     private void AnalyseDomainSpecificDisableUsage(string type)
     {
-      if (type.Equals("unregister_netdev") && this.DeviceUnregisterRegion == null)
+      if ((type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
+        && this.DeviceUnregisterRegion == null)
         return;
 
       InstrumentationRegion hotRegion = null;
-      if (type.Equals("unregister_netdev"))
+      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
         hotRegion = this.DeviceUnregisterRegion;
 
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
-      if (type.Equals("unregister_netdev"))
+      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
         this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, false,
           predecessorCallees, successorCallees);
 
@@ -231,20 +237,21 @@ namespace Whoop.Instrumentation
 
       foreach (var succ in successorCallees)
       {
-        if (type.Equals("unregister_netdev"))
+        if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
           succ.IsDeviceRegistered = false;
       }
     }
 
     private void AnalyseDomainSpecificEnableUsage(string type)
     {
-      if (type.Equals("register_netdev") && this.DeviceRegisterRegion == null)
+      if ((type.Equals("register_netdev") || type.Equals("misc_register"))
+        && this.DeviceRegisterRegion == null)
         return;
       if (type.Equals("network") && this.NetworkEnableRegion == null)
         return;
 
       InstrumentationRegion hotRegion = null;
-      if (type.Equals("register_netdev"))
+      if (type.Equals("register_netdev") || type.Equals("misc_register"))
         hotRegion = this.DeviceRegisterRegion;
       if (type.Equals("network"))
         hotRegion = this.NetworkEnableRegion;
@@ -252,7 +259,7 @@ namespace Whoop.Instrumentation
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
-      if (type.Equals("register_netdev"))
+      if (type.Equals("register_netdev") || type.Equals("misc_register"))
         this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, true,
           predecessorCallees, successorCallees);
 
@@ -318,7 +325,7 @@ namespace Whoop.Instrumentation
       {
         if (pred.Equals(hotRegion))
           continue;
-        if (type.Equals("register_netdev"))
+        if (type.Equals("register_netdev") || type.Equals("misc_register"))
           pred.IsDeviceRegistered = false;
         if (type.Equals("network"))
           pred.IsDisablingNetwork = true;

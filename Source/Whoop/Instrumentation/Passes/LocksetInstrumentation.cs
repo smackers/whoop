@@ -188,6 +188,22 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
+        else if (c.callee.Equals("spin_lock_irqsave"))
+        {
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+          c.Ins.RemoveAt(1);
+          c.Ins.Add(Expr.True);
+
+          this.EP.IsHoldingLock = true;
+        }
+        else if (c.callee.Equals("spin_unlock_irqrestore"))
+        {
+          c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+          c.Ins.RemoveAt(1);
+          c.Ins.Add(Expr.False);
+
+          this.EP.IsHoldingLock = true;
+        }
         else if (c.callee.Equals("pm_runtime_get_sync") ||
           c.callee.Equals("pm_runtime_get_noresume"))
         {

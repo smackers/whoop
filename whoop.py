@@ -125,6 +125,12 @@ clangCoreIncludes = [
                       findtools.whoopDir + "/Model/linux",
                       findtools.whoopDir + "/Model/asm"
                     ]
+clangOtherIncludes = [
+                      findtools.smackSrcDir + "/include/smack",
+                      findtools.whoopDir + "OtherModels/seq1/include/ddverify",
+                      findtools.whoopDir + "/OtherModels/seq1/include",
+                      findtools.whoopDir + "/OtherModels/seq1/include/linux"
+                    ]
 clangCoreDefines = [ ]
 
 """ This class defines all the default options for
@@ -140,7 +146,7 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
-    self.includes = clangCoreIncludes
+    self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
     self.onlyRaces = False
@@ -150,6 +156,7 @@ class DefaultCmdLineOptions(object):
     self.inlineBound = 0
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
+    self.useOtherModel = False
     self.verbose = False
     self.silent = False
     self.printPairs = False
@@ -213,6 +220,7 @@ def showHelpAndExit():
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
+    --use-other-model       Uses an alternative environmental model.
 
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
@@ -313,6 +321,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.checkInParamAliasing = True
     if o == "--no-existential-opts":
       CommandLineOptions.noExistentialOpts = True
+    if o == "--use-other-model":
+      CommandLineOptions.useOtherModel = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
     if o == "--inline":
@@ -535,7 +545,7 @@ def startToolChain(argv):
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
               'inparam-aliasing', 'no-existential-opts',
-              'gen-smt2', 'solver=', 'logic=',
+              'gen-smt2', 'solver=', 'logic=', 'use-other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
               'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
              ])
@@ -582,6 +592,11 @@ def startToolChain(argv):
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFile, summaryInfoFilename)
     if not CommandLineOptions.stopAtCruncher: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
+
+  if CommandLineOptions.useOtherModel:
+    global clangCoreIncludes
+    clangCoreIncludes = clangOtherIncludes
+  CommandLineOptions.includes += clangCoreIncludes
 
   if CommandLineOptions.inline:
     CommandLineOptions.chauffeurOptions.append("-inline")

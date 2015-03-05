@@ -277,7 +277,7 @@ namespace Whoop.Analysis
 
     public static Expr ComputeLiteralsInExpr(Expr expr)
     {
-      if (!((expr as NAryExpr).Args[0] is NAryExpr))
+      if (!(expr is NAryExpr) || !((expr as NAryExpr).Args[0] is NAryExpr))
       {
         return expr;
       }

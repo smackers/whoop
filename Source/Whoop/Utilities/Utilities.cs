@@ -27,12 +27,14 @@ namespace Whoop
         funcName.Contains("$memset") ||
         funcName.Equals("alloc_etherdev") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
+        funcName.Equals("spin_lock_irqsave") || funcName.Equals("spin_unlock_irqrestore") ||
         funcName.Equals("ASSERT_RTNL") ||
         funcName.Equals("netif_device_attach") || funcName.Equals("netif_device_detach") ||
         funcName.Equals("netif_stop_queue") ||
         funcName.Equals("pm_runtime_get_sync") || funcName.Equals("pm_runtime_get_noresume") ||
         funcName.Equals("pm_runtime_put_sync") || funcName.Equals("pm_runtime_put_noidle") ||
-        funcName.Equals("register_netdev") || funcName.Equals("unregister_netdev"))
+        funcName.Equals("register_netdev") || funcName.Equals("unregister_netdev") ||
+        funcName.Equals("misc_register") || funcName.Equals("misc_deregister"))
         return false;
       return true;
     }

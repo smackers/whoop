@@ -128,7 +128,9 @@ namespace Whoop.Refactoring
             }
 
             if (call.callee.Contains("mutex_lock") ||
-                call.callee.Contains("mutex_unlock"))
+              call.callee.Contains("mutex_unlock") ||
+              call.callee.Contains("spin_lock_irqsave") ||
+              call.callee.Contains("spin_unlock_irqrestore"))
             {
               var lockExpr = PointerArithmeticAnalyser.ComputeRootPointer(impl, block.Label, call.Ins[0]);
               if (inPtrs != null && (!(lockExpr is LiteralExpr) || (lockExpr is NAryExpr)))
