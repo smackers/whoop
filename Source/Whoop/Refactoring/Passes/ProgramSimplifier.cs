@@ -104,7 +104,7 @@ namespace Whoop.Refactoring
 
           if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"))
             continue;
-          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Contains("$M."))
+          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.StartsWith("$M."))
             continue;
 
           if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$exn"))

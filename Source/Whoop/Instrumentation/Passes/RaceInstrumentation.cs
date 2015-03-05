@@ -72,8 +72,12 @@ namespace Whoop.Instrumentation
       foreach (var mr in SharedStateAnalyser.GetMemoryRegions(this.EP))
       {
         List<Variable> inParams = new List<Variable>();
-        inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-          this.AC.MemoryModelType)));
+
+        if (mr.TypedIdent.Type.IsMap)
+        {
+          inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+            this.AC.MemoryModelType)));
+        }
 
         Procedure proc = new Procedure(Token.NoToken, this.MakeAccessFuncName(access, mr.Name),
           new List<TypeVariable>(), inParams, new List<Variable>(),
@@ -154,21 +158,30 @@ namespace Whoop.Instrumentation
           }
         }
 
-        var ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
-          this.AC.MemoryModelType));
-        var watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
-          val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
+        List<BigBlock> blocks = null;
+        if (mr.TypedIdent.Type.IsMap)
+        {
+          var ptr = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, "ptr",
+            this.AC.MemoryModelType));
+          var watchdog = this.AC.GetAccessWatchdogConstants().Find(val =>
+            val.Name.Contains(this.AC.GetAccessWatchdogConstantName(mr.Name)));
 
-        var ptrExpr = new IdentifierExpr(ptr.tok, ptr);
-        var watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
-        var guardExpr = Expr.Eq(watchdogExpr, ptrExpr);
+          var ptrExpr = new IdentifierExpr(ptr.tok, ptr);
+          var watchdogExpr = new IdentifierExpr(watchdog.tok, watchdog);
+          var guardExpr = Expr.Eq(watchdogExpr, ptrExpr);
 
-        var ifStmts = new StmtList(new List<BigBlock> {
-          new BigBlock(Token.NoToken, null, cmds, null, null) }, Token.NoToken);
-        var ifCmd = new IfCmd(Token.NoToken, guardExpr, ifStmts, null, null);
+          var ifStmts = new StmtList(new List<BigBlock> {
+            new BigBlock(Token.NoToken, null, cmds, null, null) }, Token.NoToken);
+          var ifCmd = new IfCmd(Token.NoToken, guardExpr, ifStmts, null, null);
 
-        var blocks = new List<BigBlock> {
-          new BigBlock(Token.NoToken, "_" + access.ToString(), new List<Cmd>(), ifCmd, null) };
+          blocks = new List<BigBlock> {
+            new BigBlock(Token.NoToken, "_" + access.ToString(), new List<Cmd>(), ifCmd, null) };
+        }
+        else
+        {
+          blocks = new List<BigBlock> {
+            new BigBlock(Token.NoToken, "_" + access.ToString(), cmds, null, null) };
+        }
 
         Implementation impl = new Implementation(Token.NoToken, this.MakeAccessFuncName(access, mr.Name),
           new List<TypeVariable>(), inParams, new List<Variable>(), new List<Variable>(),
@@ -194,14 +207,16 @@ namespace Whoop.Instrumentation
           Cmd c = block.Cmds[idx];
           if (!(c is AssignCmd)) continue;
 
-          var lhss = (c as AssignCmd).Lhss.OfType<MapAssignLhs>();
-          var rhss = (c as AssignCmd).Rhss.OfType<NAryExpr>();
+          var lhssMap = (c as AssignCmd).Lhss.OfType<MapAssignLhs>();
+          var lhss = (c as AssignCmd).Lhss.OfType<SimpleAssignLhs>();
+          var rhssMap = (c as AssignCmd).Rhss.OfType<NAryExpr>();
+          var rhss = (c as AssignCmd).Rhss.OfType<IdentifierExpr>();
 
           CallCmd call = null;
-          if (lhss.Count() == 1)
+          if (lhssMap.Count() == 1)
           {
-            var lhs = lhss.First();
-            if (lhs.DeepAssignedIdentifier.Name.Contains("$M.") &&
+            var lhs = lhssMap.First();
+            if (lhs.DeepAssignedIdentifier.Name.StartsWith("$M.") &&
               lhs.Map is SimpleAssignLhs && lhs.Indexes.Count == 1)
             {
               if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
@@ -212,7 +227,7 @@ namespace Whoop.Instrumentation
                   this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
                   new List<Expr> { ind }, new List<IdentifierExpr>());
 
-                if (rhss.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
+                if (rhssMap.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
                   (c as AssignCmd).Rhss[0].ToString().StartsWith("$p"))
                 {
                   call.Attributes = new QKeyValue(Token.NoToken, "rhs",
@@ -232,11 +247,43 @@ namespace Whoop.Instrumentation
               }
             }
           }
-          else if (rhss.Count() == 1)
+          else if (lhss.Count() == 1)
           {
-            var rhs = rhss.First();
+            var lhs = lhss.First();
+            if (lhs.DeepAssignedIdentifier.Name.StartsWith("$M."))
+            {
+              if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+                val.Name.Equals(lhs.DeepAssignedIdentifier.Name)))
+              {
+                call = new CallCmd(Token.NoToken,
+                  this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
+                  new List<Expr>(), new List<IdentifierExpr>());
+
+                if (rhssMap.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
+                  (c as AssignCmd).Rhss[0].ToString().StartsWith("$p"))
+                {
+                  call.Attributes = new QKeyValue(Token.NoToken, "rhs",
+                    new List<object>() { (c as AssignCmd).Rhss[0]
+                  }, call.Attributes);
+                }
+
+                if (!region.HasWriteAccess.ContainsKey(lhs.DeepAssignedIdentifier.Name))
+                  region.HasWriteAccess.Add(lhs.DeepAssignedIdentifier.Name, 0);
+                region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] = 
+                  region.HasWriteAccess[lhs.DeepAssignedIdentifier.Name] + 1;
+              }
+              else
+              {
+                call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
+                  new List<Expr>(), new List<IdentifierExpr>());
+              }
+            }
+          }
+          else if (rhssMap.Count() == 1)
+          {
+            var rhs = rhssMap.First();
             if (rhs.Fun is MapSelect && rhs.Args.Count == 2 &&
-              (rhs.Args[0] as IdentifierExpr).Name.Contains("$M."))
+              (rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M."))
             {
               if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
                 val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name)))
@@ -249,6 +296,29 @@ namespace Whoop.Instrumentation
                   region.HasReadAccess.Add((rhs.Args[0] as IdentifierExpr).Name, 0);
                 region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] = 
                   region.HasReadAccess[(rhs.Args[0] as IdentifierExpr).Name] + 1;
+              }
+              else
+              {
+                call = new CallCmd(Token.NoToken, "_NO_OP_$" + this.EP.Name,
+                  new List<Expr>(), new List<IdentifierExpr>());
+              }
+            }
+          }
+          else if (rhss.Count() == 1)
+          {
+            var rhs = rhss.First();
+            if (rhs.Name.StartsWith("$M."))
+            {
+              if (SharedStateAnalyser.GetMemoryRegions(this.EP).Any(val =>
+                val.Name.Equals(rhs.Name)))
+              {
+                call = new CallCmd(Token.NoToken,
+                  this.MakeAccessFuncName(AccessType.READ, rhs.Name),
+                  new List<Expr>(), new List<IdentifierExpr>());
+
+                if (!region.HasReadAccess.ContainsKey(rhs.Name))
+                  region.HasReadAccess.Add(rhs.Name, 0);
+                region.HasReadAccess[rhs.Name] = region.HasReadAccess[rhs.Name] + 1;
               }
               else
               {

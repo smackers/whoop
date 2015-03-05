@@ -64,9 +64,21 @@ namespace Whoop.Analysis
           foreach (var rhs in (b.Cmds[k] as AssignCmd).Rhss.OfType<NAryExpr>())
           {
             if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
-                !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+              !((rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M.")))
               continue;
 
+            Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
+            HavocCmd havoc = new HavocCmd(Token.NoToken,
+              new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
+            b.Cmds[k] = havoc;
+          }
+
+          if (!(b.Cmds[k] is AssignCmd)) continue;
+          foreach (var rhs in (b.Cmds[k] as AssignCmd).Rhss.OfType<IdentifierExpr>())
+          {
+            if (!(rhs.Name.StartsWith("$M.")))
+              continue;
+            Console.WriteLine(b.Cmds[k]);
             Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
             HavocCmd havoc = new HavocCmd(Token.NoToken,
               new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
@@ -88,8 +100,16 @@ namespace Whoop.Analysis
 
           foreach (var lhs in (b.Cmds[k] as AssignCmd).Lhss.OfType<MapAssignLhs>())
           {
-            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+            if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")) ||
                 !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+              continue;
+
+            cmdsToRemove.Add(b.Cmds[k]);
+          }
+
+          foreach (var lhs in (b.Cmds[k] as AssignCmd).Lhss.OfType<SimpleAssignLhs>())
+          {
+            if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")))
               continue;
 
             cmdsToRemove.Add(b.Cmds[k]);

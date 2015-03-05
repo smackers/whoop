@@ -209,13 +209,21 @@ namespace Whoop.Analysis
         if (result is NAryExpr)
         {
           if (((result as NAryExpr).Args[0] is IdentifierExpr) &&
-            ((result as NAryExpr).Args[0] as IdentifierExpr).Name.Contains("$M."))
+            ((result as NAryExpr).Args[0] as IdentifierExpr).Name.StartsWith("$M."))
           {
             return id;
           }
 
+          if (PointerArithmeticAnalyser.TryPerformCast(ref result))
+          {
+            continue;
+          }
+
           if (PointerArithmeticAnalyser.ShouldSkipFromAnalysis(result as NAryExpr))
+          {
             return id;
+          }
+
           if (alreadyVisited.Any(v => v.Item1.Equals(label) && v.Item2.Equals(result)))
             return id;
 
@@ -318,15 +326,20 @@ namespace Whoop.Analysis
             if (this.AssignmentMap[id].Contains(assign.Rhss[0]))
               continue;
 
-            this.AssignmentMap[id].Add(assign.Rhss[0]);
-            if (assign.Rhss[0].ToString().StartsWith("$pa("))
-              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
-            if (assign.Rhss[0] is IdentifierExpr && this.InParams.Any(val =>
-              val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
-              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
-            if (assign.Rhss[0] is IdentifierExpr && this.AC.TopLevelDeclarations.OfType<Constant>().
-              Any(val => val.Name.Equals((assign.Rhss[0] as IdentifierExpr).Name)))
-              this.ExpressionMap[id].Add(assign.Rhss[0], 0);
+            var expr = assign.Rhss[0];
+            PointerArithmeticAnalyser.TryPerformCast(ref expr);
+            this.AssignmentMap[id].Add(expr);
+
+            if (expr.ToString().StartsWith("$pa("))
+              this.ExpressionMap[id].Add(expr, 0);
+            if (expr is IdentifierExpr && this.InParams.Any(val =>
+              val.Name.Equals((expr as IdentifierExpr).Name)))
+              this.ExpressionMap[id].Add(expr, 0);
+            if (expr is IdentifierExpr && this.AC.TopLevelDeclarations.OfType<Constant>().
+              Any(val => val.Name.Equals((expr as IdentifierExpr).Name)))
+              this.ExpressionMap[id].Add(expr, 0);
+            if (expr is LiteralExpr)
+              this.ExpressionMap[id].Add(expr, 0);
           }
           else if (block.Cmds[i] is CallCmd)
           {
@@ -349,8 +362,8 @@ namespace Whoop.Analysis
       {
         if (PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].ContainsKey(id))
           continue;
-
         if (identifiers[id]) continue;
+
         bool fixpoint = true;
         do
         {
@@ -420,20 +433,28 @@ namespace Whoop.Analysis
         PointerArithmeticAnalyser.Cache[this.EP][this.Implementation].Add(identifier.Key, new HashSet<Expr>());
         foreach (var pair in identifier.Value)
         {
-          var id = pair.Key as IdentifierExpr;
-          if (this.InParams.Any(val => val.Name.Equals(id.Name)))
+          if (pair.Key is LiteralExpr)
           {
             PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(
-              Expr.Add(id, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value))));
+              Expr.Add(pair.Key, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value))));
           }
-          else
+          else if (pair.Key is IdentifierExpr)
           {
-            var outcome = new HashSet<Expr>();
-            var alreadyMatched = new HashSet<Tuple<IdentifierExpr, IdentifierExpr>>();
-            this.MatchExpressions(outcome, identifier.Key, id, pair.Value, alreadyMatched);
-            foreach (var expr in outcome)
+            var id = pair.Key as IdentifierExpr;
+            if (this.InParams.Any(val => val.Name.Equals(id.Name)))
             {
-              PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(expr);
+              PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(
+                Expr.Add(id, new LiteralExpr(Token.NoToken, BigNum.FromInt(pair.Value))));
+            }
+            else
+            {
+              var outcome = new HashSet<Expr>();
+              var alreadyMatched = new HashSet<Tuple<IdentifierExpr, IdentifierExpr>>();
+              this.MatchExpressions(outcome, identifier.Key, id, pair.Value, alreadyMatched);
+              foreach (var expr in outcome)
+              {
+                PointerArithmeticAnalyser.Cache[this.EP][this.Implementation][identifier.Key].Add(expr);
+              }
             }
           }
         }
@@ -547,7 +568,7 @@ namespace Whoop.Analysis
         int ixs = 0;
 
         if (((expr as NAryExpr).Args[0] is IdentifierExpr) &&
-          ((expr as NAryExpr).Args[0] as IdentifierExpr).Name.Contains("$M."))
+          ((expr as NAryExpr).Args[0] as IdentifierExpr).Name.StartsWith("$M."))
         {
           toRemove.Add(expr);
           continue;
@@ -615,6 +636,24 @@ namespace Whoop.Analysis
       return blockGraph;
     }
 
+    private static bool TryPerformCast(ref Expr expr)
+    {
+      if (!(expr is NAryExpr))
+      {
+        return false;
+      }
+
+      var fun = (expr as NAryExpr).Fun;
+      if (!(fun.FunctionName == "$i2p" || fun.FunctionName == "$p2i"))
+      {
+        return false;
+      }
+
+      expr = (expr as NAryExpr).Args[0];
+
+      return true;
+    }
+
     private static bool IsArithmeticExpression(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$add" || (expr as NAryExpr).Fun.FunctionName == "+" ||
@@ -632,12 +671,12 @@ namespace Whoop.Analysis
     private static bool ShouldSkipFromAnalysis(NAryExpr expr)
     {
       if (expr.Fun.FunctionName == "$and" || expr.Fun.FunctionName == "$or" ||
-        expr.Fun.FunctionName == "$xor" ||
-        expr.Fun.FunctionName == "$lshr" ||
-        expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$p2i" ||
-        expr.Fun.FunctionName == "$trunc" ||
-        expr.Fun.FunctionName == "$ashr" || expr.Fun.FunctionName == "$urem" ||
-        expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
+          expr.Fun.FunctionName == "$xor" ||
+          expr.Fun.FunctionName == "$lshr" ||
+          expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$p2i" ||
+          expr.Fun.FunctionName == "$trunc" ||
+          expr.Fun.FunctionName == "$ashr" || expr.Fun.FunctionName == "$urem" ||
+          expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
         return true;
       return false;
     }

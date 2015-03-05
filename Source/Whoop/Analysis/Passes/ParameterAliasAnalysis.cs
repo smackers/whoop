@@ -124,6 +124,9 @@ namespace Whoop.Analysis
             id = access as IdentifierExpr;
           }
 
+          if (id == null)
+            continue;
+
           var inParam = region.Procedure().InParams.Find(val => val.Name.Equals(id.Name));
           if (inParam == null)
             continue;

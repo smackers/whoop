@@ -167,8 +167,15 @@ namespace Whoop.Analysis
 
           if (isInstrumentedCall && resource != null && accessType != null)
           {
+            if (call.Ins.Count == 0)
+            {
+              region.TryAddLocalResourceAccess(resource, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
+              continue;
+            }
+
             HashSet<Expr> ptrExprs = null;
             this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
+
             foreach (var ptrExpr in ptrExprs)
             {
               var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);

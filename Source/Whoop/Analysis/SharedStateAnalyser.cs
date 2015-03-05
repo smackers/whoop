@@ -76,8 +76,15 @@ namespace Whoop.Analysis
 
           foreach (var lhs in (c as AssignCmd).Lhss.OfType<MapAssignLhs>())
           {
-            if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+            if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")) ||
                 !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+              continue;
+            return true;
+          }
+
+          foreach (var lhs in (c as AssignCmd).Lhss.OfType<SimpleAssignLhs>())
+          {
+            if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")))
               continue;
             return true;
           }
@@ -85,7 +92,14 @@ namespace Whoop.Analysis
           foreach (var rhs in (c as AssignCmd).Rhss.OfType<NAryExpr>())
           {
             if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
-                !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+              !((rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M.")))
+              continue;
+            return true;
+          }
+
+          foreach (var rhs in (c as AssignCmd).Rhss.OfType<IdentifierExpr>())
+          {
+            if (!rhs.Name.StartsWith("$M."))
               continue;
             return true;
           }
@@ -149,8 +163,20 @@ namespace Whoop.Analysis
           {
             foreach (var lhs in (cmd as AssignCmd).Lhss.OfType<MapAssignLhs>())
             {
-              if (!(lhs.DeepAssignedIdentifier.Name.Contains("$M.")) ||
+              if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")) ||
                 !(lhs.Map is SimpleAssignLhs) || lhs.Indexes.Count != 1)
+                continue;
+
+              Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+                Find(val => val.Name.Equals(lhs.DeepAssignedIdentifier.Name));
+
+              if (!vars.Any(val => val.Name.Equals(v.Name)))
+                vars.Add(v);
+            }
+
+            foreach (var lhs in (cmd as AssignCmd).Lhss.OfType<SimpleAssignLhs>())
+            {
+              if (!(lhs.DeepAssignedIdentifier.Name.StartsWith("$M.")))
                 continue;
 
               Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
@@ -163,11 +189,23 @@ namespace Whoop.Analysis
             foreach (var rhs in (cmd as AssignCmd).Rhss.OfType<NAryExpr>())
             {
               if (!(rhs.Fun is MapSelect) || rhs.Args.Count != 2 ||
-                !((rhs.Args[0] as IdentifierExpr).Name.Contains("$M.")))
+                !((rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M.")))
                 continue;
 
               Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
                 Find(val => val.Name.Equals((rhs.Args[0] as IdentifierExpr).Name));
+
+              if (!vars.Any(val => val.Name.Equals(v.Name)))
+                vars.Add(v);
+            }
+
+            foreach (var rhs in (cmd as AssignCmd).Rhss.OfType<IdentifierExpr>())
+            {
+              if (!rhs.Name.StartsWith("$M."))
+                continue;
+
+              Variable v = ac.TopLevelDeclarations.OfType<GlobalVariable>().ToList().
+                Find(val => val.Name.Equals(rhs.Name));
 
               if (!vars.Any(val => val.Name.Equals(v.Name)))
                 vars.Add(v);
