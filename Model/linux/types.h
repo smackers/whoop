@@ -81,6 +81,10 @@ typedef __kernel_gid16_t        gid16_t;
 
 typedef unsigned long		uintptr_t;
 
+#ifndef loff_t
+typedef long long loff_t;
+#endif
+
 /*
  * The following typedefs are also protected by individual ifdefs for
  * historical reasons:

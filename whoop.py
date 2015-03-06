@@ -120,13 +120,13 @@ class SourceLanguage(object):
   C = 1
 
 clangCoreIncludes = [
-                      findtools.smackSrcDir + "/include/smack",
+                      findtools.smackSrcDir + "/smack",
                       findtools.whoopDir + "/Model",
                       findtools.whoopDir + "/Model/linux",
                       findtools.whoopDir + "/Model/asm"
                     ]
 clangOtherIncludes = [
-                      findtools.smackSrcDir + "/include/smack",
+                      findtools.smackSrcDir + "/smack",
                       findtools.whoopDir + "OtherModels/seq1/include/ddverify",
                       findtools.whoopDir + "/OtherModels/seq1/include",
                       findtools.whoopDir + "/OtherModels/seq1/include/linux"

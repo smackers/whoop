@@ -1,6 +1,10 @@
 #ifndef _IOCTL_H
 #define _IOCTL_H
 
+#ifndef IFNAMSIZ
+#define	IFNAMSIZ	16
+#endif
+
 typedef struct {
 	unsigned int clock_rate;
 	unsigned int clock_type;
