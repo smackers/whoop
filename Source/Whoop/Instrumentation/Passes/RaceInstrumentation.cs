@@ -279,7 +279,8 @@ namespace Whoop.Instrumentation
               }
             }
           }
-          else if (rhssMap.Count() == 1)
+
+          if (rhssMap.Count() == 1)
           {
             var rhs = rhssMap.First();
             if (rhs.Fun is MapSelect && rhs.Args.Count == 2 &&
