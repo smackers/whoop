@@ -246,6 +246,24 @@ namespace Whoop.Analysis
         ac.IsAWhoopFunc((val as Procedure).Name));
     }
 
+    public static void RemoveCorralFunctions(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
+        (val as Procedure).Name.Equals("corral_atomic_begin"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
+        (val as Procedure).Name.Equals("corral_atomic_end"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Procedure) &&
+        (val as Procedure).Name.Equals("corral_getThreadID"));
+    }
+
+    public static void RemoveModelledProcedureBodies(AnalysisContext ac)
+    {
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("mutex_lock"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("mutex_unlock"));
+    }
+
     public static void RemoveOriginalInitFunc(AnalysisContext ac)
     {
       ac.TopLevelDeclarations.Remove(ac.GetConstant(DeviceDriver.InitEntryPoint));

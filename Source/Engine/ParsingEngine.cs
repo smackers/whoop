@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
+using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Refactoring;
 
@@ -51,6 +52,9 @@ namespace Whoop
       Refactoring.Factory.CreateLockRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateFunctionPointerRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateEntryPointRefactoring(this.AC, this.EP).Run();
+
+      ModelCleaner.RemoveCorralFunctions(this.AC);
+      ModelCleaner.RemoveModelledProcedureBodies(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {

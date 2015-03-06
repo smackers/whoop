@@ -27,18 +27,18 @@ namespace Whoop
     {
       Contract.Requires(cce.NonNullElements(args));
 
-      CommandLineOptions.Install(new WhoopDriverCommandLineOptions());
+      CommandLineOptions.Install(new WhoopRaceCheckerCommandLineOptions());
 
       try
       {
-        WhoopDriverCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
+        WhoopRaceCheckerCommandLineOptions.Get().RunningBoogieFromCommandLine = true;
 
-        if (!WhoopDriverCommandLineOptions.Get().Parse(args))
+        if (!WhoopRaceCheckerCommandLineOptions.Get().Parse(args))
         {
           Environment.Exit((int)Outcome.FatalError);
         }
 
-        if (WhoopDriverCommandLineOptions.Get().Files.Count == 0)
+        if (WhoopRaceCheckerCommandLineOptions.Get().Files.Count == 0)
         {
           Whoop.IO.Reporter.ErrorWriteLine("Whoop: error: no input files were specified");
           Environment.Exit((int)Outcome.FatalError);
@@ -46,7 +46,7 @@ namespace Whoop
 
         List<string> fileList = new List<string>();
 
-        foreach (string file in WhoopDriverCommandLineOptions.Get().Files)
+        foreach (string file in WhoopRaceCheckerCommandLineOptions.Get().Files)
         {
           string extension = Path.GetExtension(file);
           if (extension != null)
@@ -77,43 +77,43 @@ namespace Whoop
         PipelineStatistics stats = new PipelineStatistics();
         WhoopErrorReporter errorReporter = new WhoopErrorReporter();
 
-        if (WhoopDriverCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
+        if (WhoopRaceCheckerCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
         {
           foreach (var pair in DeviceDriver.EntryPointPairs)
           {
             AnalysisContext ac = null;
 
             var parser = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl");
-            if (pair.Item1.Name.Equals(pair.Item2.Name))
+            if (pair.EntryPoint1.Name.Equals(pair.EntryPoint2.Name))
             {
               string extension = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
                 extension = "$summarised";
               else
                 extension = "$instrumented";
 
-              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                pair.Item2.Name, pair.Item1.Name + extension });
+              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
+                pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension });
             }
             else
             {
               string extension1 = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item1.Name))
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
                 extension1 = "$summarised";
               else
                 extension1 = "$instrumented";
 
               string extension2 = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.Item2.Name))
+              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint2.Name))
                 extension2 = "$summarised";
               else
                 extension2 = "$instrumented";
 
-              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.Item1.Name + "_" +
-                pair.Item2.Name, pair.Item1.Name + extension1, pair.Item2.Name + extension2 });
+              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
+                pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension1, pair.EntryPoint2.Name + extension2 });
             }
 
-            new StaticLocksetAnalyser(ac, pair.Item1, pair.Item2, stats, errorReporter).Run();
+            new StaticLocksetAnalyser(ac, pair.EntryPoint1, pair.EntryPoint2, stats, errorReporter).Run();
           }
         }
 

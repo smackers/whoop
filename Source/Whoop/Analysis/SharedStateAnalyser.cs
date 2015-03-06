@@ -116,12 +116,12 @@ namespace Whoop.Analysis
       List<Variable> otherEpVars;
 
       foreach (var pair in DeviceDriver.EntryPointPairs.FindAll(val =>
-        val.Item1.Name.Equals(ep.Name) || val.Item2.Name.Equals(ep.Name)))
+        val.EntryPoint1.Name.Equals(ep.Name) || val.EntryPoint2.Name.Equals(ep.Name)))
       {
-        if (!pair.Item1.Name.Equals(ep.Name))
-          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item1);
-        else if (!pair.Item2.Name.Equals(ep.Name))
-          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.Item2);
+        if (!pair.EntryPoint1.Name.Equals(ep.Name))
+          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.EntryPoint1);
+        else if (!pair.EntryPoint2.Name.Equals(ep.Name))
+          otherEpVars = SharedStateAnalyser.GetMemoryRegions(pair.EntryPoint2);
         else
           otherEpVars = epVars;
 

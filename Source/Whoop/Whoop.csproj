@@ -94,6 +94,7 @@
     <Compile Include="Analysis\Passes\FunctionPointerUseAnalysis.cs" />
     <Compile Include="Summarisation\SummaryGeneration.cs" />
     <Compile Include="Core\IPass.cs" />
+    <Compile Include="Domain\Drivers\EntryPointPair.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

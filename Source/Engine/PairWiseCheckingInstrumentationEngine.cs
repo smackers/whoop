@@ -36,7 +36,7 @@ namespace Whoop
       {
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {
-          Console.WriteLine(" |------ [{0} :: {1}]", pair.Item1.Name, pair.Item2.Name);
+          Console.WriteLine(" |------ [{0} :: {1}]", pair.EntryPoint1.Name, pair.EntryPoint2.Name);
           Console.WriteLine(" |  |");
           this.Timer = new ExecutionTimer();
           this.Timer.Start();
@@ -44,24 +44,25 @@ namespace Whoop
 
         Analysis.Factory.CreateLockAbstraction(this.AC).Run();
 
-        if (pair.Item1.Name.Equals(pair.Item2.Name))
+        if (pair.EntryPoint1.Name.Equals(pair.EntryPoint2.Name))
         {
-          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item1).Run();
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.EntryPoint1).Run();
         }
         else
         {
-          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item1).Run();
-          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.Item2).Run();
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.EntryPoint1).Run();
+          Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.EntryPoint2).Run();
         }
 
-        Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair.Item1, pair.Item2).Run();
-        Analysis.Factory.CreatePairParameterAliasAnalysis(this.AC, pair.Item1, pair.Item2).Run();
+        Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair.EntryPoint1, pair.EntryPoint2).Run();
+        Analysis.Factory.CreatePairParameterAliasAnalysis(this.AC, pair.EntryPoint1, pair.EntryPoint2).Run();
 
         ModelCleaner.RemoveOriginalInitFunc(this.AC);
         ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);
         ModelCleaner.RemoveUnusedTopLevelDeclerations(this.AC);
         ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
 //        ModelCleaner.RemoveNonPairMemoryRegions(this.AC, pair.Item1, pair.Item2);
+        ModelCleaner.RemoveCorralFunctions(this.AC);
 
         if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
         {
@@ -74,7 +75,7 @@ namespace Whoop
         Whoop.IO.BoogieProgramEmitter.Emit(this.AC.TopLevelDeclarations,
           WhoopEngineCommandLineOptions.Get().Files[
             WhoopEngineCommandLineOptions.Get().Files.Count - 1], "check_" +
-          pair.Item1.Name + "_" + pair.Item2.Name, "wbpl");
+          pair.EntryPoint1.Name + "_" + pair.EntryPoint2.Name, "wbpl");
 
         this.AC.ResetAnalysisContext();
         this.AC.ResetToProgramTopLevelDeclarations();

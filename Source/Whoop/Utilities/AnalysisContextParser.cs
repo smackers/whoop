@@ -32,6 +32,7 @@ namespace Whoop
     public bool TryParseNew(ref AnalysisContext ac, List<string> additional = null)
     {
       List<string> filesToParse = new List<string>();
+      filesToParse.Add(WhoopCommandLineOptions.Get().WhoopDeclFile);
 
       if (additional != null)
       {

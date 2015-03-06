@@ -87,6 +87,7 @@ namespace Whoop
       }
 
       ModelCleaner.RemoveUnecesseryInfoFromSpecialFunctions(this.AC);
+      ModelCleaner.RemoveCorralFunctions(this.AC);
 
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {

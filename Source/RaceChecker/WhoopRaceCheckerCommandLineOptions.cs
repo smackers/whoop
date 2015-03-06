@@ -15,11 +15,11 @@ using Microsoft.Boogie;
 
 namespace Whoop
 {
-  internal class WhoopDriverCommandLineOptions : WhoopCommandLineOptions
+  internal class WhoopRaceCheckerCommandLineOptions : WhoopCommandLineOptions
   {
     public List<string> FunctionsToAnalyse = new List<string>();
 
-    public WhoopDriverCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
+    public WhoopRaceCheckerCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
     }
@@ -40,9 +40,9 @@ namespace Whoop
       return base.ParseOption(option, ps);
     }
 
-    internal static WhoopDriverCommandLineOptions Get()
+    internal static WhoopRaceCheckerCommandLineOptions Get()
     {
-      return (WhoopDriverCommandLineOptions)CommandLineOptions.Clo;
+      return (WhoopRaceCheckerCommandLineOptions)CommandLineOptions.Clo;
     }
   }
 }

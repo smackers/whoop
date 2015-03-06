@@ -53,6 +53,8 @@ namespace Whoop
 
       Summarisation.SummaryInformationParser.RegisterSummaryName(this.EP.Name);
 
+      ModelCleaner.RemoveCorralFunctions(this.AC);
+
       if (WhoopEngineCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();

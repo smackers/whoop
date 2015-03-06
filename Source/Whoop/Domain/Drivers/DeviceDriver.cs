@@ -27,7 +27,7 @@ namespace Whoop.Domain.Drivers
     #region fields
 
     public static List<EntryPoint> EntryPoints;
-    public static List<Tuple<EntryPoint, EntryPoint>> EntryPointPairs;
+    public static List<EntryPointPair> EntryPointPairs;
 
     public static string InitEntryPoint
     {
@@ -43,8 +43,8 @@ namespace Whoop.Domain.Drivers
     {
       foreach (var ep in DeviceDriver.EntryPointPairs)
       {
-        Console.WriteLine("Entry Point: " + ep.Item1.Name
-          + " :: " + ep.Item2.Name);
+        Console.WriteLine("Entry Point: " + ep.EntryPoint1.Name
+          + " :: " + ep.EntryPoint2.Name);
       }
     }
 
@@ -91,7 +91,7 @@ namespace Whoop.Domain.Drivers
         }
       }
 
-      DeviceDriver.EntryPointPairs = new List<Tuple<EntryPoint, EntryPoint>>();
+      DeviceDriver.EntryPointPairs = new List<EntryPointPair>();
 
       foreach (var ep1 in DeviceDriver.EntryPoints)
       {
@@ -100,7 +100,7 @@ namespace Whoop.Domain.Drivers
           if (!DeviceDriver.CanBePaired(ep1, ep2)) continue;
           if (!DeviceDriver.IsNewPair(ep1.Name, ep2.Name)) continue;
           if (!DeviceDriver.CanRunConcurrently(ep1.KernelFunc, ep2.KernelFunc)) continue;
-          DeviceDriver.EntryPointPairs.Add(new Tuple<EntryPoint, EntryPoint>(ep1, ep2));
+          DeviceDriver.EntryPointPairs.Add(new EntryPointPair(ep1, ep2));
         }
       }
     }
@@ -115,12 +115,12 @@ namespace Whoop.Domain.Drivers
       var pairs = new HashSet<EntryPoint>();
 
       foreach (var pair in DeviceDriver.EntryPointPairs.FindAll(val =>
-        val.Item1.Name.Equals(ep.Name) || val.Item2.Name.Equals(ep.Name)))
+        val.EntryPoint1.Name.Equals(ep.Name) || val.EntryPoint2.Name.Equals(ep.Name)))
       {
-        if (pair.Item1.Name.Equals(ep.Name))
-          pairs.Add(pair.Item2);
-        else if (pair.Item2.Name.Equals(ep.Name))
-          pairs.Add(pair.Item1);
+        if (pair.EntryPoint1.Name.Equals(ep.Name))
+          pairs.Add(pair.EntryPoint2);
+        else if (pair.EntryPoint2.Name.Equals(ep.Name))
+          pairs.Add(pair.EntryPoint1);
       }
 
       return pairs;
@@ -154,8 +154,8 @@ namespace Whoop.Domain.Drivers
     private static bool IsNewPair(string ep1, string ep2)
     {
       if (DeviceDriver.EntryPointPairs.Exists(val =>
-        (val.Item1.Name.Equals(ep1) && (val.Item2.Name.Equals(ep2))) ||
-        (val.Item1.Name.Equals(ep2) && (val.Item2.Name.Equals(ep1)))))
+        (val.EntryPoint1.Name.Equals(ep1) && (val.EntryPoint2.Name.Equals(ep2))) ||
+        (val.EntryPoint1.Name.Equals(ep2) && (val.EntryPoint2.Name.Equals(ep1)))))
       {
         return false;
       }

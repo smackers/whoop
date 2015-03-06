@@ -47,9 +47,9 @@ namespace Whoop
     {
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
-      if (WhoopDriverCommandLineOptions.Get().LoopUnrollCount != -1)
-        this.AC.Program.UnrollLoops(WhoopDriverCommandLineOptions.Get().LoopUnrollCount,
-          WhoopDriverCommandLineOptions.Get().SoundLoopUnrolling);
+      if (WhoopRaceCheckerCommandLineOptions.Get().LoopUnrollCount != -1)
+        this.AC.Program.UnrollLoops(WhoopRaceCheckerCommandLineOptions.Get().LoopUnrollCount,
+          WhoopRaceCheckerCommandLineOptions.Get().SoundLoopUnrolling);
 
       string checkerName = "check$" + this.EP1.Name + "$" + this.EP2.Name;
       Implementation checker = this.AC.TopLevelDeclarations.OfType<Implementation>().ToList().
@@ -61,8 +61,8 @@ namespace Whoop
 
       try
       {
-        vcgen = new VC.VCGen(this.AC.Program, WhoopDriverCommandLineOptions.Get().SimplifyLogFilePath,
-          WhoopDriverCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
+        vcgen = new VC.VCGen(this.AC.Program, WhoopRaceCheckerCommandLineOptions.Get().SimplifyLogFilePath,
+          WhoopRaceCheckerCommandLineOptions.Get().SimplifyLogFileAppend, new List<Checker>());
       }
       catch (ProverException e)
       {
@@ -75,10 +75,10 @@ namespace Whoop
       List<Counterexample> errors;
 
       DateTime start = new DateTime();
-      if (WhoopDriverCommandLineOptions.Get().Trace)
+      if (WhoopRaceCheckerCommandLineOptions.Get().Trace)
       {
         start = DateTime.UtcNow;
-        if (WhoopDriverCommandLineOptions.Get().Trace)
+        if (WhoopRaceCheckerCommandLineOptions.Get().Trace)
         {
           Console.WriteLine("");
           Console.WriteLine("Verifying {0} ...", checker.Name.Substring(5));
@@ -109,7 +109,7 @@ namespace Whoop
       DateTime end = DateTime.UtcNow;
       TimeSpan elapsed = end - start;
 
-      if (WhoopDriverCommandLineOptions.Get().Trace)
+      if (WhoopRaceCheckerCommandLineOptions.Get().Trace)
       {
         int poCount = vcgen.CumulativeAssertionCount - prevAssertionCount;
         timeIndication = string.Format("  [{0:F3} s, {1} proof obligation{2}]  ",
@@ -118,11 +118,11 @@ namespace Whoop
 
       this.ProcessOutcome(checker, vcOutcome, errors, timeIndication, this.Stats);
 
-      if (vcOutcome == VC.VCGen.Outcome.Errors || WhoopDriverCommandLineOptions.Get().Trace)
+      if (vcOutcome == VC.VCGen.Outcome.Errors || WhoopRaceCheckerCommandLineOptions.Get().Trace)
         Console.Out.Flush();
 
-      WhoopDriverCommandLineOptions.Get().TheProverFactory.Close();
-//      cce.NonNull(WhoopDriverCommandLineOptions.Get().TheProverFactory).Close();
+      WhoopRaceCheckerCommandLineOptions.Get().TheProverFactory.Close();
+//      cce.NonNull(WhoopRaceCheckerCommandLineOptions.Get().TheProverFactory).Close();
       vcgen.Dispose();
     }
 
@@ -134,12 +134,12 @@ namespace Whoop
         case VC.VCGen.Outcome.ReachedBound:
           Whoop.IO.Reporter.Inform(String.Format("{0}verified", timeIndication));
           Console.WriteLine(string.Format("Stratified Inlining: Reached recursion bound of {0}",
-            WhoopDriverCommandLineOptions.Get().RecursionBound));
+            WhoopRaceCheckerCommandLineOptions.Get().RecursionBound));
           stats.VerifiedCount++;
           break;
         
         case VC.VCGen.Outcome.Correct:
-          if (WhoopDriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopRaceCheckerCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Reporter.Inform(String.Format("{0}credible", timeIndication));
             stats.VerifiedCount++;
@@ -168,7 +168,7 @@ namespace Whoop
         
         case VC.VCGen.Outcome.Errors:
           Contract.Assert(errors != null);
-          if (WhoopDriverCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
+          if (WhoopRaceCheckerCommandLineOptions.Get().vcVariety == CommandLineOptions.VCVariety.Doomed)
           {
             Whoop.IO.Reporter.Inform(String.Format("{0}doomed", timeIndication));
             stats.ErrorCount++;

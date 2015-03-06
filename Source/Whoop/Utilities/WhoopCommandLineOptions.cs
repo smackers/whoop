@@ -17,6 +17,7 @@ namespace Whoop
   public class WhoopCommandLineOptions : CommandLineOptions
   {
     public string OriginalFile = "";
+    public string WhoopDeclFile = "";
     public string AnalyseOnly = "";
 
     public int InliningBound = 0;
@@ -52,6 +53,15 @@ namespace Whoop
         if (ps.ConfirmArgumentCount(1))
         {
           this.OriginalFile = ps.args[ps.i];
+        }
+        return true;
+      }
+
+      if (option == "whoopDecl")
+      {
+        if (ps.ConfirmArgumentCount(1))
+        {
+          this.WhoopDeclFile = ps.args[ps.i];
         }
         return true;
       }

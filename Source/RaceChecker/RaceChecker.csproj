@@ -8,7 +8,7 @@
     <ProjectGuid>{FD4F2900-FF82-4282-B76A-6775A5643B87}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Whoop</RootNamespace>
-    <AssemblyName>WhoopDriver</AssemblyName>
+    <AssemblyName>WhoopRaceChecker</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -23,7 +23,6 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\Binaries</OutputPath>
     <ErrorReport>prompt</ErrorReport>
@@ -36,7 +35,7 @@
     <Compile Include="StaticLocksetAnalyser.cs" />
     <Compile Include="WhoopErrorReporter.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="WhoopDriverCommandLineOptions.cs" />
+    <Compile Include="WhoopRaceCheckerCommandLineOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">

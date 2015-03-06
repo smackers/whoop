@@ -17,6 +17,7 @@ using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
 using Whoop.Summarisation;
+using System.Diagnostics;
 
 namespace Whoop
 {

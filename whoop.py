@@ -101,7 +101,7 @@ cleanUpHandler = BatchCaller()
 
 """ Timing for the toolchain.
 """
-Tools = [ "chauffeur", "clang", "smack", "whoopEngine", "whoopCruncher", "whoopDriver" ]
+Tools = [ "chauffeur", "clang", "smack", "whoopEngine", "whoopCruncher", "whoopRaceChecker" ]
 Timing = { }
 
 """ WindowsError is not defined on UNIX
@@ -145,7 +145,7 @@ class DefaultCmdLineOptions(object):
     self.smackOptions = [ ]
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
-    self.whoopDriverOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
+    self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
@@ -341,7 +341,7 @@ def processGeneralOptions(opts, args):
     if o == "--boogie-opt":
       CommandLineOptions.whoopEngineOptions += str(a).split(" ")
       CommandLineOptions.whoopCruncherOptions += str(a).split(" ")
-      CommandLineOptions.whoopDriverOptions += str(a).split(" ")
+      CommandLineOptions.whoopRaceCheckerOptions += str(a).split(" ")
     if o == "--gen-smt2":
       CommandLineOptions.generateSmt2 = True
     if o == "--stop-at-re":
@@ -391,7 +391,7 @@ def processGeneralOptions(opts, args):
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "'" + a + "' specified via --boogie-file should have extension .bpl")
       CommandLineOptions.whoopEngineOptions += [ a ]
       CommandLineOptions.whoopCruncherOptions += [ a ]
-      CommandLineOptions.whoopDriverOptions += [ a ]
+      CommandLineOptions.whoopRaceCheckerOptions += [ a ]
     if o == "--solver":
       if a.lower() in ("z3","cvc4"):
         CommandLineOptions.solver = a.lower()
@@ -614,36 +614,40 @@ def startToolChain(argv):
     CommandLineOptions.smackOptions += [ bcFilename, "-o", bplFilename ]
     CommandLineOptions.smackOptions += [ "--source-loc-syms" ]
 
+  CommandLineOptions.whoopEngineOptions += [ "/whoopDecl:" + findtools.whoopDir + os.sep + "Model" + os.sep + "whoop_decl.bpl" ]
+  CommandLineOptions.whoopCruncherOptions += [ "/whoopDecl:" + findtools.whoopDir + os.sep + "Model" + os.sep + "whoop_decl.bpl" ]
+  CommandLineOptions.whoopRaceCheckerOptions += [ "/whoopDecl:" + findtools.whoopDir + os.sep + "Model" + os.sep + "whoop_decl.bpl" ]
+
   if CommandLineOptions.solver == "cvc4":
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:SOLVER=cvc4" ]
     CommandLineOptions.whoopCruncherOptions += [ "/proverOpt:SOLVER=cvc4" ]
-    CommandLineOptions.whoopDriverOptions += [ "/proverOpt:SOLVER=cvc4" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/proverOpt:SOLVER=cvc4" ]
     CommandLineOptions.whoopEngineOptions += [ "/cvc4exe:" + findtools.cvc4BinDir + os.sep + "cvc4.exe" ]
     CommandLineOptions.whoopCruncherOptions += [ "/cvc4exe:" + findtools.cvc4BinDir + os.sep + "cvc4.exe" ]
-    CommandLineOptions.whoopDriverOptions += [ "/cvc4exe:" + findtools.cvc4BinDir + os.sep + "cvc4.exe" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/cvc4exe:" + findtools.cvc4BinDir + os.sep + "cvc4.exe" ]
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
     CommandLineOptions.whoopCruncherOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
-    CommandLineOptions.whoopDriverOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
   else:
     CommandLineOptions.whoopEngineOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
     CommandLineOptions.whoopCruncherOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
-    CommandLineOptions.whoopDriverOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
 
   if CommandLineOptions.generateSmt2:
     CommandLineOptions.whoopCruncherOptions += [ "/proverLog:" + smt2Filename ]
-    CommandLineOptions.whoopDriverOptions += [ "/proverLog:" + smt2Filename ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/proverLog:" + smt2Filename ]
 
   if CommandLineOptions.printPairs:
     CommandLineOptions.whoopEngineOptions += [ "/printPairs" ]
   if CommandLineOptions.debugging:
     CommandLineOptions.whoopEngineOptions += [ "/debugWhoop" ]
     CommandLineOptions.whoopCruncherOptions += [ "/debugWhoop" ]
-    CommandLineOptions.whoopDriverOptions += [ "/debugWhoop" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/debugWhoop" ]
 
   if not os.getcwd() + os.sep in filename: filename = os.getcwd() + os.sep + filename
   CommandLineOptions.whoopEngineOptions += [ "/originalFile:" + filename + ext ]
   CommandLineOptions.whoopCruncherOptions += [ "/originalFile:" + filename + ext ]
-  CommandLineOptions.whoopDriverOptions += [ "/originalFile:" + filename + ext ]
+  CommandLineOptions.whoopRaceCheckerOptions += [ "/originalFile:" + filename + ext ]
 
   if CommandLineOptions.onlyRaces:
     CommandLineOptions.whoopEngineOptions += [ "/onlyRaceChecking" ]
@@ -657,7 +661,7 @@ def startToolChain(argv):
     CommandLineOptions.whoopEngineOptions += [ "/noExistentialOpts" ]
 
   if CommandLineOptions.analyseOnly != "":
-    CommandLineOptions.whoopDriverOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/analyseOnly:" + CommandLineOptions.analyseOnly ]
 
   if CommandLineOptions.timePasses:
     CommandLineOptions.whoopEngineOptions += [ "/timePasses" ]
@@ -665,13 +669,13 @@ def startToolChain(argv):
 
   if CommandLineOptions.noInfer:
     CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
-    CommandLineOptions.whoopDriverOptions += [ "/skipInference" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/skipInference" ]
 
   CommandLineOptions.whoopCruncherOptions += [ "/contractInfer" ]
 
   CommandLineOptions.whoopEngineOptions += [ bplFilename ]
   CommandLineOptions.whoopCruncherOptions += [ bplFilename ]
-  CommandLineOptions.whoopDriverOptions += [ bplFilename ]
+  CommandLineOptions.whoopRaceCheckerOptions += [ bplFilename ]
 
   """ RUN CHAUFFEUR """
   if not CommandLineOptions.skip["chauffeur"]:
@@ -727,10 +731,10 @@ def startToolChain(argv):
       if CommandLineOptions.stopAtCruncher: return 0
 
   """ RUN WHOOP DRIVER """
-  runTool("whoopDriver",
+  runTool("whoopRaceChecker",
           (["mono"] if os.name == "posix" else []) +
-          [findtools.whoopBinDir + "/WhoopDriver.exe"] +
-          CommandLineOptions.whoopDriverOptions,
+          [findtools.whoopBinDir + "/WhoopRaceChecker.exe"] +
+          CommandLineOptions.whoopRaceCheckerOptions,
           ErrorCodes.DRIVER_ERROR,
           CommandLineOptions.componentTimeout)
 
