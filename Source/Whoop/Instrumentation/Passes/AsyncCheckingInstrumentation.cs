@@ -105,13 +105,13 @@ namespace Whoop.Instrumentation
 
       if (this.EP1 != null)
       {
-        this.AnalyseEntryPointCall(call1, initImpl, cmdsToAdd);
+        this.AnalyseEntryPointCall(this.EP1, call1, initImpl, cmdsToAdd);
         this.RemoveResultFromEntryPoint(this.EP1);
       }
 
       if (this.EP2 != null)
       {
-        this.AnalyseEntryPointCall(call2, initImpl, cmdsToAdd);
+        this.AnalyseEntryPointCall(this.EP2, call2, initImpl, cmdsToAdd);
         this.RemoveResultFromEntryPoint(this.EP2);
       }
 
@@ -276,21 +276,30 @@ namespace Whoop.Instrumentation
 
     private CallCmd CreateAsyncEntryPointCall(EntryPoint ep)
     {
+      string name = ep.Name;
+      if (ep.IsClone)
+        name = name.Replace("#net", "");
+
       var call = new CallCmd(Token.NoToken, ep.Name, new List<Expr>(),
         new List<IdentifierExpr>(), null, true);
+
       return call;
     }
 
-    private void AnalyseEntryPointCall(CallCmd epCall, Implementation impl, List<Cmd> cmds)
+    private void AnalyseEntryPointCall(EntryPoint ep, CallCmd epCall, Implementation impl, List<Cmd> cmds)
     {
       var checker = this.AC.GetImplementation("whoop$checker");
+
+      string name = ep.Name;
+      if (ep.IsClone)
+        name = name.Replace("#net", "");
 
       CallCmd checkerCall = null;
       foreach (var block in checker.Blocks)
       {
         foreach (var call in block.Cmds.OfType<CallCmd>())
         {
-          if (call.callee.Equals(epCall.callee))
+          if (call.callee.Equals(name))
           {
             checkerCall = call;
             break;
@@ -349,7 +358,11 @@ namespace Whoop.Instrumentation
 
     private void RemoveResultFromEntryPoint(EntryPoint ep)
     {
-      var impl = this.AC.GetImplementation(ep.Name);
+      string name = ep.Name;
+      if (ep.IsClone)
+        name = name.Replace("#net", "");
+
+      var impl = this.AC.GetImplementation(name);
       impl.OutParams.Clear();
       impl.Proc.OutParams.Clear();
 

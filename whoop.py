@@ -56,8 +56,9 @@ class ErrorCodes(object):
   SMACK_ERROR = 4
   WHOOP_ERROR = 5
   DRIVER_ERROR = 6
-  TIMEOUT = 7
-  CTRL_C = 8
+  CORRAL_ERROR = 7
+  TIMEOUT = 8
+  CTRL_C = 9
 
 # Try to import the paths need for the Whoop toolchain
 try:
@@ -101,7 +102,7 @@ cleanUpHandler = BatchCaller()
 
 """ Timing for the toolchain.
 """
-Tools = [ "chauffeur", "clang", "smack", "whoopEngine", "whoopCruncher", "whoopRaceChecker" ]
+Tools = [ "chauffeur", "clang", "smack", "whoopEngine", "whoopCruncher", "whoopRaceChecker", "corral" ]
 Timing = { }
 
 """ WindowsError is not defined on UNIX
@@ -146,14 +147,18 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
+    self.corralOptions = [ "/cooperative" ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
     self.onlyRaces = False
     self.onlyDeadlocks = False
+    self.findBugs = False
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
+    self.yieldNone = False
+    self.yieldAll = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
     self.useOtherModel = False
@@ -178,7 +183,8 @@ class DefaultCmdLineOptions(object):
                   "clang": False,
                   "smack": False,
                   "engine": False,
-                  "cruncher": False }
+                  "cruncher": False,
+                  "raceChecker": False }
 
 CommandLineOptions = DefaultCmdLineOptions()
 
@@ -204,6 +210,7 @@ def showHelpAndExit():
     -h, --help              Display this message.
     -I <value>              Add directory to include search path.
     -D <value>              Define symbol.
+    --find-bugs             Runs Corral after race checking the program to find bugs.
     --timeout=X             Allow each tool in the toolchain to run for X seconds before giving up.
                             A timeout of 0 disables the timeout. The default is {componentTimeout} seconds.
     --verbose               Show commands to run and use verbose output.
@@ -219,6 +226,8 @@ def showHelpAndExit():
     --no-existential-opts   Do not perform existential optimisations.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
+    --yield-none            Turn off yield instrumentation.
+    --yield-all             Instruments yields in all visible operations.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
     --use-other-model       Uses an alternative environmental model.
 
@@ -246,6 +255,7 @@ def showHelpAndExit():
     --skip-until-engine     Start toolchain at the Whoop instrumentation engine.
     --skip-until-cruncher   Start toolchain at the Whoop invariant inference cruncher.
     --skip-until-checker    Start toolchain at the Whoop race checker.
+    --skip-until-corral     Start toolchain at the Corral bug finder.
     --time-as-csv=label     Print timing as CSV row with label.
     --silent                Silent on success; only show errors/timing.
   """.format(**stringReplacements))
@@ -315,8 +325,14 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyRaces = True
     if o == "--only-deadlock-checking":
       CommandLineOptions.onlyDeadlocks = True
+    if o == "--find-bugs":
+      CommandLineOptions.findBugs = True
     if o == "--no-infer":
       CommandLineOptions.noInfer = True
+    if o == "--yield-none":
+      CommandLineOptions.yieldNone = True
+    if o == "--yield-all":
+      CommandLineOptions.yieldAll = True
     if o == "--inparam-aliasing":
       CommandLineOptions.checkInParamAliasing = True
     if o == "--no-existential-opts":
@@ -374,6 +390,13 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.skip["smack"] = True
       CommandLineOptions.skip["engine"] = True
       CommandLineOptions.skip["cruncher"] = True
+    if o == "--skip-until-corral":
+      CommandLineOptions.skip["chauffeur"] = True
+      CommandLineOptions.skip["clang"] = True
+      CommandLineOptions.skip["smack"] = True
+      CommandLineOptions.skip["engine"] = True
+      CommandLineOptions.skip["cruncher"] = True
+      CommandLineOptions.skip["raceChecker"] = True
 
   # All options whose processing can result in an error go in this loop.
   # See also the comment above the previous loop.
@@ -504,6 +527,18 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
     if CommandLineOptions.silent and stdout: print(stdout, file=sys.stderr)
     raise ReportAndExit(ErrorCode, stdout)
 
+def runCorral(filename):
+    directory = os.path.dirname(os.path.realpath(filename))
+    inputFile = os.path.splitext(os.path.basename(filename))[0]
+    for file in os.listdir(directory):
+      if fnmatch.fnmatch(file, inputFile + '_check_racy_*.bpl'):
+        runTool("corral",
+                (["mono"] if os.name == "posix" else []) +
+                [findtools.corralBinDir + "/corral.exe"] +
+                CommandLineOptions.corralOptions + [ directory + os.sep + file ],
+                ErrorCodes.CORRAL_ERROR,
+                CommandLineOptions.componentTimeout)
+
 def addInline(match, info):
   foundit = False
   procName = match.group(1)
@@ -538,17 +573,18 @@ def startToolChain(argv):
   try:
     opts, args = getopt.gnu_getopt(argv,'hVD:I:',
              ['help', 'version', 'debug', 'verbose', 'silent',
-              'only-race-checking', 'only-deadlock-checking',
+              'find-bugs', 'only-race-checking', 'only-deadlock-checking',
               'time', 'time-as-csv=', 'time-passes',
               'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
+              'yield-none', 'yield-all',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'use-other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
               'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher',
-              'skip-until-checker'
+              'skip-until-checker', 'skip-until-corral'
              ])
   except getopt.GetoptError as getoptError:
     ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, getoptError.msg + ".  Try --help for list of options")
@@ -667,10 +703,16 @@ def startToolChain(argv):
   if CommandLineOptions.timePasses:
     CommandLineOptions.whoopEngineOptions += [ "/timePasses" ]
     CommandLineOptions.whoopCruncherOptions += [ "/timePasses" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/timePasses" ]
 
   if CommandLineOptions.noInfer:
     CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
     CommandLineOptions.whoopRaceCheckerOptions += [ "/skipInference" ]
+
+  if CommandLineOptions.yieldNone:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNone" ]
+  elif CommandLineOptions.yieldAll:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
 
   CommandLineOptions.whoopCruncherOptions += [ "/contractInfer" ]
 
@@ -732,12 +774,18 @@ def startToolChain(argv):
       if CommandLineOptions.stopAtCruncher: return 0
 
   """ RUN WHOOP RACE CHECKER """
-  runTool("whoopRaceChecker",
-          (["mono"] if os.name == "posix" else []) +
-          [findtools.whoopBinDir + "/WhoopRaceChecker.exe"] +
-          CommandLineOptions.whoopRaceCheckerOptions,
-          ErrorCodes.DRIVER_ERROR,
-          CommandLineOptions.componentTimeout)
+  if not CommandLineOptions.skip["raceChecker"]:
+    runTool("whoopRaceChecker",
+            (["mono"] if os.name == "posix" else []) +
+            [findtools.whoopBinDir + "/WhoopRaceChecker.exe"] +
+            CommandLineOptions.whoopRaceCheckerOptions,
+            ErrorCodes.DRIVER_ERROR,
+            CommandLineOptions.componentTimeout)
+
+  if CommandLineOptions.findBugs:
+      """ RUN CORRAL """
+      runCorral(filename)
+
 
   """ SUCCESS - REPORT STATUS """
   if CommandLineOptions.silent:

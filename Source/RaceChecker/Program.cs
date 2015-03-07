@@ -75,6 +75,15 @@ namespace Whoop
         Summarisation.SummaryInformationParser.FromFile(fileList);
 
         PipelineStatistics stats = new PipelineStatistics();
+        ExecutionTimer timer = null;
+
+        if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          Console.WriteLine("\n[RaceChecker] runtime");
+          Console.WriteLine(" |");
+          timer = new ExecutionTimer();
+          timer.Start();
+        }
 
         var pairMap = new Dictionary<EntryPointPair, ErrorReporter>();
         foreach (var pair in DeviceDriver.EntryPointPairs)
@@ -122,6 +131,13 @@ namespace Whoop
           new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
 
           new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
+        }
+
+        if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
+        {
+          timer.Stop();
+          Console.WriteLine(" |");
+          Console.WriteLine(" |--- [Total] {0}", timer.Result());
         }
 
         Whoop.IO.Reporter.WriteTrailer(stats);
