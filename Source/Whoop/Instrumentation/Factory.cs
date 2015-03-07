@@ -60,5 +60,10 @@ namespace Whoop.Instrumentation
     {
       return new AsyncCheckingInstrumentation(ac, pair);
     }
+
+    public static IPass CreateYieldInstrumentation(AnalysisContext ac, EntryPointPair pair)
+    {
+      return new YieldInstrumentation(ac, pair);
+    }
   }
 }

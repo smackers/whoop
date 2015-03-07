@@ -204,13 +204,13 @@ namespace Whoop.Instrumentation
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
         {
-          Cmd c = block.Cmds[idx];
-          if (!(c is AssignCmd)) continue;
+          if (!(block.Cmds[idx] is AssignCmd)) continue;
+          var assign = block.Cmds[idx] as AssignCmd;
 
-          var lhssMap = (c as AssignCmd).Lhss.OfType<MapAssignLhs>();
-          var lhss = (c as AssignCmd).Lhss.OfType<SimpleAssignLhs>();
-          var rhssMap = (c as AssignCmd).Rhss.OfType<NAryExpr>();
-          var rhss = (c as AssignCmd).Rhss.OfType<IdentifierExpr>();
+          var lhssMap = assign.Lhss.OfType<MapAssignLhs>();
+          var lhss = assign.Lhss.OfType<SimpleAssignLhs>();
+          var rhssMap = assign.Rhss.OfType<NAryExpr>();
+          var rhss = assign.Rhss.OfType<IdentifierExpr>();
 
           CallCmd call = null;
           if (lhssMap.Count() == 1)
@@ -227,11 +227,11 @@ namespace Whoop.Instrumentation
                   this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
                   new List<Expr> { ind }, new List<IdentifierExpr>());
 
-                if (rhssMap.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
-                  (c as AssignCmd).Rhss[0].ToString().StartsWith("$p"))
+                if (rhssMap.Count() == 0 && assign.Rhss.Count == 1 &&
+                  assign.Rhss[0].ToString().StartsWith("$p"))
                 {
                   call.Attributes = new QKeyValue(Token.NoToken, "rhs",
-                    new List<object>() { (c as AssignCmd).Rhss[0]
+                    new List<object>() { assign.Rhss[0]
                   }, call.Attributes);
                 }
 
@@ -259,11 +259,11 @@ namespace Whoop.Instrumentation
                   this.MakeAccessFuncName(AccessType.WRITE, lhs.DeepAssignedIdentifier.Name),
                   new List<Expr>(), new List<IdentifierExpr>());
 
-                if (rhssMap.Count() == 0 && (c as AssignCmd).Rhss.Count == 1 &&
-                  (c as AssignCmd).Rhss[0].ToString().StartsWith("$p"))
+                if (rhssMap.Count() == 0 && assign.Rhss.Count == 1 &&
+                  assign.Rhss[0].ToString().StartsWith("$p"))
                 {
                   call.Attributes = new QKeyValue(Token.NoToken, "rhs",
-                    new List<object>() { (c as AssignCmd).Rhss[0]
+                    new List<object>() { assign.Rhss[0]
                   }, call.Attributes);
                 }
 

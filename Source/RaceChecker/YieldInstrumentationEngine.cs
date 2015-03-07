@@ -51,6 +51,7 @@ namespace Whoop
       }
 
       Instrumentation.Factory.CreateAsyncCheckingInstrumentation(this.AC, this.Pair).Run();
+      Instrumentation.Factory.CreateYieldInstrumentation(this.AC, this.Pair).Run();
 
       if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
       {

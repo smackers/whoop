@@ -24,7 +24,7 @@ void mutex_lock(struct mutex *lock)
 	__SMACK_code("call corral_atomic_begin();");
 	int tid = __SMACK_nondet();
 	__SMACK_code("call @ := corral_getThreadID();", tid);
-	__SMACK_code("assert @ != @;", tid, lock->holder);
+	// __SMACK_code("assert @ != @;", tid, lock->holder);
 	__SMACK_code("assume @ == @;", lock->status, UNLOCKED);
 	lock->holder = tid;
 	__SMACK_code("call corral_atomic_end();");
@@ -35,7 +35,7 @@ void mutex_unlock(struct mutex *lock)
 	__SMACK_code("call corral_atomic_begin();");
 	int tid = __SMACK_nondet();
 	__SMACK_code("call @ := corral_getThreadID();", tid);
-	__SMACK_code("assert @ == @;", tid, lock->holder);
+	// __SMACK_code("assert @ == @;", tid, lock->holder);
 	lock->status = UNLOCKED;
 	__SMACK_code("call corral_atomic_end();");
 }
