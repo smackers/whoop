@@ -2,6 +2,6 @@
 
 procedure corral_atomic_begin();
 procedure corral_atomic_end();
-procedure corral_getThreadID() returns (tid: int);
+procedure corral_getThreadID() returns (t:int);
 
 // END WHOOP-SPECIFIC CODE

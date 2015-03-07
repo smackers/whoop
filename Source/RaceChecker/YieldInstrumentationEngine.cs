@@ -52,8 +52,6 @@ namespace Whoop
 
       Instrumentation.Factory.CreateAsyncCheckingInstrumentation(this.AC, this.Pair).Run();
 
-      ModelCleaner.RemoveCorralFunctions(this.AC);
-
       if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
