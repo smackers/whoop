@@ -18,6 +18,7 @@ using Microsoft.Basetypes;
 
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
+using System.Diagnostics;
 
 namespace Whoop.Instrumentation
 {
@@ -28,38 +29,22 @@ namespace Whoop.Instrumentation
     private EntryPoint EP2;
     private ExecutionTimer Timer;
 
-    private int LocalVarCounter;
     private List<Implementation> AlreadyCalledFuncs;
+    private Dictionary<string, Tuple<int, IdentifierExpr, Variable>> InParams;
 
     public AsyncCheckingInstrumentation(AnalysisContext ac, EntryPointPair pair)
     {
       Contract.Requires(ac != null && pair != null);
       this.AC = ac;
+      this.EP1 = pair.EntryPoint1;
+      this.EP2 = pair.EntryPoint2;
 
-      if (!pair.EntryPoint2.Name.Equals(DeviceDriver.InitEntryPoint))
-      {
-        this.EP1 = pair.EntryPoint1;
-      }
-      else
-      {
-        this.EP1 = null;
-      }
-
-      if (!pair.EntryPoint2.Name.Equals(DeviceDriver.InitEntryPoint))
-      {
-        this.EP2 = pair.EntryPoint2;
-      }
-      else
-      {
-        this.EP2 = null;
-      }
-
-      this.LocalVarCounter = 0;
       this.AlreadyCalledFuncs = new List<Implementation>();
+      this.InParams = new Dictionary<string, Tuple<int, IdentifierExpr, Variable>>();
     }
 
     /// <summary>
-    /// Runs a async checking instrumentation pass.
+    /// Runs an async checking instrumentation pass.
     /// </summary>
     public void Run()
     {
@@ -71,14 +56,87 @@ namespace Whoop.Instrumentation
 
       var initImpl = this.AC.GetImplementation(DeviceDriver.InitEntryPoint);
 
+      this.InstrumentCheckerFunction();
       this.InstrumentInitFunction(initImpl);
-      this.VisitFunctionsInImplementation(initImpl);
-      this.SimplifyProgram();
+      this.RemoveResultFromEntryPoint(this.EP1);
+      this.RemoveResultFromEntryPoint(this.EP2);
+//      this.VisitFunctionsInImplementation(initImpl);
+//      this.SimplifyProgram();
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
         Console.WriteLine(" |  |------ [AsyncCheckingInstrumentation] {0}", this.Timer.Result());
+      }
+    }
+
+    private void InstrumentCheckerFunction()
+    {
+      var checker = this.AC.Checker;
+      var counter = 0;
+
+      foreach (var block in checker.Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
+        {
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+
+          var call = block.Cmds[idx] as CallCmd;
+          if (Utilities.IsDeviceAllocationFunction(call.callee))
+          {
+            var newInParam = new LocalVariable(Token.NoToken, new TypedIdent(
+              Token.NoToken, "$dev" + counter, this.AC.MemoryModelType));
+            this.InParams.Add(call.callee, new Tuple<int, IdentifierExpr, Variable>(
+              counter, call.Outs[0], newInParam));
+
+            checker.InParams.Add(newInParam);
+            checker.Proc.InParams.Add(newInParam);
+            counter++;
+
+            block.Cmds.RemoveAt(idx);
+            idx--;
+          }
+          else if (call.callee.Equals(DeviceDriver.InitEntryPoint) ||
+            (!call.callee.Equals(this.EP1.Name) && !call.callee.Equals(this.EP2.Name)))
+          {
+            block.Cmds.RemoveAt(idx);
+            idx--;
+          }
+          else
+          {
+            call.IsAsync = true;
+            call.Outs.Clear();
+          }
+        }
+      }
+
+      foreach (var block in checker.Blocks)
+      {
+        for (int idx = 0; idx < block.Cmds.Count; idx++)
+        {
+          if (!(block.Cmds[idx] is CallCmd))
+            continue;
+
+          var call = block.Cmds[idx] as CallCmd;
+          if (!call.IsAsync)
+            continue;
+
+          foreach (var inParam in this.InParams)
+          {
+            for (int i = 0; i < call.Ins.Count; i++)
+            {
+              if (!(call.Ins[i] is IdentifierExpr))
+                continue;
+              var id = call.Ins[i] as IdentifierExpr;
+              if (id.Name.Equals(inParam.Value.Item2.Name))
+              {
+                call.Ins[i] = new IdentifierExpr(
+                  inParam.Value.Item3.tok, inParam.Value.Item3);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -89,30 +147,26 @@ namespace Whoop.Instrumentation
       initImpl.Attributes = new QKeyValue(Token.NoToken,
         "entrypoint", new List<object>(), null);
 
-      CallCmd call1 = null;
-      if (this.EP1 != null)
+      var checkerCall = this.CreateCheckerCall(initImpl);
+
+      var idArray = new IdentifierExpr[this.InParams.Count];
+      foreach (var block in initImpl.Blocks)
       {
-        call1 = this.CreateAsyncEntryPointCall(this.EP1);
+        foreach (var call in block.Cmds.OfType<CallCmd>())
+        {
+          foreach (var inParam in this.InParams)
+          {
+            if (!inParam.Key.Equals(call.callee))
+              continue;
+
+            idArray[inParam.Value.Item1 - 0] = call.Outs[0];
+          }
+        }
       }
 
-      CallCmd call2 = null;
-      if (this.EP2 != null)
+      foreach (var id in idArray)
       {
-        call2 = this.CreateAsyncEntryPointCall(this.EP2);
-      }
-
-      var cmdsToAdd = new List<Cmd>();
-
-      if (this.EP1 != null)
-      {
-        this.AnalyseEntryPointCall(this.EP1, call1, initImpl, cmdsToAdd);
-        this.RemoveResultFromEntryPoint(this.EP1);
-      }
-
-      if (this.EP2 != null)
-      {
-        this.AnalyseEntryPointCall(this.EP2, call2, initImpl, cmdsToAdd);
-        this.RemoveResultFromEntryPoint(this.EP2);
+        checkerCall.Ins.Add(id);
       }
 
       bool foundRegistrationPoint = false;
@@ -135,33 +189,12 @@ namespace Whoop.Instrumentation
 
         if (foundRegistrationPoint && block.Cmds.Count == index + 1)
         {
-          block.Cmds.AddRange(cmdsToAdd);
-
-          if (this.EP1 != null)
-          {
-            block.Cmds.Add(call1);
-          }
-
-          if (this.EP2 != null)
-          {
-            block.Cmds.Add(call2);
-          }
-
+          block.Cmds.Add(checkerCall);
           break;
         }
         else if (foundRegistrationPoint)
         {
-          if (this.EP2 != null)
-          {
-            block.Cmds.Add(call2);
-          }
-
-          if (this.EP1 != null)
-          {
-            block.Cmds.Add(call1);
-          }
-
-          block.Cmds.InsertRange(index + 1, cmdsToAdd);
+          block.Cmds.Insert(index + 1, checkerCall);
           break;
         }
       }
@@ -170,22 +203,7 @@ namespace Whoop.Instrumentation
       {
         foreach (var block in initImpl.Blocks)
         {
-          if (!(block.TransferCmd is ReturnCmd))
-          {
-            continue;
-          }
-
-          block.Cmds.AddRange(cmdsToAdd);
-
-          if (this.EP1 != null)
-          {
-            block.Cmds.Add(call1);
-          }
-
-          if (this.EP2 != null)
-          {
-            block.Cmds.Add(call2);
-          }
+          block.Cmds.Add(checkerCall);
         }
       }
     }
@@ -274,93 +292,28 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private CallCmd CreateAsyncEntryPointCall(EntryPoint ep)
+    private CallCmd CreateCheckerCall(Implementation initImpl)
     {
-      string name = ep.Name;
-      if (ep.IsClone)
-        name = name.Replace("#net", "");
-
-      var call = new CallCmd(Token.NoToken, ep.Name, new List<Expr>(),
-        new List<IdentifierExpr>(), null, true);
-
-      return call;
-    }
-
-    private void AnalyseEntryPointCall(EntryPoint ep, CallCmd epCall, Implementation impl, List<Cmd> cmds)
-    {
-      var checker = this.AC.GetImplementation("whoop$checker");
-
-      string name = ep.Name;
-      if (ep.IsClone)
-        name = name.Replace("#net", "");
-
-      CallCmd checkerCall = null;
-      foreach (var block in checker.Blocks)
+      var inParams = new List<Expr>();
+      foreach (var inParam in initImpl.InParams)
       {
-        foreach (var call in block.Cmds.OfType<CallCmd>())
-        {
-          if (call.callee.Equals(name))
-          {
-            checkerCall = call;
-            break;
-          }
-        }
-
-        if (checkerCall != null)
-          break;
+        inParams.Add(new IdentifierExpr(inParam.tok, inParam));
       }
 
-      for (int idx = 0; idx < checkerCall.Ins.Count; idx++)
-      {
-        var inParam = checkerCall.Ins[idx];
-
-        if (inParam is IdentifierExpr)
-        {
-          string callee = "";
-          if (this.IsHotVariable(impl, inParam as IdentifierExpr, out callee))
-          {
-            CallCmd hotCall = null;
-            foreach (var block in impl.Blocks)
-            {
-              foreach (var call in block.Cmds.OfType<CallCmd>())
-              {
-                if (call.callee.Equals(callee))
-                {
-                  hotCall = call;
-                  break;
-                }
-              }
-
-              if (hotCall != null)
-              {
-                break;
-              }
-            }
-
-            epCall.Ins.Add(hotCall.Outs.First());
-          }
-        }
-        else
-        {
-          var local = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
-            "$l" + this.LocalVarCounter, this.AC.MemoryModelType));
-          this.LocalVarCounter++;
-          impl.LocVars.Add(local);
-
-          var localId = new IdentifierExpr(local.tok, local);
-          var havoc = new HavocCmd(Token.NoToken, new List<IdentifierExpr> { localId });
-          cmds.Add(havoc);
-
-          epCall.Ins.Add(localId);
-        }
-      }
+      return new CallCmd(Token.NoToken, "whoop$checker", inParams,
+        new List<IdentifierExpr>(), null, false);
     }
 
     private void RemoveResultFromEntryPoint(EntryPoint ep)
     {
+      if (ep.Name.Equals(DeviceDriver.InitEntryPoint))
+        return;
+
       string name = ep.Name;
       if (ep.IsClone)
+      {
         name = name.Replace("#net", "");
+      }
 
       var impl = this.AC.GetImplementation(name);
       impl.OutParams.Clear();
@@ -371,33 +324,6 @@ namespace Whoop.Instrumentation
         b.Cmds.RemoveAll(cmd => (cmd is AssignCmd) && (cmd as AssignCmd).
           Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"));
       }
-    }
-
-    private bool IsHotVariable(Implementation impl, IdentifierExpr id, out string callee)
-    {
-      callee = "";
-
-      foreach (var block in impl.Blocks)
-      {
-        foreach (var call in block.Cmds.OfType<CallCmd>())
-        {
-          if (!call.Outs.Any(val => val.Name.Equals(id.Name)))
-            continue;
-
-          if (call.callee.Equals("alloc_etherdev"))
-          {
-            callee = "alloc_etherdev";
-            return true;
-          }
-          else if (call.callee.Equals("alloc_testdev"))
-          {
-            callee = "alloc_testdev";
-            return true;
-          }
-        }
-      }
-
-      return false;
     }
   }
 }

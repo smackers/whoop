@@ -49,6 +49,9 @@ namespace Whoop.Instrumentation
       {
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
           continue;
+        if (impl.Equals(this.AC.Checker))
+          continue;
+
         this.InstrumentYieldsAttribute(impl);
         this.InstrumentYieldsInLocks(impl);
         this.InstrumentYieldsInMemoryAccesses(impl);

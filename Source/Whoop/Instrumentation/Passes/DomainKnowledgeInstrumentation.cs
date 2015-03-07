@@ -183,7 +183,8 @@ namespace Whoop.Instrumentation
               call.Outs.Clear();
             }
           }
-          else if (call.callee.Equals("alloc_etherdev"))
+          else if (call.callee.Equals("alloc_etherdev") ||
+            call.callee.Equals("alloc_testdev"))
           {
             List<AssignLhs> newLhss = new List<AssignLhs>();
             List<Expr> newRhss = new List<Expr>();

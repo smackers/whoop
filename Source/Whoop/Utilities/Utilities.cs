@@ -17,6 +17,18 @@ namespace Whoop
   internal static class Utilities
   {
     /// <summary>
+    /// Checks if the given function performs device allocation.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="funcName">Function name</param>
+    public static bool IsDeviceAllocationFunction(string funcName)
+    {
+      if (funcName.Equals("alloc_etherdev") || funcName.Equals("alloc_testdev"))
+        return true;
+      return false;
+    }
+
+    /// <summary>
     /// Checks if the given function performs device registration.
     /// </summary>
     /// <returns>Boolean value</returns>
@@ -39,7 +51,7 @@ namespace Whoop
         funcName.Contains("$memset") ||
         funcName.Contains("$malloc") || funcName.Contains("$alloca") ||
         funcName.Contains("$free") ||
-        funcName.Equals("alloc_etherdev") ||
+        funcName.Equals("alloc_etherdev") || funcName.Equals("alloc_testdev") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
         funcName.Equals("spin_lock_irqsave") || funcName.Equals("spin_unlock_irqrestore") ||
         funcName.Equals("ASSERT_RTNL") ||
