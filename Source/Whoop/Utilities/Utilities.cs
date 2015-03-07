@@ -37,6 +37,8 @@ namespace Whoop
     {
       if (funcName.Contains("$memcpy") || funcName.Contains("memcpy_fromio") ||
         funcName.Contains("$memset") ||
+        funcName.Contains("$malloc") || funcName.Contains("$alloca") ||
+        funcName.Contains("$free") ||
         funcName.Equals("alloc_etherdev") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
         funcName.Equals("spin_lock_irqsave") || funcName.Equals("spin_unlock_irqrestore") ||
@@ -59,6 +61,7 @@ namespace Whoop
     public static bool ShouldSkipFromAnalysis(CallCmd call)
     {
       if (call.callee.Contains("$malloc") || call.callee.Contains("$alloca") ||
+        call.callee.Contains("$free") ||
         call.callee.Contains("strlcpy") ||
         call.callee.Contains("readq") || call.callee.Contains("readb") ||
         call.callee.Contains("readw") || call.callee.Contains("readl") ||

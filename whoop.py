@@ -141,7 +141,7 @@ class DefaultCmdLineOptions(object):
     self.SL = SourceLanguage.Unknown
     self.sourceFiles = [ ]
     self.chauffeurOptions = [ ]
-    self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c" ]
+    self.clangOptions = [ "-w", "-g", "-emit-llvm", "-O0", "-c", "-DMEMORY_MODEL_NO_REUSE_IMPLS" ]
     self.smackOptions = [ ]
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]

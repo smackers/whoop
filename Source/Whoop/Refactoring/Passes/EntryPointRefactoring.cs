@@ -258,9 +258,11 @@ namespace Whoop.Refactoring
 
     private void RefactorFunction(Implementation func)
     {
-      Constant cons = this.AC.GetConstant(func.Name);
-      this.CreateNewConstant(cons);
+      var cons = this.AC.GetConstant(func.Name);
+      if (cons == null)
+        return;
 
+      this.CreateNewConstant(cons);
       this.AC.TopLevelDeclarations.RemoveAll(val =>
         (val is Constant) && (val as Constant).Name.Equals(func.Name));
 
@@ -278,9 +280,9 @@ namespace Whoop.Refactoring
 
     private void CreateNewConstant(Constant cons)
     {
-      string consName = cons.Name + "$" + this.EP.Name;
+      var consName = cons.Name + "$" + this.EP.Name;
 
-      Constant newCons = new Constant(cons.tok,
+      var newCons = new Constant(cons.tok,
         new TypedIdent(cons.TypedIdent.tok, consName,
           cons.TypedIdent.Type), cons.Unique);
 
