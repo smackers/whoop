@@ -17,16 +17,19 @@ using Microsoft.Boogie;
 
 namespace Whoop
 {
-  internal sealed class WhoopErrorReporter
+  internal sealed class ErrorReporter
   {
     private List<Tuple<SourceLocationInfo, SourceLocationInfo>> ReportedErrors;
 
-    internal WhoopErrorReporter()
+    public bool FoundErrors;
+
+    public ErrorReporter()
     {
       this.ReportedErrors = new List<Tuple<SourceLocationInfo, SourceLocationInfo>>();
+      this.FoundErrors = false;
     }
 
-    internal int ReportCounterexample(Counterexample error)
+    public int ReportCounterexample(Counterexample error)
     {
       Contract.Requires(error != null);
       int errors = 0;
@@ -85,6 +88,11 @@ namespace Whoop
         Console.WriteLine("Error: ReturnCounterexample");
       }
 
+      if (errors > 0)
+      {
+        this.FoundErrors = true;
+      }
+
       return errors;
     }
 
@@ -124,7 +132,7 @@ namespace Whoop
         Tuple<string, string> eps = this.GetAsyncFuncsNames(conflictingAction, potentialConflictingActions[i]);
         this.DetermineNatureOfRace(potentialConflictingActions[i], out raceName, out access1, access2);
 
-        WhoopErrorReporter.ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
+        ErrorReporter.ErrorWriteLine("\n" + sourceInfoForSecondAccess.GetFile() + ":",
           "potential " + raceName + " race:\n", ErrorMsgType.Error);
 
         Console.Error.Write(access1 + " by entry point " + eps.Item2 + ", ");
@@ -205,7 +213,7 @@ namespace Whoop
       string checkStateName = QKeyValue.FindStringAttribute(conflictingAction.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
 
-      Model.CapturedState checkState = WhoopErrorReporter.GetStateFromModel(checkStateName, cex.Model);
+      Model.CapturedState checkState = ErrorReporter.GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
 
       Dictionary<string, bool> checkStateLocksDictionary = null;
@@ -227,7 +235,7 @@ namespace Whoop
           if (otherAccess.Equals("read") && this.GetAccessType(c.Attributes) == "read")
             continue;
 
-          Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
+          Model.CapturedState logState = ErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
           if (WhoopRaceCheckerCommandLineOptions.Get().DebugWhoop)
@@ -365,7 +373,7 @@ namespace Whoop
       if (sourceLocationsForUnreleasedLocks.Count == 0)
         return sourceLocationsForUnreleasedLocks.Count;
 
-      WhoopErrorReporter.ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
+      ErrorReporter.ErrorWriteLine("\n" + sourceLocationsForUnreleasedLocks[0].GetFile() + ":",
         "potential source of deadlock:\n", ErrorMsgType.Error);
 
       foreach (var v in sourceLocationsForUnreleasedLocks)
@@ -382,7 +390,7 @@ namespace Whoop
     {
       string checkStateName = QKeyValue.FindStringAttribute(deadlockCheck.Attributes, "captureState");
       Contract.Requires(checkStateName != null);
-      Model.CapturedState checkState = WhoopErrorReporter.GetStateFromModel(checkStateName, cex.Model);
+      Model.CapturedState checkState = ErrorReporter.GetStateFromModel(checkStateName, cex.Model);
       Contract.Requires(checkState != null);
 
       List<Tuple<string, string>> locksLeftLocked = new List<Tuple<string, string>>();
@@ -397,7 +405,7 @@ namespace Whoop
           if (!stateName.Contains("update_cls_state")) continue;
           if (!asyncFunc.Equals(QKeyValue.FindStringAttribute(c.Attributes, "entryPoint"))) continue;
 
-          Model.CapturedState logState = WhoopErrorReporter.GetStateFromModel(stateName, cex.Model);
+          Model.CapturedState logState = ErrorReporter.GetStateFromModel(stateName, cex.Model);
           if (logState == null) continue;
 
           string lockName = logState.Variables.ToList().Find(val => val.Contains("UPDATE_CURRENT_LOCKSET") &&
@@ -486,9 +494,9 @@ namespace Whoop
     private int ReportRequiresFailure(CallCounterexample cex)
     {
       Console.Error.WriteLine();
-      WhoopErrorReporter.ErrorWriteLine(cex.FailingCall + ":",
+      ErrorReporter.ErrorWriteLine(cex.FailingCall + ":",
         "a precondition for this call might not hold", ErrorMsgType.Error);
-      WhoopErrorReporter.ErrorWriteLine(cex.FailingRequires.Line + ":",
+      ErrorReporter.ErrorWriteLine(cex.FailingRequires.Line + ":",
         "this is the precondition that might not hold", ErrorMsgType.Note);
       return 1;
     }

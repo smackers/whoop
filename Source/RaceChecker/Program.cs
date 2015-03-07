@@ -75,46 +75,53 @@ namespace Whoop
         Summarisation.SummaryInformationParser.FromFile(fileList);
 
         PipelineStatistics stats = new PipelineStatistics();
-        WhoopErrorReporter errorReporter = new WhoopErrorReporter();
 
-        if (WhoopRaceCheckerCommandLineOptions.Get().FunctionsToAnalyse.Count == 0)
+        var pairMap = new Dictionary<EntryPointPair, ErrorReporter>();
+        foreach (var pair in DeviceDriver.EntryPointPairs)
         {
-          foreach (var pair in DeviceDriver.EntryPointPairs)
+          AnalysisContext ac = null;
+          var parser = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl");
+          var errorReporter = new ErrorReporter();
+
+          if (pair.EntryPoint1.Name.Equals(pair.EntryPoint2.Name))
           {
-            AnalysisContext ac = null;
-
-            var parser = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl");
-            if (pair.EntryPoint1.Name.Equals(pair.EntryPoint2.Name))
-            {
-              string extension = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
-                extension = "$summarised";
-              else
-                extension = "$instrumented";
-
-              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
-                pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension });
-            }
+            string extension = null;
+            if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
+              extension = "$summarised";
             else
-            {
-              string extension1 = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
-                extension1 = "$summarised";
-              else
-                extension1 = "$instrumented";
+              extension = "$instrumented";
 
-              string extension2 = null;
-              if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint2.Name))
-                extension2 = "$summarised";
-              else
-                extension2 = "$instrumented";
-
-              parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
-                pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension1, pair.EntryPoint2.Name + extension2 });
-            }
-
-            new StaticLocksetAnalyser(ac, pair.EntryPoint1, pair.EntryPoint2, stats, errorReporter).Run();
+            parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
+              pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension });
           }
+          else
+          {
+            string extension1 = null;
+            if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint1.Name))
+              extension1 = "$summarised";
+            else
+              extension1 = "$instrumented";
+
+            string extension2 = null;
+            if (Summarisation.SummaryInformationParser.AvailableSummaries.Contains(pair.EntryPoint2.Name))
+              extension2 = "$summarised";
+            else
+              extension2 = "$instrumented";
+
+            parser.TryParseNew(ref ac, new List<string> { "check_" + pair.EntryPoint1.Name + "_" +
+              pair.EntryPoint2.Name, pair.EntryPoint1.Name + extension1, pair.EntryPoint2.Name + extension2 });
+          }
+
+          new StaticLocksetAnalyser(ac, pair, errorReporter, stats).Run();
+          pairMap.Add(pair, errorReporter);
+        }
+
+        foreach (var pair in pairMap)
+        {
+          AnalysisContext ac = null;
+          new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
+
+          new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
         }
 
         Whoop.IO.Reporter.WriteTrailer(stats);

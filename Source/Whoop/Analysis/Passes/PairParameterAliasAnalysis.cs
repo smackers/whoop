@@ -30,12 +30,12 @@ namespace Whoop.Analysis
     private EntryPoint EP2;
     private ExecutionTimer Timer;
 
-    public PairParameterAliasAnalysis(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public PairParameterAliasAnalysis(AnalysisContext ac, EntryPointPair pair)
     {
-      Contract.Requires(ac != null && ep1 != null && ep2 != null);
+      Contract.Requires(ac != null && pair != null);
       this.AC = ac;
-      this.EP1 = ep1;
-      this.EP2 = ep2;
+      this.EP1 = pair.EntryPoint1;
+      this.EP2 = pair.EntryPoint2;
     }
 
     public void Run()

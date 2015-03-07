@@ -245,7 +245,7 @@ def showHelpAndExit():
     --skip-until-model      Start toolchain at the SMACK LLVM-IR to Boogie translation tool.
     --skip-until-engine     Start toolchain at the Whoop instrumentation engine.
     --skip-until-cruncher   Start toolchain at the Whoop invariant inference cruncher.
-    --skip-until-driver     Start toolchain at the Whoop static analysis driver.
+    --skip-until-checker    Start toolchain at the Whoop race checker.
     --time-as-csv=label     Print timing as CSV row with label.
     --silent                Silent on success; only show errors/timing.
   """.format(**stringReplacements))
@@ -368,7 +368,7 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.skip["clang"] = True
       CommandLineOptions.skip["smack"] = True
       CommandLineOptions.skip["engine"] = True
-    if o == "--skip-until-driver":
+    if o == "--skip-until-checker":
       CommandLineOptions.skip["chauffeur"] = True
       CommandLineOptions.skip["clang"] = True
       CommandLineOptions.skip["smack"] = True
@@ -547,7 +547,8 @@ def startToolChain(argv):
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'use-other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
-              'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher', 'skip-until-driver'
+              'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher',
+              'skip-until-checker'
              ])
   except getopt.GetoptError as getoptError:
     ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, getoptError.msg + ".  Try --help for list of options")
@@ -730,7 +731,7 @@ def startToolChain(argv):
               CommandLineOptions.componentTimeout)
       if CommandLineOptions.stopAtCruncher: return 0
 
-  """ RUN WHOOP DRIVER """
+  """ RUN WHOOP RACE CHECKER """
   runTool("whoopRaceChecker",
           (["mono"] if os.name == "posix" else []) +
           [findtools.whoopBinDir + "/WhoopRaceChecker.exe"] +

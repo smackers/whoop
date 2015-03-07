@@ -54,8 +54,8 @@ namespace Whoop
           Instrumentation.Factory.CreateGlobalRaceCheckingInstrumentation(this.AC, pair.EntryPoint2).Run();
         }
 
-        Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair.EntryPoint1, pair.EntryPoint2).Run();
-        Analysis.Factory.CreatePairParameterAliasAnalysis(this.AC, pair.EntryPoint1, pair.EntryPoint2).Run();
+        Instrumentation.Factory.CreatePairInstrumentation(this.AC, pair).Run();
+        Analysis.Factory.CreatePairParameterAliasAnalysis(this.AC, pair).Run();
 
         ModelCleaner.RemoveOriginalInitFunc(this.AC);
         ModelCleaner.RemoveEntryPointSpecificTopLevelDeclerations(this.AC);

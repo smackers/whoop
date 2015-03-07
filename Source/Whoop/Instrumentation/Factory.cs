@@ -51,9 +51,14 @@ namespace Whoop.Instrumentation
       return new GlobalRaceCheckingInstrumentation(ac, ep);
     }
 
-    public static IPass CreatePairInstrumentation(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public static IPass CreatePairInstrumentation(AnalysisContext ac, EntryPointPair pair)
     {
-      return new PairInstrumentation(ac, ep1, ep2);
+      return new PairInstrumentation(ac, pair);
+    }
+
+    public static IPass CreateAsyncCheckingInstrumentation(AnalysisContext ac, EntryPointPair pair)
+    {
+      return new AsyncCheckingInstrumentation(ac, pair);
     }
   }
 }

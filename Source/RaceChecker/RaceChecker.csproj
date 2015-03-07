@@ -33,9 +33,10 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="StaticLocksetAnalyser.cs" />
-    <Compile Include="WhoopErrorReporter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="WhoopRaceCheckerCommandLineOptions.cs" />
+    <Compile Include="YieldInstrumentationEngine.cs" />
+    <Compile Include="ErrorReporter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Whoop\Whoop.csproj">

@@ -17,6 +17,18 @@ namespace Whoop
   internal static class Utilities
   {
     /// <summary>
+    /// Checks if the given function performs device registration.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="funcName">Function name</param>
+    public static bool IsDeviceRegistrationFunction(string funcName)
+    {
+      if (funcName.Equals("register_netdev") || funcName.Equals("misc_register"))
+        return true;
+      return false;
+    }
+
+    /// <summary>
     /// Checks if the given function should be accessed.
     /// </summary>
     /// <returns>Boolean value</returns>

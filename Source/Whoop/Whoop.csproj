@@ -95,6 +95,7 @@
     <Compile Include="Summarisation\SummaryGeneration.cs" />
     <Compile Include="Core\IPass.cs" />
     <Compile Include="Domain\Drivers\EntryPointPair.cs" />
+    <Compile Include="Instrumentation\Passes\AsyncCheckingInstrumentation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />

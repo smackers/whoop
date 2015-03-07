@@ -207,7 +207,7 @@ namespace Whoop.Refactoring
 
     private void CleanUp()
     {
-      HashSet<Implementation> uncalledFuncs = new HashSet<Implementation>();
+      var uncalledFuncs = new HashSet<Implementation>();
 
       foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {

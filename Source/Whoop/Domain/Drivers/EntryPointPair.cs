@@ -22,14 +22,10 @@ namespace Whoop.Domain.Drivers
     public readonly EntryPoint EntryPoint1;
     public readonly EntryPoint EntryPoint2;
 
-    public bool HasRace;
-
     public EntryPointPair(EntryPoint ep1, EntryPoint ep2)
     {
       this.EntryPoint1 = ep1;
       this.EntryPoint2 = ep2;
-
-      this.HasRace = false;
     }
   }
 }

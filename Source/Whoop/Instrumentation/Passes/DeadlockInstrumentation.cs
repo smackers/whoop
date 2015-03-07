@@ -109,7 +109,7 @@ namespace Whoop.Instrumentation
 
     private void InstrumentImplementation(InstrumentationRegion region)
     {
-      CallCmd call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
+      var call = new CallCmd(Token.NoToken, "_CHECK_ALL_LOCKS_HAVE_BEEN_RELEASED",
         new List<Expr> { }, new List<IdentifierExpr>());
       region.Blocks()[region.Blocks().Count - 1].Cmds.Add(call);
     }

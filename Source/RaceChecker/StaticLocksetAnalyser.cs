@@ -29,18 +29,17 @@ namespace Whoop
     private EntryPoint EP2;
 
     PipelineStatistics Stats;
-    WhoopErrorReporter ErrorReporter;
+    ErrorReporter ErrorReporter;
 
-    public StaticLocksetAnalyser(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2,
-      PipelineStatistics stats, WhoopErrorReporter errorReporter)
+    public StaticLocksetAnalyser(AnalysisContext ac, EntryPointPair pair, ErrorReporter errorReporter,
+      PipelineStatistics stats)
     {
-      Contract.Requires(ac != null && ep1 != null && ep2 != null &&
-        stats != null && errorReporter != null);
+      Contract.Requires(ac != null && pair != null && errorReporter != null && stats != null);
       this.AC = ac;
-      this.EP1 = ep1;
-      this.EP2 = ep2;
-      this.Stats = stats;
+      this.EP1 = pair.EntryPoint1;
+      this.EP2 = pair.EntryPoint2;
       this.ErrorReporter = errorReporter;
+      this.Stats = stats;
     }
 
     public void Run()

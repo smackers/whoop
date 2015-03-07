@@ -487,7 +487,7 @@ namespace Whoop.Regions
         }
       }
 
-      CallCmd call = new CallCmd(Token.NoToken, impl.Name, ins, new List<IdentifierExpr>());
+      var call = new CallCmd(Token.NoToken, impl.Name, ins, new List<IdentifierExpr>());
 
       return call;
     }

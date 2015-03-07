@@ -36,9 +36,9 @@ namespace Whoop.Analysis
       return new ParameterAliasAnalysis(ac, ep);
     }
 
-    public static IPass CreatePairParameterAliasAnalysis(AnalysisContext ac, EntryPoint ep1, EntryPoint ep2)
+    public static IPass CreatePairParameterAliasAnalysis(AnalysisContext ac, EntryPointPair pair)
     {
-      return new PairParameterAliasAnalysis(ac, ep1, ep2);
+      return new PairParameterAliasAnalysis(ac, pair);
     }
 
     public static IPass CreateLocalMemoryAllocationAnalysis(AnalysisContext ac, EntryPoint ep)
