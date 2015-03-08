@@ -52,9 +52,7 @@ namespace Whoop.Instrumentation
         if (impl.Equals(this.AC.Checker))
           continue;
 
-        this.InstrumentYieldsAttribute(impl);
-        this.InstrumentYieldsInLocks(impl);
-        this.InstrumentYieldsInMemoryAccesses(impl);
+        this.InstrumentImplementation(impl);
       }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
@@ -65,6 +63,17 @@ namespace Whoop.Instrumentation
     }
 
     #region yield instrumentation
+
+    private void InstrumentImplementation(Implementation impl)
+    {
+      this.InstrumentYieldsAttribute(impl);
+      this.InstrumentYieldsInLocks(impl);
+
+      if (!WhoopCommandLineOptions.Get().YieldNoAccess)
+      {
+        this.InstrumentYieldsInMemoryAccesses(impl);
+      }
+    }
 
     private void InstrumentYieldsAttribute(Implementation impl)
     {
@@ -98,6 +107,8 @@ namespace Whoop.Instrumentation
 
     private void InstrumentYieldsInMemoryAccesses(Implementation impl)
     {
+      int rvCounter = 0;
+
       foreach (var block in impl.Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
@@ -110,14 +121,16 @@ namespace Whoop.Instrumentation
           var rhssMap = assign.Rhss.OfType<NAryExpr>();
           var rhss = assign.Rhss.OfType<IdentifierExpr>();
 
-          bool accessFound = false;
+          bool writeAccessFound = false;
+          bool readAccessFound = false;
+
           if (lhssMap.Count() == 1)
           {
             var lhs = lhssMap.First();
             if (lhs.DeepAssignedIdentifier.Name.StartsWith("$M.") &&
               lhs.Map is SimpleAssignLhs && lhs.Indexes.Count == 1)
             {
-              accessFound = true;
+              writeAccessFound = true;
             }
           }
           else if (lhss.Count() == 1)
@@ -125,7 +138,7 @@ namespace Whoop.Instrumentation
             var lhs = lhss.First();
             if (lhs.DeepAssignedIdentifier.Name.StartsWith("$M."))
             {
-              accessFound = true;
+              writeAccessFound = true;
             }
           }
 
@@ -135,7 +148,7 @@ namespace Whoop.Instrumentation
             if (rhs.Fun is MapSelect && rhs.Args.Count == 2 &&
               (rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M."))
             {
-              accessFound = true;
+              readAccessFound = true;
             }
           }
           else if (rhss.Count() == 1)
@@ -143,11 +156,11 @@ namespace Whoop.Instrumentation
             var rhs = rhss.First();
             if (rhs.Name.StartsWith("$M."))
             {
-              accessFound = true;
+              readAccessFound = true;
             }
           }
 
-          if (!accessFound)
+          if (!writeAccessFound && !readAccessFound)
             continue;
 
           if (idx + 1 == block.Cmds.Count)
@@ -160,6 +173,56 @@ namespace Whoop.Instrumentation
           }
 
           idx++;
+
+          if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound)
+          {
+            var localVar = new LocalVariable(Token.NoToken, new TypedIdent(
+              Token.NoToken, "$rv" + rvCounter, this.AC.MemoryModelType));
+            impl.LocVars.Add(localVar);
+            rvCounter++;
+
+            var id = new IdentifierExpr(localVar.tok, localVar);
+            var readAssign = new AssignCmd(Token.NoToken,
+              new List<AssignLhs> { new SimpleAssignLhs(Token.NoToken, id)},
+              assign.Rhss);
+            var readAssert = new AssertCmd(Token.NoToken, Expr.Eq(
+              assign.Lhss[0].DeepAssignedIdentifier, id));
+
+            if (idx + 1 == block.Cmds.Count)
+            {
+              block.Cmds.Add(readAssign);
+              block.Cmds.Add(readAssert);
+            }
+            else
+            {
+              block.Cmds.Insert(idx + 1, readAssert);
+              block.Cmds.Insert(idx + 1, readAssign);
+            }
+
+            idx += 2;
+          }
+          else if (WhoopCommandLineOptions.Get().YieldRaceChecking && writeAccessFound)
+          {
+            Expr expr = null;
+            if (lhssMap.Count() == 1)
+              expr = lhssMap.First().AsExpr;
+            else
+              expr = lhss.First().AsExpr;
+
+            var writeAssert = new AssertCmd(Token.NoToken, Expr.Eq(
+              expr, assign.Rhss.First()));
+
+            if (idx + 1 == block.Cmds.Count)
+            {
+              block.Cmds.Add(writeAssert);
+            }
+            else
+            {
+              block.Cmds.Insert(idx + 1, writeAssert);
+            }
+
+            idx++;
+          }
         }
       }
     }

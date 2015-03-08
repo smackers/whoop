@@ -29,6 +29,10 @@ namespace Whoop
     public bool MergeExistentials = true;
     public bool DoTopDownExternalAccessInstrumentation = true;
 
+    public bool YieldAll = false;
+    public bool YieldNoAccess = false;
+    public bool YieldRaceChecking = false;
+
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
     public bool SkipInference = false;
@@ -101,6 +105,24 @@ namespace Whoop
       if (option == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;
+        return true;
+      }
+
+      if (option == "yieldAll")
+      {
+        this.YieldAll = true;
+        return true;
+      }
+
+      if (option == "yieldNoAccess")
+      {
+        this.YieldNoAccess = true;
+        return true;
+      }
+
+      if (option == "yieldRaceChecking")
+      {
+        this.YieldRaceChecking = true;
         return true;
       }
 

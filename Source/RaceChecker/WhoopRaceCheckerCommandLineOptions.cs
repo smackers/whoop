@@ -17,9 +17,6 @@ namespace Whoop
 {
   internal class WhoopRaceCheckerCommandLineOptions : WhoopCommandLineOptions
   {
-    public bool YieldNone = false;
-    public bool YieldAll = false;
-
     public WhoopRaceCheckerCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
 
@@ -27,18 +24,6 @@ namespace Whoop
 
     protected override bool ParseOption(string option, CommandLineOptionEngine.CommandLineParseState ps)
     {
-      if (option == "yieldNone")
-      {
-        this.YieldNone = true;
-        return true;
-      }
-
-      if (option == "yieldAll")
-      {
-        this.YieldAll = true;
-        return true;
-      }
-
       return base.ParseOption(option, ps);
     }
 

@@ -158,8 +158,9 @@ class DefaultCmdLineOptions(object):
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
-    self.yieldNone = False
+    self.yieldNoAccess = False
     self.yieldAll = False
+    self.yieldRaceChecking = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
     self.useOtherModel = False
@@ -228,8 +229,9 @@ def showHelpAndExit():
     --no-existential-opts   Do not perform existential optimisations.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
-    --yield-none            Turn off yield instrumentation.
     --yield-all             Instruments yields in all visible operations.
+    --yield-no-access       Turn off yield instrumentation in memory accesses.
+    --yield-race-check      Instruments race checking in yielded memory accesses.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
     --use-other-model       Uses an alternative environmental model.
 
@@ -331,10 +333,12 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.findBugs = True
     if o == "--no-infer":
       CommandLineOptions.noInfer = True
-    if o == "--yield-none":
-      CommandLineOptions.yieldNone = True
     if o == "--yield-all":
       CommandLineOptions.yieldAll = True
+    if o == "--yield-no-access":
+      CommandLineOptions.yieldNoAccess = True
+    if o == "--yield-race-check":
+      CommandLineOptions.yieldRaceChecking = True
     if o == "--inparam-aliasing":
       CommandLineOptions.checkInParamAliasing = True
     if o == "--no-existential-opts":
@@ -526,7 +530,10 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
                         ": " + str(e) + "\nWith command line args:\n" + \
                         pprint.pformat(Command))
   if CommandLineOptions.time:
-    Timing[ToolName] = end-start
+    if Timing.has_key(ToolName):
+      Timing[ToolName] = Timing[ToolName] + end-start
+    else:
+      Timing[ToolName] = end-start
   if returnCode != ErrorCodes.SUCCESS:
     if not (CommandLineOptions.findBugs and ToolName == "whoopRaceChecker"):
       if CommandLineOptions.silent and stdout: print(stdout, file=sys.stderr)
@@ -584,7 +591,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
-              'yield-none', 'yield-all',
+              'yield-all', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'use-other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
@@ -716,10 +723,13 @@ def startToolChain(argv):
     CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
     CommandLineOptions.whoopRaceCheckerOptions += [ "/skipInference" ]
 
-  if CommandLineOptions.yieldNone:
-    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNone" ]
+  if CommandLineOptions.yieldNoAccess:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
   elif CommandLineOptions.yieldAll:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
+
+  if CommandLineOptions.yieldRaceChecking:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldRaceChecking" ]
 
   CommandLineOptions.whoopCruncherOptions += [ "/contractInfer" ]
 
