@@ -147,7 +147,8 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
-    self.corralOptions = [ "/cooperative" ]
+    self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:1" ]
+    # self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:7", "/staticInlining", "/trackAllVars" ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
@@ -179,6 +180,7 @@ class DefaultCmdLineOptions(object):
     self.stopAtBpl = False
     self.stopAtEngine = False
     self.stopAtCruncher = False
+    self.stopAtRaceChecker = False
     self.skip = { "chauffeur": False,
                   "clang": False,
                   "smack": False,
@@ -370,6 +372,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.stopAtEngine = True
     if o == "--stop-at-cruncher":
       CommandLineOptions.stopAtCruncher = True
+    if o == "--stop-at-race-checker":
+      CommandLineOptions.stopAtRaceChecker = True
     if o == "--skip-until-clang":
       CommandLineOptions.skip["chauffeur"] = True
     if o == "--skip-until-model":
@@ -524,8 +528,9 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
   if CommandLineOptions.time:
     Timing[ToolName] = end-start
   if returnCode != ErrorCodes.SUCCESS:
-    if CommandLineOptions.silent and stdout: print(stdout, file=sys.stderr)
-    raise ReportAndExit(ErrorCode, stdout)
+    if not (CommandLineOptions.findBugs and ToolName == "whoopRaceChecker"):
+      if CommandLineOptions.silent and stdout: print(stdout, file=sys.stderr)
+      raise ReportAndExit(ErrorCode, stdout)
 
 def runCorral(filename):
     directory = os.path.dirname(os.path.realpath(filename))
@@ -582,9 +587,10 @@ def startToolChain(argv):
               'yield-none', 'yield-all',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'use-other-model',
-              'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine', 'stop-at-cruncher',
-              'skip-until-clang', 'skip-until-model', 'skip-until-engine', 'skip-until-cruncher',
-              'skip-until-checker', 'skip-until-corral'
+              'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
+              'stop-at-cruncher', 'stop-at-race-checker',
+              'skip-until-clang', 'skip-until-model', 'skip-until-engine',
+              'skip-until-cruncher', 'skip-until-checker', 'skip-until-corral'
              ])
   except getopt.GetoptError as getoptError:
     ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, getoptError.msg + ".  Try --help for list of options")
@@ -618,7 +624,7 @@ def startToolChain(argv):
       thisfile = os.path.splitext(os.path.basename(inputFilename))[0]
       path = os.path.realpath(inputFilename).replace(os.path.basename(inputFilename), "")
       for file in os.listdir(os.path.dirname(os.path.realpath(inputFilename))):
-        if fnmatch.fnmatch(file, thisfile + '_*.wbpl'):
+        if fnmatch.fnmatch(file, thisfile + '_*.' + pattern):
           try: os.remove(path + file)
           except OSError: pass
     cleanUpHandler.register(DeleteFile, bcFilename)
@@ -628,7 +634,8 @@ def startToolChain(argv):
     if not CommandLineOptions.stopAtBpl: cleanUpHandler.register(DeleteFile, bplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
     if not CommandLineOptions.stopAtEngine: cleanUpHandler.register(DeleteFile, summaryInfoFilename)
-    if not CommandLineOptions.stopAtCruncher: cleanUpHandler.register(DeleteFilesWithPattern, wbplFilename)
+    if not CommandLineOptions.stopAtCruncher: cleanUpHandler.register(DeleteFilesWithPattern, "wbpl")
+    if not CommandLineOptions.stopAtRaceChecker: cleanUpHandler.register(DeleteFilesWithPattern, "bpl")
 
   if CommandLineOptions.useOtherModel:
     global clangCoreIncludes
@@ -781,11 +788,11 @@ def startToolChain(argv):
             CommandLineOptions.whoopRaceCheckerOptions,
             ErrorCodes.DRIVER_ERROR,
             CommandLineOptions.componentTimeout)
+    if CommandLineOptions.stopAtRaceChecker: return 0
 
   if CommandLineOptions.findBugs:
       """ RUN CORRAL """
       runCorral(filename)
-
 
   """ SUCCESS - REPORT STATUS """
   if CommandLineOptions.silent:

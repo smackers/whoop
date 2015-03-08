@@ -16,6 +16,8 @@ namespace Whoop
 {
   public class WhoopCommandLineOptions : CommandLineOptions
   {
+    public Mode Mode = Mode.LinuxDrivers;
+
     public string OriginalFile = "";
     public string WhoopDeclFile = "";
     public string AnalyseOnly = "";

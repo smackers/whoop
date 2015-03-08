@@ -60,8 +60,17 @@ namespace Whoop.Instrumentation
       this.InstrumentInitFunction(initImpl);
       this.RemoveResultFromEntryPoint(this.EP1);
       this.RemoveResultFromEntryPoint(this.EP2);
-//      this.VisitFunctionsInImplementation(initImpl);
-//      this.SimplifyProgram();
+      this.VisitFunctionsInImplementation(initImpl);
+      this.SimplifyProgram();
+
+      // HACK
+      foreach (var proc in this.AC.TopLevelDeclarations.OfType<Procedure>())
+      {
+        if (proc.Name.StartsWith("$memcpy") || proc.Name.StartsWith("$memset"))
+        {
+          proc.Ensures.Clear();
+        }
+      }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -74,6 +83,10 @@ namespace Whoop.Instrumentation
     {
       var checker = this.AC.Checker;
       var counter = 0;
+
+      bool duplicate = false;
+      if (this.EP1.Equals(this.EP2))
+        duplicate = true;
 
       foreach (var block in checker.Blocks)
       {
@@ -135,6 +148,12 @@ namespace Whoop.Instrumentation
                   inParam.Value.Item3.tok, inParam.Value.Item3);
               }
             }
+          }
+
+          if (duplicate)
+          {
+            block.Cmds.Insert(idx, call);
+            idx++;
           }
         }
       }
