@@ -98,6 +98,7 @@
     <Compile Include="Instrumentation\Passes\AsyncCheckingInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\YieldInstrumentation.cs" />
     <Compile Include="Core\Mode.cs" />
+    <Compile Include="Core\ErrorReporter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utilities\" />
@@ -138,6 +139,9 @@
     </Reference>
     <Reference Include="ExecutionEngine">
       <HintPath>..\..\BoogieBinaries\ExecutionEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Model">
+      <HintPath>..\..\BoogieBinaries\Model.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

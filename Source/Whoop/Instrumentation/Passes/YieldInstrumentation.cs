@@ -28,13 +28,15 @@ namespace Whoop.Instrumentation
   {
     private AnalysisContext AC;
     private EntryPointPair Pair;
+    private ErrorReporter ErrorReporter;
     private ExecutionTimer Timer;
 
-    public YieldInstrumentation(AnalysisContext ac, EntryPointPair pair)
+    public YieldInstrumentation(AnalysisContext ac, EntryPointPair pair, ErrorReporter errorReporter)
     {
-      Contract.Requires(ac != null && pair != null);
+      Contract.Requires(ac != null && pair != null && errorReporter != null);
       this.AC = ac;
       this.Pair = pair;
+      this.ErrorReporter = errorReporter;
     }
 
     public void Run()
@@ -69,7 +71,8 @@ namespace Whoop.Instrumentation
       this.InstrumentYieldsAttribute(impl);
       this.InstrumentYieldsInLocks(impl);
 
-      if (!WhoopCommandLineOptions.Get().YieldNoAccess)
+      if (!WhoopCommandLineOptions.Get().YieldNoAccess &&
+        this.ErrorReporter.FoundErrors)
       {
         this.InstrumentYieldsInMemoryAccesses(impl);
       }
@@ -164,14 +167,9 @@ namespace Whoop.Instrumentation
             continue;
 
           if (idx + 1 == block.Cmds.Count)
-          {
             block.Cmds.Add(new YieldCmd(Token.NoToken));
-          }
           else
-          {
             block.Cmds.Insert(idx + 1, new YieldCmd(Token.NoToken));
-          }
-
           idx++;
 
           if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound)
