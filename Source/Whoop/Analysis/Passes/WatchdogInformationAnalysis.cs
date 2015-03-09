@@ -174,12 +174,15 @@ namespace Whoop.Analysis
             }
 
             HashSet<Expr> ptrExprs = null;
-            this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
-
+            var result = this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
             foreach (var ptrExpr in ptrExprs)
             {
               var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);
-              if (!WhoopCommandLineOptions.Get().CheckInParamAliasing &&
+              if (result == PointerArithmeticAnalyser.ResultType.Const)
+              {
+                region.TryAddLocalResourceAccess(resource, ptrExpr);
+              }
+              else if (!WhoopCommandLineOptions.Get().CheckInParamAliasing &&
                 region.FunctionPointers.Any(val => val.Name.Equals(id.Name)))
               {
                 call.callee = "_NO_OP_$" + this.EP.Name;

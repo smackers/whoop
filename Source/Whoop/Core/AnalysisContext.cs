@@ -173,7 +173,7 @@ namespace Whoop
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
-      Implementation impl = (this.TopLevelDeclarations.Find(val => (val is Implementation) &&
+      Implementation impl = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Implementation) &&
         (val as Implementation).Name.Equals(name)) as Implementation);
       return impl;
     }
@@ -181,7 +181,7 @@ namespace Whoop
     public Constant GetConstant(string name)
     {
       Contract.Requires(name != null);
-      Constant cons = (this.TopLevelDeclarations.Find(val => (val is Constant) &&
+      Constant cons = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Constant) &&
         (val as Constant).Name.Equals(name)) as Constant);
       return cons;
     }

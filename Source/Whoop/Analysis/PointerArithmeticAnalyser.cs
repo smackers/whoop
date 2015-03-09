@@ -54,6 +54,7 @@ namespace Whoop.Analysis
       Pointer,
       Literal,
       Axiom,
+      Const,
       Allocated
     }
 
@@ -85,11 +86,22 @@ namespace Whoop.Analysis
     /// Compute $pa(p, i, s) == p + i * s);
     /// </summary>
     /// <returns>Result type</returns>
-    /// <param name="id">Identifier expression</param>
+    /// <param name="id">Expression</param>
     /// <param name="ptrExprs">Computed ptr expressions</param>
     public ResultType TryComputeRootPointers(Expr id, out HashSet<Expr> ptrExprs)
     {
       ptrExprs = new HashSet<Expr>();
+
+      if (id is NAryExpr)
+      {
+        var constExpr = this.TryComputeConstNaryExpr(id as NAryExpr);
+        if (constExpr != null)
+        {
+          ptrExprs.Add(constExpr);
+        }
+
+        return ResultType.Const;
+      }
 
       if ((id is LiteralExpr) && (id as LiteralExpr).isBigNum)
       {
@@ -367,7 +379,7 @@ namespace Whoop.Analysis
         bool fixpoint = true;
         do
         {
-          fixpoint = this.TryComputeNaryNAryExprs(id);
+          fixpoint = this.TryComputeNAryExprs(id);
         }
         while (!fixpoint);
         identifiers[id] = true;
@@ -557,7 +569,7 @@ namespace Whoop.Analysis
       }
     }
 
-    private bool TryComputeNaryNAryExprs(IdentifierExpr id)
+    private bool TryComputeNAryExprs(IdentifierExpr id)
     {
       var toRemove = new HashSet<Expr>();
       foreach (var expr in this.ExpressionMap[id].Keys.ToList())
@@ -611,6 +623,44 @@ namespace Whoop.Analysis
         return false;
 
       return true;
+    }
+
+    private Expr TryComputeConstNaryExpr(NAryExpr expr)
+    {
+      Expr result = expr;
+      int ixs = 0;
+
+      do
+      {
+        var nary = result as NAryExpr;
+
+        if (!nary.Fun.FunctionName.Equals("$pa") ||
+          ((nary.Args[0] is NAryExpr) &&
+            !(nary.Args[0] as NAryExpr).Fun.FunctionName.Equals("$pa")) ||
+          ((nary.Args[0] is IdentifierExpr) &&
+            this.AC.GetConstant((nary.Args[0] as IdentifierExpr).Name) == null))
+        {
+          return null;
+        }
+
+        Expr p = (result as NAryExpr).Args[0];
+        Expr i = (result as NAryExpr).Args[1];
+        Expr s = (result as NAryExpr).Args[2];
+
+        if ((i is LiteralExpr) && (s is LiteralExpr))
+        {
+          ixs += (i as LiteralExpr).asBigNum.ToInt * (s as LiteralExpr).asBigNum.ToInt;
+        }
+        else
+        {
+          return null;
+        }
+
+        result = p;
+      }
+      while (result is NAryExpr);
+
+      return Expr.Add(result, new LiteralExpr(Token.NoToken, BigNum.FromInt(ixs)));
     }
 
     #endregion
