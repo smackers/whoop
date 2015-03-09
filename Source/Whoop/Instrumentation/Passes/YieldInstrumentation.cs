@@ -72,7 +72,7 @@ namespace Whoop.Instrumentation
       this.InstrumentYieldsInLocks(impl);
 
       if (!WhoopCommandLineOptions.Get().YieldNoAccess &&
-        this.ErrorReporter.FoundErrors)
+        (this.ErrorReporter.FoundErrors || WhoopCommandLineOptions.Get().YieldAll))
       {
         this.InstrumentYieldsInMemoryAccesses(impl);
       }
