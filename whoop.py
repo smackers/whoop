@@ -233,7 +233,7 @@ def showHelpAndExit():
     --yield-no-access       Turn off yield instrumentation in memory accesses.
     --yield-race-check      Instruments race checking in yielded memory accesses.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
-    --use-other-model       Uses an alternative environmental model.
+    --other-model           Uses an alternative environmental model.
 
   SOLVER OPTIONS:
     --gen-smt2              Generate smt2 file.
@@ -343,7 +343,7 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.checkInParamAliasing = True
     if o == "--no-existential-opts":
       CommandLineOptions.noExistentialOpts = True
-    if o == "--use-other-model":
+    if o == "--other-model":
       CommandLineOptions.useOtherModel = True
     if o == "--keep-temps":
       CommandLineOptions.keepTemps = True
@@ -593,7 +593,7 @@ def startToolChain(argv):
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
               'yield-all', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
-              'gen-smt2', 'solver=', 'logic=', 'use-other-model',
+              'gen-smt2', 'solver=', 'logic=', 'other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
               'stop-at-cruncher', 'stop-at-race-checker',
               'skip-until-clang', 'skip-until-model', 'skip-until-engine',

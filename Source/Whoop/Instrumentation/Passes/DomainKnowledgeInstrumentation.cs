@@ -122,7 +122,7 @@ namespace Whoop.Instrumentation
             continue;
           var call = block.Cmds[idx] as CallCmd;
           if (call.callee.Equals("register_netdev") ||
-            call.callee.Equals("misc_deregister"))
+            call.callee.Equals("misc_register"))
           {
             call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
