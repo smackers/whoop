@@ -79,23 +79,29 @@ namespace Whoop.Instrumentation
           if (!(b.Cmds[idx] is CallCmd)) continue;
           CallCmd call = b.Cmds[idx] as CallCmd;
 
+          AssumeCmd assume = null;
           if (call.callee.Contains("_UPDATE_CLS"))
           {
-            Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
+            if (b.Cmds[idx - 1] is AssumeCmd)
+              assume = b.Cmds[idx - 1] as AssumeCmd;
             call.Attributes = this.GetSourceLocationAttributes(
-              (b.Cmds[idx - 1] as AssumeCmd).Attributes, call.Attributes);
+              assume.Attributes, call.Attributes);
           }
           else if (call.callee.Contains("_WRITE_LS_"))
           {
-            Contract.Requires(idx - 1 != 0 && b.Cmds[idx - 1] is AssumeCmd);
+            if (b.Cmds[idx - 1] is AssumeCmd)
+              assume = b.Cmds[idx - 1] as AssumeCmd;
+            else if (b.Cmds[idx + 1] is AssumeCmd)
+              assume = b.Cmds[idx + 1] as AssumeCmd;
             call.Attributes = this.GetSourceLocationAttributes(
-              (b.Cmds[idx - 1] as AssumeCmd).Attributes, call.Attributes);
+              assume.Attributes, call.Attributes);
           }
           else if (call.callee.Contains("_READ_LS_"))
           {
-            Contract.Requires(idx - 2 != 0 && b.Cmds[idx - 2] is AssumeCmd);
+            if (b.Cmds[idx - 2] is AssumeCmd)
+              assume = b.Cmds[idx - 2] as AssumeCmd;
             call.Attributes = this.GetSourceLocationAttributes(
-              (b.Cmds[idx - 2] as AssumeCmd).Attributes, call.Attributes);
+              assume.Attributes, call.Attributes);
           }
         }
       }
