@@ -75,6 +75,8 @@ namespace Whoop.Summarisation
         var waVars = base.WriteAccessCheckingVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceWriteResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
         {
           foreach (var variable in waVars)
@@ -138,6 +140,8 @@ namespace Whoop.Summarisation
         var raVars = base.ReadAccessCheckingVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceReadResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
           foreach (var variable in raVars)
@@ -204,6 +208,8 @@ namespace Whoop.Summarisation
         var waVars = base.WriteAccessCheckingVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceWriteResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key))
           continue;
 
@@ -262,6 +268,8 @@ namespace Whoop.Summarisation
         var raVars = base.ReadAccessCheckingVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceReadResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasReadAccess.ContainsKey(pair.Key))
           continue;
 

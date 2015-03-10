@@ -51,7 +51,6 @@ namespace Whoop.Analysis
 
       this.AnalyseLocalAccessesInRegions();
       this.IdentifyCallAccessesInRegions();
-//      this.IdentifyReadWriteAccessesInRegions();
       this.AnalyseCallAccessesInRegions();
       this.MapAxiomAccessesInRegions();
 
@@ -96,23 +95,6 @@ namespace Whoop.Analysis
       if (!fixpoint)
       {
         this.IdentifyCallAccessesInRegions();
-      }
-    }
-
-    private void IdentifyReadWriteAccessesInRegions()
-    {
-      var fixpoint = true;
-      foreach (var region in this.AC.InstrumentationRegions)
-      {
-        if (region.IsNotAccessingResources)
-          continue;
-
-        fixpoint = this.IdentifyReadWriteAccessesInRegion(region) && fixpoint;
-      }
-
-      if (!fixpoint)
-      {
-        this.IdentifyReadWriteAccessesInRegions();
       }
     }
 
@@ -176,6 +158,10 @@ namespace Whoop.Analysis
 
           if (isInstrumentedCall && resource != null && accessType != null)
           {
+            if ((this.EP.ForceWriteResource.Contains(resource) && accessType.Equals("write")) ||
+                (this.EP.ForceReadResource.Contains(resource) && accessType.Equals("read")))
+              continue;
+
             if (call.Ins.Count == 0)
             {
               region.TryAddLocalResourceAccess(resource, new LiteralExpr(Token.NoToken, BigNum.FromInt(0)));
@@ -212,6 +198,11 @@ namespace Whoop.Analysis
                 region.TryAddLocalResourceAccess(resource, ptrExpr);
               }
             }
+
+            if (ptrExprs.Count == 0 && accessType.Equals("write"))
+              this.EP.ForceWriteResource.Add(resource);
+            else if (ptrExprs.Count == 0 && accessType.Equals("read"))
+              this.EP.ForceReadResource.Add(resource);
           }
         }
       }
@@ -280,80 +271,29 @@ namespace Whoop.Analysis
       }
 
       if (numberOfCalls == numberOfNonCheckedCalls &&
-        region.HasWriteAccess.Count == 0)
+        region.HasWriteAccess.Count == 0 &&
+        this.EP.ForceWriteResource.Count == 0)
       {
         this.CleanUpWriteInRegion(region);
         region.IsNotWriteAccessingResources = true;
       }
 
       if (numberOfCalls == numberOfNonCheckedCalls &&
-        region.HasReadAccess.Count == 0)
+        region.HasReadAccess.Count == 0 &&
+        this.EP.ForceReadResource.Count == 0)
       {
         this.CleanUpReadInRegion(region);
         region.IsNotReadAccessingResources = true;
       }
 
       if (numberOfCalls == numberOfNonCheckedCalls &&
-          region.GetResourceAccesses().Count == 0)
+          region.GetResourceAccesses().Count == 0 &&
+          this.EP.ForceWriteResource.Count == 0 &&
+          this.EP.ForceReadResource.Count == 0)
       {
         this.CleanUpRegion(region);
         region.IsNotAccessingResources = true;
         return false;
-      }
-
-      return true;
-    }
-
-    private bool IdentifyReadWriteAccessesInRegion(InstrumentationRegion region)
-    {
-      int numberOfCalls = 0;
-      int numberOfNonWriteCalls = 0;
-      int numberOfNonReadCalls = 0;
-
-      foreach (var block in region.Implementation().Blocks)
-      {
-        for (int idx = 0; idx < block.Cmds.Count; idx++)
-        {
-          if (!(block.Cmds[idx] is CallCmd))
-            continue;
-
-          var call = block.Cmds[idx] as CallCmd;
-          bool isInstrumentedCall = false;
-
-          if (idx + 1 < block.Cmds.Count && block.Cmds[idx + 1] is AssumeCmd)
-          {
-            isInstrumentedCall = QKeyValue.FindStringAttribute((block.Cmds[idx + 1]
-              as AssumeCmd).Attributes, "captureState") != null;
-          }
-
-          if (!isInstrumentedCall)
-          {
-            var calleeRegion = this.AC.InstrumentationRegions.Find(val =>
-              val.Implementation().Name.Equals(call.callee));
-            if (calleeRegion == null)
-              continue;
-
-            numberOfCalls++;
-            if (calleeRegion.IsNotWriteAccessingResources)
-              numberOfNonWriteCalls++;
-            if (calleeRegion.IsNotReadAccessingResources)
-              numberOfNonReadCalls++;
-          }
-        }
-      }
-
-      if (numberOfCalls == numberOfNonWriteCalls &&
-        region.HasWriteAccess.Count == 0)
-      {
-        this.CleanUpWriteInRegion(region);
-        region.IsNotWriteAccessingResources = true;
-      }
-
-      if (numberOfCalls == numberOfNonReadCalls &&
-        region.HasReadAccess.Count == 0)
-      {
-        this.CleanUpReadInRegion(region);
-        region.IsNotReadAccessingResources = true;
       }
 
       return true;

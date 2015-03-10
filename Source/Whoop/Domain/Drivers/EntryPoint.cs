@@ -47,6 +47,10 @@ namespace Whoop.Domain.Drivers
 
     internal Dictionary<string, int> HasWriteAccess;
     internal Dictionary<string, int> HasReadAccess;
+
+    internal HashSet<string> ForceWriteResource;
+    internal HashSet<string> ForceReadResource;
+
     internal bool IsHoldingLock;
     public bool IsEnablingDevice;
     public bool IsDisablingDevice;
@@ -112,6 +116,10 @@ namespace Whoop.Domain.Drivers
 
       this.HasWriteAccess = new Dictionary<string, int>();
       this.HasReadAccess = new Dictionary<string, int>();
+
+      this.ForceWriteResource = new HashSet<string>();
+      this.ForceReadResource = new HashSet<string>();
+
       this.IsHoldingLock = false;
       this.IsEnablingDevice = false;
       this.IsDisablingDevice = false;

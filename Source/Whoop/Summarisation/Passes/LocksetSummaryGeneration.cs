@@ -112,6 +112,9 @@ namespace Whoop.Summarisation
         var memLsVars = base.MemoryLocksetVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceWriteResource.Contains(pair.Key) ||
+            this.EP.ForceReadResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
           !this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
@@ -226,6 +229,9 @@ namespace Whoop.Summarisation
         var memLsVars = base.MemoryLocksetVariables.FindAll(val =>
           val.Name.Contains(pair.Key + "_$"));
 
+        if (this.EP.ForceWriteResource.Contains(pair.Key) ||
+            this.EP.ForceReadResource.Contains(pair.Key))
+          continue;
         if (!this.EP.HasWriteAccess.ContainsKey(pair.Key) &&
             !this.EP.HasReadAccess.ContainsKey(pair.Key))
         {
