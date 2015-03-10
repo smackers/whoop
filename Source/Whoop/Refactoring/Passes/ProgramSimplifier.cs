@@ -110,24 +110,7 @@ namespace Whoop.Refactoring
           if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$exn"))
           {
             toRemove.Add(b.Cmds[i] as AssignCmd);
-            continue;
           }
-
-          if ((b.Cmds[i] as AssignCmd).Rhss.Count != 1)
-            continue;
-          if ((b.Cmds[i] as AssignCmd).Rhss[0] is NAryExpr)
-            continue;
-          if (!((b.Cmds[i] as AssignCmd).Rhss[0] is IdentifierExpr))
-            continue;
-
-          IdentifierExpr remove = (b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier;
-          IdentifierExpr replace = (b.Cmds[i] as AssignCmd).Rhss[0] as IdentifierExpr;
-
-          if (this.ShouldSkip(impl, remove))
-            continue;
-
-          toRemove.Add(b.Cmds[i] as AssignCmd);
-          this.ReplaceExprInImplementation(impl, remove, replace);
         }
 
         foreach (var r in toRemove)
@@ -139,103 +122,5 @@ namespace Whoop.Refactoring
         toRemove.Clear();
       }
     }
-
-    #region helper functions
-
-    private void ReplaceExprInImplementation(Implementation impl, IdentifierExpr remove, IdentifierExpr replace)
-    {
-      foreach (Block b in impl.Blocks)
-      {
-        for (int ci = 0; ci < b.Cmds.Count; ci++)
-        {
-          if (b.Cmds[ci] is CallCmd)
-          {
-            CallCmd call = b.Cmds[ci] as CallCmd;
-
-            for (int ei = 0; ei < call.Ins.Count; ei++)
-            {
-              if (!(call.Ins[ei] is IdentifierExpr))
-                continue;
-              if ((call.Ins[ei] as IdentifierExpr).Name.Equals(remove.Name))
-                call.Ins[ei] = replace;
-            }
-          }
-          else if (b.Cmds[ci] is AssignCmd)
-          {
-            AssignCmd assign = b.Cmds[ci] as AssignCmd;
-            for (int ei = 0; ei < assign.Rhss.Count; ei++)
-              assign.Rhss[ei] = this.ReplaceExprInExpr(assign.Rhss[ei], remove, replace);
-            for (int ei = 0; ei < assign.Lhss.Count; ei++)
-              assign.Lhss[ei] = this.ReplaceAssignLhs(assign.Lhss[ei], remove, replace);
-          }
-          else if (b.Cmds[ci] is HavocCmd)
-          {
-            HavocCmd havoc = b.Cmds[ci] as HavocCmd;
-
-            for (int ei = 0; ei < havoc.Vars.Count; ei++)
-            {
-              if (havoc.Vars[ei].Name.Equals(remove.Name))
-                havoc.Vars[ei] = replace;
-            }
-          }
-          else if (b.Cmds[ci] is AssumeCmd)
-          {
-            AssumeCmd assume = b.Cmds[ci] as AssumeCmd;
-            this.ReplaceExprInExpr(assume.Expr, remove, replace);
-          }
-        }
-      }
-    }
-
-    private Expr ReplaceExprInExpr(Expr expr, IdentifierExpr remove, IdentifierExpr replace)
-    {
-      if (expr is IdentifierExpr)
-      {
-        if ((expr as IdentifierExpr).Name.Equals(remove.Name))
-          expr = replace;
-      }
-      else if (expr is NAryExpr)
-      {
-        for (int i = 0; i < (expr as NAryExpr).Args.Count; i++)
-          (expr as NAryExpr).Args[i] = this.ReplaceExprInExpr(
-            (expr as NAryExpr).Args[i], remove, replace);
-      }
-
-      return expr;
-    }
-
-    private AssignLhs ReplaceAssignLhs(AssignLhs lhs, IdentifierExpr remove, IdentifierExpr replace)
-    {
-      if (lhs is MapAssignLhs)
-      {
-        for (int i = 0; i < (lhs as MapAssignLhs).Indexes.Count; i++)
-          (lhs as MapAssignLhs).Indexes[i] = this.ReplaceExprInExpr(
-            (lhs as MapAssignLhs).Indexes[i], remove, replace);
-      }
-
-      return lhs;
-    }
-
-    private bool ShouldSkip(Implementation impl, IdentifierExpr remove)
-    {
-      int count = 0;
-
-      foreach (Block b in impl.Blocks)
-      {
-        for (int ci = 0; ci < b.Cmds.Count; ci++)
-        {
-          if (b.Cmds[ci] is AssignCmd)
-          {
-            if (!((b.Cmds[ci] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals(remove.Name)))
-              continue;
-            count++;
-          }
-        }
-      }
-
-      return count > 1 ? true : false;
-    }
-
-    #endregion
   }
 }
