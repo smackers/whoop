@@ -66,10 +66,18 @@ namespace Whoop.Analysis
 
     private void AnalyseLocalAccessesInRegions()
     {
+      var optimise = false;
+      if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
+        (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
+          WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
+      {
+        optimise = true;
+      }
+
       foreach (var region in this.AC.InstrumentationRegions)
       {
         this.PtrAnalysisCache.Add(region, new PointerArithmeticAnalyser(
-          this.AC, this.EP, region.Implementation()));
+          this.AC, this.EP, region.Implementation(), optimise));
         this.AnalyseLocalAccessesInRegion(region);
       }
     }
@@ -174,20 +182,12 @@ namespace Whoop.Analysis
               continue;
             }
 
-            var simplify = false;
-            if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
-              (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
-                WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
-            {
-              simplify = true;
-            }
-
             HashSet<Expr> ptrExprs = null;
             var result = this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
             foreach (var ptrExpr in ptrExprs)
             {
               var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);
-              if (result == PointerArithmeticAnalyser.ResultType.Const && !simplify)
+              if (result == PointerArithmeticAnalyser.ResultType.Const)
               {
                 region.TryAddLocalResourceAccess(resource, ptrExpr);
               }

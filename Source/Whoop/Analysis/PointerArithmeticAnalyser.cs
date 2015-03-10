@@ -33,6 +33,8 @@ namespace Whoop.Analysis
     private Implementation Implementation;
     private List<Variable> InParams;
 
+    private bool Optimise;
+
     private Dictionary<IdentifierExpr, Dictionary<Expr, int>> ExpressionMap;
     private Dictionary<IdentifierExpr, HashSet<Expr>> AssignmentMap;
     private Dictionary<IdentifierExpr, HashSet<CallCmd>> CallMap;
@@ -62,13 +64,15 @@ namespace Whoop.Analysis
 
     #region public API
 
-    public PointerArithmeticAnalyser(AnalysisContext ac, EntryPoint ep, Implementation impl)
+    public PointerArithmeticAnalyser(AnalysisContext ac, EntryPoint ep, Implementation impl, bool optimise = false)
     {
       Contract.Requires(ac != null && ep != null && impl != null);
       this.AC = ac;
       this.EP = ep;
       this.Implementation = impl;
       this.InParams = impl.InParams;
+
+      this.Optimise = optimise;
 
       this.ExpressionMap = new Dictionary<IdentifierExpr, Dictionary<Expr, int>>();
       this.AssignmentMap = new Dictionary<IdentifierExpr, HashSet<Expr>>();
@@ -92,7 +96,7 @@ namespace Whoop.Analysis
     {
       ptrExprs = new HashSet<Expr>();
 
-      if (id is NAryExpr)
+      if (id is NAryExpr && !this.Optimise)
       {
         var constExpr = this.TryComputeConstNaryExpr(id as NAryExpr);
         if (constExpr != null)
