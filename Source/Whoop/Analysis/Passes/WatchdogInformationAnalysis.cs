@@ -20,6 +20,7 @@ using Microsoft.Basetypes;
 using Whoop.Analysis;
 using Whoop.Domain.Drivers;
 using Whoop.Regions;
+using System.Text.RegularExpressions;
 
 namespace Whoop.Analysis
 {
@@ -191,12 +192,20 @@ namespace Whoop.Analysis
               }
               else if (this.PtrAnalysisCache[region].IsAxiom(id))
               {
-                if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
-                  this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
-                if (!this.AC.AxiomAccessesMap[resource].Any(val =>
-                  val.ToString().Equals(ptrExpr.ToString())))
+                if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
+                    (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
+                    WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
                 {
-                  this.AC.AxiomAccessesMap[resource].Add(ptrExpr);
+                  region.TryAddLocalResourceAccess(resource, ptrExpr);
+                }
+                else
+                {
+                  if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
+                    this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
+                  if (!this.AC.AxiomAccessesMap[resource].Any(val =>
+                  val.ToString().Equals(ptrExpr.ToString())))
+                    this.AC.AxiomAccessesMap[resource].Add(ptrExpr);
+                  region.TryAddLocalResourceAccess(resource, ptrExpr);
                 }
               }
               else
@@ -409,6 +418,13 @@ namespace Whoop.Analysis
               region.ExternallyReceivedAccesses[call][r.Key].Add(a);
             }
           }
+        }
+
+        if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
+          (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
+            WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
+        {
+          continue;
         }
 
         foreach (var pair in region.GetResourceAccesses())

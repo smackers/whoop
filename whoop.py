@@ -161,6 +161,7 @@ class DefaultCmdLineOptions(object):
     self.yieldNoAccess = False
     self.yieldAll = False
     self.yieldRaceChecking = False
+    self.noHeavyAsyncCallsOptimisation = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
     self.useOtherModel = False
@@ -339,6 +340,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.yieldNoAccess = True
     if o == "--yield-race-check":
       CommandLineOptions.yieldRaceChecking = True
+    if o == "--no-heavy-async-calls-optimisation":
+      CommandLineOptions.noHeavyAsyncCallsOptimisation = True
     if o == "--inparam-aliasing":
       CommandLineOptions.checkInParamAliasing = True
     if o == "--no-existential-opts":
@@ -591,6 +594,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
+              'no-heavy-async-calls-optimisation',
               'yield-all', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
@@ -722,6 +726,9 @@ def startToolChain(argv):
   if CommandLineOptions.noInfer:
     CommandLineOptions.whoopEngineOptions += [ "/skipInference" ]
     CommandLineOptions.whoopRaceCheckerOptions += [ "/skipInference" ]
+
+  if CommandLineOptions.noHeavyAsyncCallsOptimisation:
+    CommandLineOptions.whoopEngineOptions += [ "/noHeavyAsyncCallsOptimisation" ]
 
   if CommandLineOptions.yieldNoAccess:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]

@@ -23,11 +23,11 @@ namespace Whoop
     public string AnalyseOnly = "";
 
     public int InliningBound = 0;
-    public int EntryPointFunctionCallComplexity = 80;
+    public int EntryPointFunctionCallComplexity = 150;
 
     public bool CheckInParamAliasing = false;
     public bool MergeExistentials = true;
-    public bool DoTopDownExternalAccessInstrumentation = true;
+    public bool OptimiseHeavyAsyncCalls = true;
 
     public bool YieldAll = false;
     public bool YieldNoAccess = false;
@@ -123,6 +123,12 @@ namespace Whoop
       if (option == "yieldRaceChecking")
       {
         this.YieldRaceChecking = true;
+        return true;
+      }
+
+      if (option == "noHeavyAsyncCallsOptimisation")
+      {
+        this.OptimiseHeavyAsyncCalls = false;
         return true;
       }
 
