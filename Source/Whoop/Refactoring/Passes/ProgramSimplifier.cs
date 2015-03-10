@@ -163,9 +163,10 @@ namespace Whoop.Refactoring
           else if (b.Cmds[ci] is AssignCmd)
           {
             AssignCmd assign = b.Cmds[ci] as AssignCmd;
-
             for (int ei = 0; ei < assign.Rhss.Count; ei++)
               assign.Rhss[ei] = this.ReplaceExprInExpr(assign.Rhss[ei], remove, replace);
+            for (int ei = 0; ei < assign.Lhss.Count; ei++)
+              assign.Lhss[ei] = this.ReplaceAssignLhs(assign.Lhss[ei], remove, replace);
           }
           else if (b.Cmds[ci] is HavocCmd)
           {
@@ -196,10 +197,23 @@ namespace Whoop.Refactoring
       else if (expr is NAryExpr)
       {
         for (int i = 0; i < (expr as NAryExpr).Args.Count; i++)
-          (expr as NAryExpr).Args[i] = this.ReplaceExprInExpr((expr as NAryExpr).Args[i], remove, replace);
+          (expr as NAryExpr).Args[i] = this.ReplaceExprInExpr(
+            (expr as NAryExpr).Args[i], remove, replace);
       }
 
       return expr;
+    }
+
+    private AssignLhs ReplaceAssignLhs(AssignLhs lhs, IdentifierExpr remove, IdentifierExpr replace)
+    {
+      if (lhs is MapAssignLhs)
+      {
+        for (int i = 0; i < (lhs as MapAssignLhs).Indexes.Count; i++)
+          (lhs as MapAssignLhs).Indexes[i] = this.ReplaceExprInExpr(
+            (lhs as MapAssignLhs).Indexes[i], remove, replace);
+      }
+
+      return lhs;
     }
 
     private bool ShouldSkip(Implementation impl, IdentifierExpr remove)

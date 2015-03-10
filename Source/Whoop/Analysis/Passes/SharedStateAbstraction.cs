@@ -78,7 +78,7 @@ namespace Whoop.Analysis
           {
             if (!(rhs.Name.StartsWith("$M.")))
               continue;
-            Console.WriteLine(b.Cmds[k]);
+
             Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
             HavocCmd havoc = new HavocCmd(Token.NoToken,
               new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
