@@ -730,10 +730,12 @@ def startToolChain(argv):
   if CommandLineOptions.noHeavyAsyncCallsOptimisation:
     CommandLineOptions.whoopEngineOptions += [ "/noHeavyAsyncCallsOptimisation" ]
 
-  if CommandLineOptions.yieldNoAccess:
-    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
-  elif CommandLineOptions.yieldAll:
+  if CommandLineOptions.findBugs:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/findBugs" ]
+  if CommandLineOptions.yieldAll:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
+  elif CommandLineOptions.yieldNoAccess:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
 
   if CommandLineOptions.yieldRaceChecking:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldRaceChecking" ]

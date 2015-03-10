@@ -125,12 +125,15 @@ namespace Whoop
           pairMap.Add(pair, errorReporter);
         }
 
-        foreach (var pair in pairMap)
+        if (WhoopRaceCheckerCommandLineOptions.Get().FindBugs)
         {
-          AnalysisContext ac = null;
-          new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
+          foreach (var pair in pairMap)
+          {
+            AnalysisContext ac = null;
+            new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
 
-          new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
+            new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
+          }
         }
 
         if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)

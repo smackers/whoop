@@ -29,6 +29,7 @@ namespace Whoop
     public bool MergeExistentials = true;
     public bool OptimiseHeavyAsyncCalls = true;
 
+    public bool FindBugs = false;
     public bool YieldAll = false;
     public bool YieldNoAccess = false;
     public bool YieldRaceChecking = false;
@@ -105,6 +106,12 @@ namespace Whoop
       if (option == "onlyRaceChecking")
       {
         this.OnlyRaceChecking = true;
+        return true;
+      }
+
+      if (option == "findBugs")
+      {
+        this.FindBugs = true;
         return true;
       }
 
