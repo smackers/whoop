@@ -89,7 +89,6 @@
     <Compile Include="Refactoring\Passes\DeviceDisableProgramSlicing.cs" />
     <Compile Include="Refactoring\ReadWriteSlicing.cs" />
     <Compile Include="Refactoring\ProgramSlicing.cs" />
-    <Compile Include="Analysis\Passes\LocalMemoryAllocationAnalysis.cs" />
     <Compile Include="Analysis\Passes\PairParameterAliasAnalysis.cs" />
     <Compile Include="Analysis\Passes\FunctionPointerUseAnalysis.cs" />
     <Compile Include="Summarisation\SummaryGeneration.cs" />

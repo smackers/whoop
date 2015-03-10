@@ -41,11 +41,6 @@ namespace Whoop.Analysis
       return new PairParameterAliasAnalysis(ac, pair);
     }
 
-    public static IPass CreateLocalMemoryAllocationAnalysis(AnalysisContext ac, EntryPoint ep)
-    {
-      return new LocalMemoryAllocationAnalysis(ac, ep);
-    }
-
     public static IPass CreateWatchdogInformationAnalysis(AnalysisContext ac, EntryPoint ep)
     {
       return new WatchdogInformationAnalysis(ac, ep);

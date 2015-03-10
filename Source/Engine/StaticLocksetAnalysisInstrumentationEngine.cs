@@ -64,8 +64,6 @@ namespace Whoop
       else if (this.EP.IsClone && this.EP.IsCalledWithNetworkDisabled)
         Refactoring.Factory.CreateNetEnableProgramSlicing(this.AC, this.EP).Run();
 
-      Analysis.Factory.CreateLocalMemoryAllocationAnalysis(this.AC, this.EP).Run();
-
       Instrumentation.Factory.CreateErrorReportingInstrumentation(this.AC, this.EP).Run();
 
       if (WhoopEngineCommandLineOptions.Get().SkipInference)
