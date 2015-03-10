@@ -174,12 +174,20 @@ namespace Whoop.Analysis
               continue;
             }
 
+            var simplify = false;
+            if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
+              (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
+                WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
+            {
+              simplify = true;
+            }
+
             HashSet<Expr> ptrExprs = null;
             var result = this.PtrAnalysisCache[region].TryComputeRootPointers(call.Ins[0], out ptrExprs);
             foreach (var ptrExpr in ptrExprs)
             {
               var id = this.PtrAnalysisCache[region].GetIdentifier(ptrExpr);
-              if (result == PointerArithmeticAnalyser.ResultType.Const)
+              if (result == PointerArithmeticAnalyser.ResultType.Const && !simplify)
               {
                 region.TryAddLocalResourceAccess(resource, ptrExpr);
               }
@@ -192,21 +200,12 @@ namespace Whoop.Analysis
               }
               else if (this.PtrAnalysisCache[region].IsAxiom(id))
               {
-                if (WhoopCommandLineOptions.Get().OptimiseHeavyAsyncCalls &&
-                    (this.AC.GetNumOfEntryPointRelatedFunctions(this.EP.Name) >
-                    WhoopCommandLineOptions.Get().EntryPointFunctionCallComplexity))
-                {
-                  region.TryAddLocalResourceAccess(resource, ptrExpr);
-                }
-                else
-                {
-                  if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
-                    this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
-                  if (!this.AC.AxiomAccessesMap[resource].Any(val =>
+                if (!this.AC.AxiomAccessesMap.ContainsKey(resource))
+                  this.AC.AxiomAccessesMap.Add(resource, new HashSet<Expr>());
+                if (!this.AC.AxiomAccessesMap[resource].Any(val =>
                   val.ToString().Equals(ptrExpr.ToString())))
-                    this.AC.AxiomAccessesMap[resource].Add(ptrExpr);
-                  region.TryAddLocalResourceAccess(resource, ptrExpr);
-                }
+                  this.AC.AxiomAccessesMap[resource].Add(ptrExpr);
+                region.TryAddLocalResourceAccess(resource, ptrExpr);
               }
               else
               {
