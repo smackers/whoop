@@ -105,7 +105,6 @@ namespace Whoop.Analysis
       {
         if (region.IsNotAccessingResources)
           continue;
-
         fixpoint = this.AnalyseCallAccessesInRegion(region) && fixpoint;
       }
 

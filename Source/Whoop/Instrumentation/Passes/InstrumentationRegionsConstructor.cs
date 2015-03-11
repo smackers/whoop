@@ -48,7 +48,7 @@ namespace Whoop.Instrumentation
         if (this.SkipFromAnalysis(impl))
           continue;
 
-        InstrumentationRegion region = new InstrumentationRegion(this.AC, impl);
+        InstrumentationRegion region = new InstrumentationRegion(this.AC, this.EP, impl);
         this.AC.InstrumentationRegions.Add(region);
       }
 

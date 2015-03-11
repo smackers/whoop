@@ -32,6 +32,7 @@ namespace Whoop.Regions
 
     protected string RegionName;
 
+    private EntryPoint EP;
     private Implementation InternalImplementation;
 
     protected Block RegionHeader;
@@ -71,10 +72,11 @@ namespace Whoop.Regions
 
     #region constructors
 
-    public InstrumentationRegion(AnalysisContext ac, Implementation impl)
+    public InstrumentationRegion(AnalysisContext ac, EntryPoint ep, Implementation impl)
     {
-      Contract.Requires(ac != null);
+      Contract.Requires(ac != null && ep != null && impl != null);
       this.AC = ac;
+      this.EP = ep;
       this.RegionName = impl.Name + "$instrumented";
       this.ProcessRegionBlocks(impl);
       this.ProcessWrapperImplementation(impl);
@@ -290,6 +292,26 @@ namespace Whoop.Regions
       {
         this.ResourcesWithUnidentifiedAccesses.Add(resource);
         return false;
+      }
+
+      if (this.ExternalResourceAccesses.ContainsKey(resource) && access is NAryExpr)
+      {
+        var arg = (access as NAryExpr).Args[0];
+        var fun = (access as NAryExpr).Fun;
+
+        int heuristic = 0;
+        foreach (var acs in this.ExternalResourceAccesses[resource])
+        {
+          if (acs.ToString().StartsWith(arg.ToString() + " " + fun.FunctionName))
+            heuristic++;
+        }
+
+        if (heuristic > 30)
+        {
+          this.EP.ForceWriteResource.Add(resource);
+          this.EP.ForceReadResource.Add(resource);
+          return false;
+        }
       }
 
       if (!this.TryAddResourceAccess(resource, access))
