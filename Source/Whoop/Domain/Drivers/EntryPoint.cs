@@ -61,7 +61,7 @@ namespace Whoop.Domain.Drivers
       this.KernelFunc = kernelFunc;
       this.Module = module;
 
-      if (kernelFunc.Equals("probe"))
+      if (kernelFunc.Equals("probe") || kernelFunc.Equals("mount"))
       {
         this.IsInit = true;
         DeviceDriver.SetInitEntryPoint(name);
