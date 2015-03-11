@@ -183,10 +183,9 @@ namespace Whoop.Refactoring
                 call.Ins[0] = lockExpr;
               }
             }
-            else
+            else if (!this.ShouldSkip(call.callee))
             {
               List<Expr> computedRootPointers = new List<Expr>();
-
               foreach (var inParam in call.Ins)
               {
                 if (inParam is NAryExpr)
@@ -265,6 +264,13 @@ namespace Whoop.Refactoring
       }
 
       return callGraph;
+    }
+
+    private bool ShouldSkip(string callee)
+    {
+      if (callee.Contains("#"))
+        return true;
+      return false;
     }
   }
 }

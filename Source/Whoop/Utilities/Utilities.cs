@@ -11,6 +11,7 @@
 
 using System;
 using Microsoft.Boogie;
+using Whoop.Domain.Drivers;
 
 namespace Whoop
 {
@@ -23,7 +24,7 @@ namespace Whoop
     /// <param name="funcName">Function name</param>
     public static bool IsDeviceAllocationFunction(string funcName)
     {
-      if (funcName.Equals("alloc_etherdev") || funcName.Equals("alloc_testdev"))
+      if (funcName.Equals(DeviceDriver.SharedStructInitialiseFunc))
         return true;
       return false;
     }

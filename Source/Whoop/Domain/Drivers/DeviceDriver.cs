@@ -35,6 +35,12 @@ namespace Whoop.Domain.Drivers
       private set;
     }
 
+    public static string SharedStructInitialiseFunc
+    {
+      get;
+      private set;
+    }
+
     #endregion
 
     #region public API
@@ -58,6 +64,7 @@ namespace Whoop.Domain.Drivers
         files[files.Count - 1].IndexOf(".")) + ".info";
 
       DeviceDriver.EntryPoints = new List<EntryPoint>();
+      DeviceDriver.SharedStructInitialiseFunc = "";
 
       using(StreamReader file = new StreamReader(driverInfoFile))
       {
@@ -66,6 +73,13 @@ namespace Whoop.Domain.Drivers
         while ((line = file.ReadLine()) != null)
         {
           string type = line.Trim(new char[] { '<', '>' });
+
+          if (type.Equals("whoop_network_shared_struct"))
+          {
+            var info = file.ReadLine();
+            DeviceDriver.SharedStructInitialiseFunc = info.Remove(0, 2);
+          }
+
           Module module = new Module(type);
 
           while ((line = file.ReadLine()) != null)
