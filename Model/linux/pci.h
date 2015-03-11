@@ -35,6 +35,7 @@ struct pci_dev {
 	unsigned short  subsystem_vendor;
 	unsigned short  subsystem_device;
 
+	u8 revision;
   u64 dma_mask;
 
   struct device dev;

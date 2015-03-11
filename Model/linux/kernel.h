@@ -79,4 +79,12 @@ int snprintf(char * buf, size_t size, const char * fmt, ...);
 #define max_t(type,x,y) \
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 
+#define L1_CACHE_SHIFT          4
+#define L1_CACHE_BYTES          (1 << L1_CACHE_SHIFT)
+#define SMP_CACHE_BYTES L1_CACHE_BYTES
+
+#ifndef ____cacheline_aligned
+#define ____cacheline_aligned __attribute__((__aligned__(SMP_CACHE_BYTES)))
+#endif
+
 #endif

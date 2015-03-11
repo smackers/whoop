@@ -9,6 +9,13 @@ struct work_struct {
     void *data;
 };
 
+struct delayed_work {
+  struct work_struct work;
+  struct timer_list timer;
+  struct workqueue_struct *wq;
+  int cpu;
+};
+
 #define DECLARE_WORK(_work, _func, _data) \
 	struct work_struct _work = { \
            .func = (_func), \
