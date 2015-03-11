@@ -14,7 +14,10 @@
 #define __setup_param(str, unique_id, fn)
 #define __setup(str, func)
 
-#define module_init(initfn) static int init_module(void) __attribute__((weakref(#initfn)));
-#define module_exit(exitfn) static void cleanup_module(void) __attribute__((weakref(#exitfn)));
+void (* _whoop_init)(void);
+void (* _whoop_exit)(void);
+
+#define module_init(_function) void (* _whoop_init)(void) = _function;
+#define module_exit(_function) void (* _whoop_exit)(void) = _function;
 
 #endif /* _LINUX_INIT_H */
