@@ -16,4 +16,6 @@
 #define MODULE_GENERIC_TABLE(gtype,name) void
 #define MODULE_DEVICE_TABLE(type,name) void
 
+#define THIS_MODULE ((struct module *)0)
+
 #endif /* _LINUX_MODULE_H */

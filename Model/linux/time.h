@@ -1,10 +1,9 @@
 #ifndef _LINUX_TIME_H
 #define _LINUX_TIME_H
 
-# include <linux/cache.h>
-# include <linux/seqlock.h>
-# include <linux/math64.h>
-#include <uapi/linux/time.h>
+#include <linux/kernel.h>
+#include <linux/cache.h>
+#include <linux/seqlock.h>
 
 extern struct timezone sys_tz;
 
@@ -18,6 +17,22 @@ extern struct timezone sys_tz;
 #define FSEC_PER_SEC	1000000000000000LL
 
 #define TIME_T_MAX	(time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1)
+
+struct timespec {
+  long long   tv_sec;                 /* seconds */
+  long        tv_nsec;                /* nanoseconds */
+};
+
+struct timeval {
+  long long         tv_sec;         /* seconds */
+  long long    tv_usec;        /* microseconds */
+};
+
+struct timezone {
+    int     tz_minuteswest; /* minutes west of Greenwich */
+    int     tz_dsttime;     /* type of dst correction */
+};
+
 
 static inline int timespec_equal(const struct timespec *a,
                                  const struct timespec *b)

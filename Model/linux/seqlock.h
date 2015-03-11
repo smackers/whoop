@@ -122,12 +122,10 @@ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
 static inline void write_seqcount_begin(seqcount_t *s)
 {
 	s->sequence++;
-	smp_wmb();
 }
 
 static inline void write_seqcount_end(seqcount_t *s)
 {
-	smp_wmb();
 	s->sequence++;
 }
 
@@ -140,7 +138,6 @@ static inline void write_seqcount_end(seqcount_t *s)
  */
 static inline void write_seqcount_barrier(seqcount_t *s)
 {
-	smp_wmb();
 	s->sequence+=2;
 }
 
