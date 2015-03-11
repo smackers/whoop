@@ -55,7 +55,6 @@ namespace Whoop.Analysis
 
     private void AbstractReadAccesses(InstrumentationRegion region)
     {
-      Console.WriteLine(" region: " + region.Name());
       foreach (var b in region.Blocks())
       {
         for (int k = 0; k < b.Cmds.Count; k++)
@@ -71,8 +70,6 @@ namespace Whoop.Analysis
             Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
             HavocCmd havoc = new HavocCmd(Token.NoToken,
               new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
-            Console.WriteLine(" >>1 " + havoc);
-            Console.WriteLine(" >> " + b.Cmds[k]);
             b.Cmds[k] = havoc;
           }
 
@@ -85,8 +82,6 @@ namespace Whoop.Analysis
             Variable v = (b.Cmds[k] as AssignCmd).Lhss[0].DeepAssignedVariable;
             HavocCmd havoc = new HavocCmd(Token.NoToken,
               new List<IdentifierExpr> { new IdentifierExpr(v.tok, v) });
-            Console.WriteLine(" >>2 " + havoc);
-            Console.WriteLine(" >> " + b.Cmds[k]);
             b.Cmds[k] = havoc;
           }
         }

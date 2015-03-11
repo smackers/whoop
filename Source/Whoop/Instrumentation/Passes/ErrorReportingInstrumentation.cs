@@ -98,8 +98,12 @@ namespace Whoop.Instrumentation
           }
           else if (call.callee.Contains("_READ_LS_"))
           {
-            if (b.Cmds[idx - 2] is AssumeCmd)
+            if (b.Cmds[idx - 1] is AssumeCmd)
+              assume = b.Cmds[idx - 1] as AssumeCmd;
+            else if (b.Cmds[idx - 2] is AssumeCmd)
               assume = b.Cmds[idx - 2] as AssumeCmd;
+            else if (b.Cmds[idx + 1] is AssumeCmd)
+              assume = b.Cmds[idx + 1] as AssumeCmd;
             call.Attributes = this.GetSourceLocationAttributes(
               assume.Attributes, call.Attributes);
           }

@@ -208,7 +208,6 @@ namespace Whoop.Refactoring
     private void CleanUp()
     {
       var uncalledFuncs = new HashSet<Implementation>();
-
       foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
         if (this.FunctionsToRefactor.Contains(impl))
