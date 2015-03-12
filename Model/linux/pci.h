@@ -140,7 +140,8 @@ void *to_pci_dev(struct device *device);
 
 #define DEFINE_PCI_DEVICE_TABLE(_table) const struct pci_device_id _table[]
 
-#define module_pci_driver(__pci_driver) module_driver(__pci_driver, pci_register_driver, pci_unregister_driver)
+#define module_pci_driver(__pci_driver) \
+static void __pci_driver##_no_op(void) { }
 
 #define PCI_DEVFN(slot, func)	((((slot) & 0x1f) << 3) | ((func) & 0x07))
 #define PCI_SLOT(devfn)		(((devfn) >> 3) & 0x1f)

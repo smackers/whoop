@@ -218,12 +218,15 @@ namespace Whoop.Instrumentation
         }
       }
 
-      if (!foundRegistrationPoint)
+      if (foundRegistrationPoint)
+        return;
+
+      foreach (var block in initImpl.Blocks)
       {
-        foreach (var block in initImpl.Blocks)
-        {
-          block.Cmds.Add(checkerCall);
-        }
+        if (!(block.TransferCmd is ReturnCmd))
+          continue;
+        block.Cmds.Add(checkerCall);
+        break;
       }
     }
 

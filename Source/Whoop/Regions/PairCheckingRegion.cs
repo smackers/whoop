@@ -76,7 +76,7 @@ namespace Whoop.Regions
       this.CreateProcedure(impl1, impl2);
 
       this.CreateInParamCache(impl1, impl2);
-      this.CheckAndRefactorInParamsIfEquals(impl1, impl2);
+      this.CheckAndRefactorInParamsIfEquals();
 
       this.RegionHeader = this.CreateRegionHeader();
     }
@@ -222,10 +222,6 @@ namespace Whoop.Regions
 
     private void CreateImplementation(Implementation impl1, Implementation impl2)
     {
-      this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
-        new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2),
-        new List<Variable>(), new List<Variable>(), this.RegionBlocks);
-
       if (this.EP1.Name.Equals(this.EP2.Name))
       {
         Block call = new Block(Token.NoToken, "$logger",
@@ -256,6 +252,10 @@ namespace Whoop.Regions
         this.RegionBlocks.Add(call1);
         this.RegionBlocks.Add(call2);
       }
+
+      this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
+        new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2),
+        new List<Variable>(), new List<Variable>(), this.RegionBlocks);
 
       Block check = new Block(Token.NoToken, "$checker",
                       new List<Cmd>(), new ReturnCmd(Token.NoToken));
@@ -395,8 +395,11 @@ namespace Whoop.Regions
       }
     }
 
-    private void CheckAndRefactorInParamsIfEquals(Implementation impl1, Implementation impl2)
+    private void CheckAndRefactorInParamsIfEquals()
     {
+      if (this.CC2 == null)
+        return;
+
       var inParams = this.InternalImplementation.InParams;
       List<Tuple<int, int>> idxs = new List<Tuple<int, int>>();
 
@@ -658,6 +661,9 @@ namespace Whoop.Regions
       {
         newInParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable) as Variable);
       }
+
+      if (this.CC2 == null)
+        return newInParams;
 
       for (int i = 0; i < impl2.Proc.InParams.Count; i++)
       {
