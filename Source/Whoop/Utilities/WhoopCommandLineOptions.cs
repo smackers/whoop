@@ -31,6 +31,7 @@ namespace Whoop
 
     public bool FindBugs = false;
     public bool YieldAll = false;
+    public bool YieldCoarse = false;
     public bool YieldNoAccess = false;
     public bool YieldRaceChecking = false;
 
@@ -118,6 +119,12 @@ namespace Whoop
       if (option == "yieldAll")
       {
         this.YieldAll = true;
+        return true;
+      }
+
+      if (option == "yieldCoarse")
+      {
+        this.YieldCoarse = true;
         return true;
       }
 

@@ -160,6 +160,7 @@ class DefaultCmdLineOptions(object):
     self.inlineBound = 0
     self.yieldNoAccess = False
     self.yieldAll = False
+    self.yieldCoarse = False
     self.yieldRaceChecking = False
     self.noHeavyAsyncCallsOptimisation = False
     self.checkInParamAliasing = False
@@ -231,6 +232,7 @@ def showHelpAndExit():
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
     --yield-all             Instruments yields in all visible operations.
+    --yield-coarse          Instruments yields in a coarse granularity manner.
     --yield-no-access       Turn off yield instrumentation in memory accesses.
     --yield-race-check      Instruments race checking in yielded memory accesses.
     --time-passes           Show timing information for the various analysis and instrumentation passes.
@@ -336,6 +338,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.noInfer = True
     if o == "--yield-all":
       CommandLineOptions.yieldAll = True
+    if o == "--yield-coarse":
+      CommandLineOptions.yieldCoarse = True
     if o == "--yield-no-access":
       CommandLineOptions.yieldNoAccess = True
     if o == "--yield-race-check":
@@ -595,7 +599,7 @@ def startToolChain(argv):
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'no-infer',
               'no-heavy-async-calls-optimisation',
-              'yield-all', 'yield-no-access', 'yield-race-check',
+              'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
@@ -734,6 +738,8 @@ def startToolChain(argv):
     CommandLineOptions.whoopRaceCheckerOptions += [ "/findBugs" ]
   if CommandLineOptions.yieldAll:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
+  elif CommandLineOptions.yieldCoarse:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldCoarse" ]
   elif CommandLineOptions.yieldNoAccess:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
 

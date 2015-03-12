@@ -21,6 +21,9 @@ namespace Whoop
   public sealed class ErrorReporter
   {
     private EntryPointPair Pair;
+
+    public HashSet<string> UnprotectedResources;
+
     public bool FoundErrors;
 
     enum ErrorMsgType
@@ -33,6 +36,7 @@ namespace Whoop
     public ErrorReporter(EntryPointPair pair)
     {
       this.Pair = pair;
+      this.UnprotectedResources = new HashSet<string>();
       this.FoundErrors = false;
     }
 
@@ -82,8 +86,10 @@ namespace Whoop
     private int ReportRace(AssertCounterexample cex)
     {
       this.PopulateModelWithStatesIfNecessary(cex);
-      string resource = this.GetSharedResourceName(cex.FailingAssert.Attributes);
+
+      var resource = this.GetSharedResourceName(cex.FailingAssert.Attributes);
       var conflictingActions = this.GetConflictingAccesses(cex, resource);
+      this.UnprotectedResources.Add(resource);
 
       if (WhoopCommandLineOptions.Get().DebugWhoop)
       {
@@ -101,7 +107,7 @@ namespace Whoop
         }
       }
 
-      return errorCounter;
+      return errorCounter == 0 ? 1 : errorCounter;
     }
 
     private bool AnalyseConflict(string state1, string state2, AssumeCmd assume1, AssumeCmd assume2)

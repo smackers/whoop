@@ -127,6 +127,8 @@ namespace Whoop.Instrumentation
           bool writeAccessFound = false;
           bool readAccessFound = false;
 
+          var resource = "";
+
           if (lhssMap.Count() == 1)
           {
             var lhs = lhssMap.First();
@@ -134,6 +136,7 @@ namespace Whoop.Instrumentation
               lhs.Map is SimpleAssignLhs && lhs.Indexes.Count == 1)
             {
               writeAccessFound = true;
+              resource = lhs.DeepAssignedIdentifier.Name;
             }
           }
           else if (lhss.Count() == 1)
@@ -142,6 +145,7 @@ namespace Whoop.Instrumentation
             if (lhs.DeepAssignedIdentifier.Name.StartsWith("$M."))
             {
               writeAccessFound = true;
+              resource = lhs.DeepAssignedIdentifier.Name;
             }
           }
 
@@ -152,6 +156,7 @@ namespace Whoop.Instrumentation
               (rhs.Args[0] as IdentifierExpr).Name.StartsWith("$M."))
             {
               readAccessFound = true;
+              resource = (rhs.Args[0] as IdentifierExpr).Name;
             }
           }
           else if (rhss.Count() == 1)
@@ -160,10 +165,15 @@ namespace Whoop.Instrumentation
             if (rhs.Name.StartsWith("$M."))
             {
               readAccessFound = true;
+              resource = rhs.Name;
             }
           }
 
           if (!writeAccessFound && !readAccessFound)
+            continue;
+
+          if (!WhoopCommandLineOptions.Get().YieldCoarse &&
+              !this.ErrorReporter.UnprotectedResources.Contains(resource))
             continue;
 
           if (idx + 1 == block.Cmds.Count)
