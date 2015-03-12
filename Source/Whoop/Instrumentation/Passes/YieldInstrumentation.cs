@@ -172,7 +172,8 @@ namespace Whoop.Instrumentation
           if (!writeAccessFound && !readAccessFound)
             continue;
 
-          if (!WhoopCommandLineOptions.Get().YieldCoarse &&
+          if (!WhoopCommandLineOptions.Get().YieldAll &&
+              !WhoopCommandLineOptions.Get().YieldCoarse &&
               !this.ErrorReporter.UnprotectedResources.Contains(resource))
             continue;
 
