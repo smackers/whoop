@@ -84,8 +84,10 @@ namespace Whoop.Analysis
           continue;
         if (QKeyValue.FindBoolAttribute(impl.Attributes, "checker"))
           continue;
-        if (impl.Name.Contains("$memcpy") || impl.Name.Contains("memcpy_fromio") ||
-            impl.Name.Contains("$memset"))
+        if (impl.Name.StartsWith("$memcpy") || impl.Name.StartsWith("memcpy_fromio") ||
+            impl.Name.StartsWith("$memset") ||
+            impl.Name.StartsWith("$malloc") || impl.Name.StartsWith("$alloca") ||
+            impl.Name.StartsWith("$free"))
           continue;
 
         toRemove.Add(impl.Name);
