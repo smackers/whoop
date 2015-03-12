@@ -386,7 +386,7 @@ namespace Whoop.Regions
         this.InParamMapEP1.Add(impl1.InParams[idx].Name, this.CC1.Ins[idx] as IdentifierExpr);
       }
 
-      if (this.CC2 == null)
+      if (this.EP1.Name.Equals(this.EP2.Name))
         return;
 
       for (int idx = 0; idx < this.CC2.Ins.Count; idx++)
@@ -397,7 +397,7 @@ namespace Whoop.Regions
 
     private void CheckAndRefactorInParamsIfEquals()
     {
-      if (this.CC2 == null)
+      if (this.EP1.Name.Equals(this.EP2.Name))
         return;
 
       var inParams = this.InternalImplementation.InParams;
@@ -453,10 +453,25 @@ namespace Whoop.Regions
 
       foreach (var pair in idxs)
       {
-        this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name = 
-          this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name + "$1";
-        this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name = 
-          this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name + "$2";
+        this.InternalImplementation.InParams[pair.Item1] =
+          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+            this.InternalImplementation.InParams[pair.Item1].TypedIdent.Name + "$1",
+            this.InternalImplementation.InParams[pair.Item1].TypedIdent.Type));
+
+        this.InternalImplementation.Proc.InParams[pair.Item1] =
+          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+            this.InternalImplementation.Proc.InParams[pair.Item1].TypedIdent.Name + "$1",
+            this.InternalImplementation.Proc.InParams[pair.Item1].TypedIdent.Type));
+
+        this.InternalImplementation.InParams[pair.Item2] =
+          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+          this.InternalImplementation.InParams[pair.Item2].TypedIdent.Name + "$2",
+          this.InternalImplementation.InParams[pair.Item2].TypedIdent.Type));
+
+        this.InternalImplementation.Proc.InParams[pair.Item2] =
+          new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+            this.InternalImplementation.Proc.InParams[pair.Item2].TypedIdent.Name + "$2",
+            this.InternalImplementation.Proc.InParams[pair.Item2].TypedIdent.Type));
       }
     }
 
@@ -664,7 +679,7 @@ namespace Whoop.Regions
         newInParams.Add(new Duplicator().VisitVariable(v.Clone() as Variable) as Variable);
       }
 
-      if (this.CC2 == null)
+      if (this.EP1.Name.Equals(this.EP2.Name))
         return newInParams;
 
       for (int i = 0; i < impl2.Proc.InParams.Count; i++)

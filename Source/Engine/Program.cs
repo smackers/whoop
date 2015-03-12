@@ -168,7 +168,13 @@ namespace Whoop
 
       AnalysisContext analysisContext = null;
       new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1], "bpl").TryParseNew(ref analysisContext);
-      new PairWiseCheckingInstrumentationEngine(analysisContext).Run();
+
+      foreach (var pair in DeviceDriver.EntryPointPairs)
+      {
+        new PairWiseCheckingInstrumentationEngine(analysisContext, pair).Run();
+        analysisContext.ResetAnalysisContext();
+        analysisContext.ResetToProgramTopLevelDeclarations();
+      }
 
       Program.StopTimer();
     }
