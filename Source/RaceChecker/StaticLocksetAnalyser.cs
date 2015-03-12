@@ -30,6 +30,7 @@ namespace Whoop
 
     PipelineStatistics Stats;
     ErrorReporter ErrorReporter;
+    private ExecutionTimer Timer;
 
     public StaticLocksetAnalyser(AnalysisContext ac, EntryPointPair pair, ErrorReporter errorReporter,
       PipelineStatistics stats)
@@ -44,6 +45,14 @@ namespace Whoop
 
     public void Run()
     {
+      if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        Console.WriteLine(" |------ [{0} :: {1}]", this.EP1.Name, this.EP2.Name);
+        Console.WriteLine(" |  |");
+        this.Timer = new ExecutionTimer();
+        this.Timer.Start();
+      }
+
       this.AC.EliminateDeadVariables();
       this.AC.Inline();
       if (WhoopRaceCheckerCommandLineOptions.Get().LoopUnrollCount != -1)
@@ -54,7 +63,6 @@ namespace Whoop
       Implementation checker = this.AC.TopLevelDeclarations.OfType<Implementation>().ToList().
         Find(val => val.Name.Equals(checkerName));
       Contract.Assert(checker != null);
-      Console.WriteLine("Analyse: " + checker.Name);
 
       VC.ConditionGeneration vcgen = null;
 
@@ -123,6 +131,13 @@ namespace Whoop
       WhoopRaceCheckerCommandLineOptions.Get().TheProverFactory.Close();
 //      cce.NonNull(WhoopRaceCheckerCommandLineOptions.Get().TheProverFactory).Close();
       vcgen.Dispose();
+
+      if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
+      {
+        this.Timer.Stop();
+        Console.WriteLine(" |  |------ [StaticLocksetAnalyser] {0}", this.Timer.Result());
+        Console.WriteLine(" |");
+      }
     }
 
     private void ProcessOutcome(Implementation impl, VC.VCGen.Outcome outcome, List<Counterexample> errors,

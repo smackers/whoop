@@ -42,7 +42,6 @@
     <Compile Include="Regions\InstrumentationRegion.cs" />
     <Compile Include="Regions\IRegion.cs" />
     <Compile Include="Regions\PairCheckingRegion.cs" />
-    <Compile Include="Instrumentation\Passes\DeadlockInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\ErrorReportingInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\LocksetInstrumentation.cs" />
     <Compile Include="Instrumentation\Passes\PairInstrumentation.cs" />

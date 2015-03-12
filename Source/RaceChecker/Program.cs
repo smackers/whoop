@@ -90,7 +90,7 @@ namespace Whoop
         {
           AnalysisContext ac = null;
           var parser = new AnalysisContextParser(fileList[fileList.Count - 1], "wbpl");
-          var errorReporter = new ErrorReporter();
+          var errorReporter = new ErrorReporter(pair);
 
           if (pair.EntryPoint1.Name.Equals(pair.EntryPoint2.Name))
           {

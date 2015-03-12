@@ -580,6 +580,8 @@ namespace Whoop.Regions
     private AssumeCmd CreateCaptureStateAssume(Variable mr)
     {
       AssumeCmd assume = new AssumeCmd(Token.NoToken, Expr.True);
+      assume.Attributes = new QKeyValue(Token.NoToken, "checker",
+        new List<object>(), assume.Attributes);
       assume.Attributes = new QKeyValue(Token.NoToken, "captureState",
         new List<object>() { "check_state_" + this.CheckCounter++ }, assume.Attributes);
       assume.Attributes = new QKeyValue(Token.NoToken, "resource",

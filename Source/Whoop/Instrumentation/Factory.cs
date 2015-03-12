@@ -36,11 +36,6 @@ namespace Whoop.Instrumentation
       return new RaceInstrumentation(ac, ep);
     }
 
-    public static IPass CreateDeadlockInstrumentation(AnalysisContext ac, EntryPoint ep)
-    {
-      return new DeadlockInstrumentation(ac, ep);
-    }
-
     public static IPass CreateErrorReportingInstrumentation(AnalysisContext ac, EntryPoint ep)
     {
       return new ErrorReportingInstrumentation(ac, ep);
