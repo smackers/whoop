@@ -264,6 +264,11 @@ namespace Whoop.Analysis
         (val as Implementation).Name.Equals("mutex_lock"));
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
         (val as Implementation).Name.Equals("mutex_unlock"));
+
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("spin_lock_irqsave"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("spin_unlock_irqrestore"));
     }
 
     public static void RemoveOriginalInitFunc(AnalysisContext ac)

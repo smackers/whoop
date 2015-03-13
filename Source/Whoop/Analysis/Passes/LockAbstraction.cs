@@ -67,7 +67,8 @@ namespace Whoop.Analysis
         {
           if (!(block.Cmds[idx] is CallCmd))
             continue;
-          if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init"))
+          if (!(block.Cmds[idx] as CallCmd).callee.Contains("mutex_init") &&
+              !(block.Cmds[idx] as CallCmd).callee.Contains("spin_lock_init"))
             continue;
 
           Expr lockExpr = PointerArithmeticAnalyser.ComputeRootPointer(initFunc,
