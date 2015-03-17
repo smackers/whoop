@@ -99,7 +99,7 @@ namespace Whoop.Instrumentation
           if (Utilities.IsDeviceAllocationFunction(call.callee))
           {
             var newInParam = new LocalVariable(Token.NoToken, new TypedIdent(
-              Token.NoToken, "$dev" + counter, this.AC.MemoryModelType));
+                               Token.NoToken, "$dev" + counter, this.AC.MemoryModelType));
             this.InParams.Add(call.callee, new Tuple<int, IdentifierExpr, Variable>(
               counter, call.Outs[0], newInParam));
 
@@ -110,11 +110,16 @@ namespace Whoop.Instrumentation
             block.Cmds.RemoveAt(idx);
             idx--;
           }
+          else if (call.callee.Equals("$static_init") ||
+            call.callee.Equals("$malloc"))
+          {
+            continue;
+          }
           else if (call.callee.Equals(DeviceDriver.InitEntryPoint) ||
             (!call.callee.Equals(this.EP1.Name) && !call.callee.Equals(this.EP2.Name)))
           {
-//            block.Cmds.RemoveAt(idx);
-//            idx--;
+            block.Cmds.RemoveAt(idx);
+            idx--;
           }
           else
           {

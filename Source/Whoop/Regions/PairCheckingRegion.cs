@@ -222,36 +222,25 @@ namespace Whoop.Regions
 
     private void CreateImplementation(Implementation impl1, Implementation impl2)
     {
+      Block call = new Block(Token.NoToken, "$logger",
+        new List<Cmd>(), new GotoCmd(Token.NoToken,
+          new List<string> { "$checker" }));
+
       if (this.EP1.Name.Equals(this.EP2.Name))
       {
-        Block call = new Block(Token.NoToken, "$logger",
-                        new List<Cmd>(), new GotoCmd(Token.NoToken,
-                        new List<string> { "$checker" }));
-
         this.CC1 = this.CreateCallCmd(impl1, impl2);
         call.Cmds.Add(this.CC1);
-
-        this.RegionBlocks.Add(call);
       }
       else
       {
-        Block call1 = new Block(Token.NoToken, "$logger$1",
-                        new List<Cmd>(), new GotoCmd(Token.NoToken,
-                        new List<string> { "$logger$2" }));
-
         this.CC1 = this.CreateCallCmd(impl1, impl2);
-        call1.Cmds.Add(this.CC1);
-
-        Block call2 = new Block(Token.NoToken, "$logger$2",
-                        new List<Cmd>(), new GotoCmd(Token.NoToken,
-                        new List<string> { "$checker" }));
+        call.Cmds.Add(this.CC1);
 
         this.CC2 = this.CreateCallCmd(impl2, impl1, true);
-        call2.Cmds.Add(this.CC2);
-
-        this.RegionBlocks.Add(call1);
-        this.RegionBlocks.Add(call2);
+        call.Cmds.Add(this.CC2);
       }
+
+      this.RegionBlocks.Add(call);
 
       this.InternalImplementation = new Implementation(Token.NoToken, this.RegionName,
         new List<TypeVariable>(), this.CreateNewInParams(impl1, impl2),
@@ -484,6 +473,7 @@ namespace Whoop.Regions
       Block header = new Block(Token.NoToken, "$header",
         new List<Cmd>(), new GotoCmd(Token.NoToken,
           new List<string> { this.RegionBlocks[0].Label }));
+
       this.RegionBlocks.Insert(0, header);
       return header;
     }
