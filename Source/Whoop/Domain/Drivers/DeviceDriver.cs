@@ -113,7 +113,7 @@ namespace Whoop.Domain.Drivers
         {
           if (!DeviceDriver.CanBePaired(ep1, ep2)) continue;
           if (!DeviceDriver.IsNewPair(ep1.Name, ep2.Name)) continue;
-          if (!DeviceDriver.CanRunConcurrently(ep1.KernelFunc, ep2.KernelFunc)) continue;
+          if (!DeviceDriver.CanRunConcurrently(ep1, ep2)) continue;
           DeviceDriver.EntryPointPairs.Add(new EntryPointPair(ep1, ep2));
         }
       }
@@ -219,28 +219,31 @@ namespace Whoop.Domain.Drivers
     /// Checks if the given entry points can run concurrently.
     /// </summary>
     /// <returns>Boolean value</returns>
-    /// <param name="ep1">Name of first entry point</param>
-    /// <param name="ep2">Name of second entry point</param>
-    private static bool CanRunConcurrently(string ep1, string ep2)
+    /// <param name="ep1">First entry point</param>
+    /// <param name="ep2">Second entry point</param>
+    private static bool CanRunConcurrently(EntryPoint ep1, EntryPoint ep2)
     {
-      if (DeviceDriver.HasKernelImposedDeviceLock(ep1) &&
-          DeviceDriver.HasKernelImposedDeviceLock(ep2))
+      if (DeviceDriver.HasKernelImposedDeviceLock(ep1.KernelFunc) &&
+          DeviceDriver.HasKernelImposedDeviceLock(ep2.KernelFunc))
         return false;
-      if (DeviceDriver.HasKernelImposedPowerLock(ep1) &&
-          DeviceDriver.HasKernelImposedPowerLock(ep2))
+      if (DeviceDriver.HasKernelImposedPowerLock(ep1.KernelFunc) &&
+          DeviceDriver.HasKernelImposedPowerLock(ep2.KernelFunc))
         return false;
-      if (DeviceDriver.HasKernelImposedRTNL(ep1) &&
-          DeviceDriver.HasKernelImposedRTNL(ep2))
+      if (DeviceDriver.HasKernelImposedRTNL(ep1.KernelFunc) &&
+          DeviceDriver.HasKernelImposedRTNL(ep2.KernelFunc))
         return false;
-      if (DeviceDriver.HasKernelImposedTxLock(ep1) &&
-          DeviceDriver.HasKernelImposedTxLock(ep2))
+      if (DeviceDriver.HasKernelImposedTxLock(ep1.KernelFunc) &&
+          DeviceDriver.HasKernelImposedTxLock(ep2.KernelFunc))
         return false;
 
-      if (DeviceDriver.IsPowerManagementAPI(ep1) &&
-          DeviceDriver.IsPowerManagementAPI(ep2))
+      if (DeviceDriver.IsPowerManagementAPI(ep1.KernelFunc) &&
+          DeviceDriver.IsPowerManagementAPI(ep2.KernelFunc))
         return false;
-      if (DeviceDriver.IsCalledWithNetpollDisabled(ep1) &&
-          DeviceDriver.IsCalledWithNetpollDisabled(ep2))
+      if (DeviceDriver.IsCalledWithNetpollDisabled(ep1.KernelFunc) &&
+          DeviceDriver.IsCalledWithNetpollDisabled(ep2.KernelFunc))
+        return false;
+
+      if (DeviceDriver.IsFileOperationsSerialised(ep1, ep2))
         return false;
 
       return true;
@@ -347,6 +350,25 @@ namespace Whoop.Domain.Drivers
     {
       // network device management API
       if (ep.Equals("ndo_start_xmit"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the file operation entry points have been serialised by
+    /// the kernel.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsFileOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
+    {
+      // file_operations API
+      if (!ep1.Module.Name.Equals("file_operations") ||
+          !ep2.Module.Name.Equals("file_operations"))
+        return false;
+
+      if (ep1.KernelFunc.Equals("release") || ep2.KernelFunc.Equals("release"))
         return true;
 
       return false;
