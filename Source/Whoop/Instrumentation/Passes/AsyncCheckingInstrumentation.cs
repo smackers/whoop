@@ -113,8 +113,8 @@ namespace Whoop.Instrumentation
           else if (call.callee.Equals(DeviceDriver.InitEntryPoint) ||
             (!call.callee.Equals(this.EP1.Name) && !call.callee.Equals(this.EP2.Name)))
           {
-            block.Cmds.RemoveAt(idx);
-            idx--;
+//            block.Cmds.RemoveAt(idx);
+//            idx--;
           }
           else
           {

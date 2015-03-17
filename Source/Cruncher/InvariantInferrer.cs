@@ -55,7 +55,9 @@ namespace Whoop
         this.Timer.Start();
       }
 
-      this.PerformHoudini();
+      HoudiniOutcome outcome = null;
+
+      this.PerformHoudini(ref outcome);
       this.ApplyInvariants();
 
       this.AC.ResetToProgramTopLevelDeclarations();
@@ -86,11 +88,11 @@ namespace Whoop
         WhoopCruncherCommandLineOptions.Get().Files.Count - 1], this.EP.Name + "$summarised", "wbpl");
     }
 
-    private void PerformHoudini()
+    private void PerformHoudini(ref HoudiniOutcome outcome)
     {
       var houdiniStats = new HoudiniSession.HoudiniStatistics();
       this.Houdini = new Houdini(this.AC.Program, houdiniStats);
-      HoudiniOutcome outcome = this.Houdini.PerformHoudiniInference();
+      outcome = this.Houdini.PerformHoudiniInference();
 
       if (CommandLineOptions.Clo.PrintAssignment)
       {

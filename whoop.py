@@ -177,7 +177,7 @@ class DefaultCmdLineOptions(object):
     self.timePasses = None
     self.componentTimeout = 0
     self.solver = "z3"
-    self.logic = "QF_ALL_SUPPORTED"
+    self.logic = "ALL_SUPPORTED"
     self.stopAtRe = False
     self.stopAtBc = False
     self.stopAtBpl = False
