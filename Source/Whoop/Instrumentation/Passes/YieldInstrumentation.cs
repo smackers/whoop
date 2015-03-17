@@ -68,7 +68,6 @@ namespace Whoop.Instrumentation
 
     private void InstrumentImplementation(Implementation impl)
     {
-      this.InstrumentYieldsAttribute(impl);
       this.InstrumentYieldsInLocks(impl);
 
       if (!WhoopCommandLineOptions.Get().YieldNoAccess &&
@@ -76,14 +75,6 @@ namespace Whoop.Instrumentation
       {
         this.InstrumentYieldsInMemoryAccesses(impl);
       }
-    }
-
-    private void InstrumentYieldsAttribute(Implementation impl)
-    {
-      impl.Attributes = new QKeyValue(Token.NoToken,
-        "yields", new List<object>(), impl.Attributes);
-      impl.Proc.Attributes = new QKeyValue(Token.NoToken,
-        "yields", new List<object>(), impl.Proc.Attributes);
     }
 
     private void InstrumentYieldsInLocks(Implementation impl)
