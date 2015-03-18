@@ -436,7 +436,7 @@ def processGeneralOptions(opts, args):
       else:
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --solver must be 'Z3' or 'CVC4'")
     if o == "--logic":
-      if a.upper() in ("ALL_SUPPORTED","QF_ALL_SUPPORTED"):
+      if a.upper() in ("ALL_SUPPORTED","QF_ALL_SUPPORTED","AUFLIA","AUFNIA"):
         CommandLineOptions.logic = a.upper()
       else:
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --logic must be 'ALL_SUPPORTED' or 'QF_ALL_SUPPORTED'")
@@ -687,6 +687,9 @@ def startToolChain(argv):
     CommandLineOptions.whoopEngineOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
     CommandLineOptions.whoopCruncherOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
     CommandLineOptions.whoopRaceCheckerOptions += [ "/proverOpt:LOGIC=" + CommandLineOptions.logic ]
+    CommandLineOptions.whoopEngineOptions += [ "/useArrayTheory" ]
+    CommandLineOptions.whoopCruncherOptions += [ "/useArrayTheory" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/useArrayTheory" ]
   else:
     CommandLineOptions.whoopEngineOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
     CommandLineOptions.whoopCruncherOptions += [ "/z3exe:" + findtools.z3BinDir + os.sep + "z3.exe" ]
