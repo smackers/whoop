@@ -196,6 +196,13 @@ namespace Whoop.Instrumentation
       bool foundRegistrationPoint = false;
       foreach (var block in initImpl.Blocks)
       {
+        if (foundRegistrationPoint &&
+          !this.EP1.IsInit && !this.EP2.IsInit)
+        {
+          block.Cmds.RemoveRange(0, block.Cmds.Count);
+          continue;
+        }
+
         int index = 0;
         for (int idx = 0; idx < block.Cmds.Count; idx++)
         {
@@ -214,12 +221,15 @@ namespace Whoop.Instrumentation
         if (foundRegistrationPoint && block.Cmds.Count == index + 1)
         {
           block.Cmds.Add(checkerCall);
-          break;
+        }
+        else if (foundRegistrationPoint && !this.EP1.IsInit && !this.EP2.IsInit)
+        {
+          block.Cmds.RemoveRange(index + 1, block.Cmds.Count - index - 1);
+          block.Cmds.Insert(index + 1, checkerCall);
         }
         else if (foundRegistrationPoint)
         {
           block.Cmds.Insert(index + 1, checkerCall);
-          break;
         }
       }
 
