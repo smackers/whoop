@@ -99,7 +99,7 @@ namespace Whoop.Instrumentation
           if (Utilities.IsDeviceAllocationFunction(call.callee))
           {
             var newInParam = new LocalVariable(Token.NoToken, new TypedIdent(
-                               Token.NoToken, "$dev" + counter, this.AC.MemoryModelType));
+              Token.NoToken, "$dev" + counter, this.AC.MemoryModelType));
             this.InParams.Add(call.callee, new Tuple<int, IdentifierExpr, Variable>(
               counter, call.Outs[0], newInParam));
 
@@ -170,6 +170,14 @@ namespace Whoop.Instrumentation
         "entrypoint", new List<object>(), null);
       initImpl.Attributes = new QKeyValue(Token.NoToken,
         "entrypoint", new List<object>(), null);
+
+//      var staticInitCall = new CallCmd(Token.NoToken, "$static_init",
+//        new List<Expr>(), new List<IdentifierExpr>());
+//      foreach (var block in initImpl.Blocks)
+//      {
+//        block.Cmds.Insert(0, staticInitCall);
+//        break;
+//      }
 
       var checkerCall = this.CreateCheckerCall(initImpl);
 
