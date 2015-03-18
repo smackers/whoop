@@ -25,6 +25,7 @@ namespace Whoop.Domain.Drivers
     public readonly Module Module;
 
     public readonly bool IsInit;
+    public readonly bool IsExit;
     public readonly bool IsClone;
 
     public readonly bool IsGoingToDisableNetwork;
@@ -70,6 +71,11 @@ namespace Whoop.Domain.Drivers
       {
         this.IsInit = false;
       }
+
+      if (kernelFunc.Equals("remove"))
+        this.IsExit = true;
+      else
+        this.IsExit = false;
 
       this.IsClone = isClone;
 
