@@ -3,28 +3,37 @@
 
 #include <smack.h>
 
+#ifndef MUTEX_UNINITIALIZED
+#define MUTEX_UNINITIALIZED 0
+#endif
+
+#ifndef MUTEX_INITIALIZED
+#define MUTEX_INITIALIZED 1
+#endif
+
 #ifndef MUTEX_UNLOCKED
 #define MUTEX_UNLOCKED 0
 #endif
 
 struct mutex
 {
+	int init;
 	int locked;
 };
 
-struct mutex *mutex_init(struct mutex *lock)
+void mutex_init(struct mutex *lock)
 {
-	struct mutex *mutex = (struct mutex *) malloc(sizeof(struct mutex *));
-	mutex->locked = MUTEX_UNLOCKED;
-	return mutex;
+	lock = (struct mutex *) malloc(sizeof(struct mutex *));
+	lock->locked = MUTEX_UNLOCKED;
+	lock->init = MUTEX_INITIALIZED;
 }
 
 void mutex_lock(struct mutex *lock)
 {
-	__SMACK_code("call corral_atomic_begin();");
 	int tid = __SMACK_nondet();
 	__SMACK_code("call @ := corral_getThreadID();", tid);
-	__SMACK_code("assert @ != @;", tid, lock->locked);
+	//__SMACK_code("assert @ != @;", tid, lock->locked);
+	__SMACK_code("call corral_atomic_begin();");
 	__SMACK_code("assume @ == @;", lock->locked, MUTEX_UNLOCKED);
 	lock->locked = tid;
 	__SMACK_code("call corral_atomic_end();");
@@ -32,10 +41,10 @@ void mutex_lock(struct mutex *lock)
 
 void mutex_unlock(struct mutex *lock)
 {
-	__SMACK_code("call corral_atomic_begin();");
 	int tid = __SMACK_nondet();
 	__SMACK_code("call @ := corral_getThreadID();", tid);
-	__SMACK_code("assert @ == @;", tid, lock->locked);
+	//__SMACK_code("assert @ == @;", tid, lock->locked);
+	__SMACK_code("call corral_atomic_begin();");
 	lock->locked = MUTEX_UNLOCKED;
 	__SMACK_code("call corral_atomic_end();");
 }
