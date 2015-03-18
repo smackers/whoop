@@ -177,7 +177,7 @@ class DefaultCmdLineOptions(object):
     self.timePasses = None
     self.componentTimeout = 0
     self.solver = "z3"
-    self.logic = "ALL_SUPPORTED"
+    self.logic = "AUFLIRA"
     self.stopAtRe = False
     self.stopAtBc = False
     self.stopAtBpl = False
@@ -436,10 +436,10 @@ def processGeneralOptions(opts, args):
       else:
         raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --solver must be 'Z3' or 'CVC4'")
     if o == "--logic":
-      if a.upper() in ("ALL_SUPPORTED","QF_ALL_SUPPORTED","AUFLIA","AUFNIA"):
+      if a.upper() in ("ALL_SUPPORTED","QF_ALL_SUPPORTED","AUFLIRA"):
         CommandLineOptions.logic = a.upper()
       else:
-        raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --logic must be 'ALL_SUPPORTED' or 'QF_ALL_SUPPORTED'")
+        raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "argument to --logic must be 'ALL_SUPPORTED', 'QF_ALL_SUPPORTED' or 'AUFLIRA'")
     if o == "--inline-bound":
       try:
         CommandLineOptions.inlineBound = int(a)
