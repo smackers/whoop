@@ -12,5 +12,6 @@ struct __wait_queue_head {
 };
 typedef struct __wait_queue_head wait_queue_head_t;
 
+#define DECLARE_WAIT_QUEUE_HEAD(x) struct __wait_queue_head x = { 0 }
 
 #endif /* _LINUX_WAIT_H */

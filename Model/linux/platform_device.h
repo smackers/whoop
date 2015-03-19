@@ -17,26 +17,28 @@
 #define PLATFORM_DEVID_NONE	(-1)
 #define PLATFORM_DEVID_AUTO	(-2)
 
-// struct mfd_cell;
-//
-// struct platform_device {
-// 	const char	*name;
-// 	int		id;
-// 	bool		id_auto;
-// 	struct device	dev;
-// 	u32		num_resources;
-// 	struct resource	*resource;
-//
-// 	const struct platform_device_id	*id_entry;
-// 	char *driver_override; /* Driver name to force a match */
-//
-// 	/* MFD cell pointer */
-// 	struct mfd_cell *mfd_cell;
-//
-// 	/* arch specific additions */
-// 	struct pdev_archdata	archdata;
-// };
-//
+struct mfd_cell;
+
+struct pdev_archdata { };
+
+struct platform_device {
+	const char	*name;
+	int		id;
+	bool		id_auto;
+	struct device	dev;
+	u32		num_resources;
+	struct resource	*resource;
+
+	const struct platform_device_id	*id_entry;
+	char *driver_override; /* Driver name to force a match */
+
+	/* MFD cell pointer */
+	struct mfd_cell *mfd_cell;
+
+	/* arch specific additions */
+	struct pdev_archdata	archdata;
+};
+
 // #define platform_get_device_id(pdev)	((pdev)->id_entry)
 //
 // #define to_platform_device(x) container_of((x), struct platform_device, dev)

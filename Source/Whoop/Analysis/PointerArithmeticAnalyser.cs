@@ -730,6 +730,7 @@ namespace Whoop.Analysis
           expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$p2i" ||
           expr.Fun.FunctionName == "$trunc" ||
           expr.Fun.FunctionName == "$ashr" || expr.Fun.FunctionName == "$urem" ||
+          expr.Fun.FunctionName == "$udiv" ||
           expr.Fun.FunctionName == "!=" || expr.Fun.FunctionName == "-")
         return true;
       return false;

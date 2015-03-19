@@ -9,6 +9,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/list.h>
 
+struct device_driver;
+
 struct device_private {
 	void *driver_data;
 	struct device *device;
@@ -17,11 +19,13 @@ struct device_private {
 struct device {
 	struct device *parent;
 	struct device_private *p;
+	struct device_driver *driver;
 	void (*release)(struct device * dev);
 };
 
 struct device_driver {
 	const char *name;
+	struct module           *owner;
 
 	int (*probe) (struct device *dev);
 	int (*remove) (struct device *dev);
@@ -32,6 +36,32 @@ struct device_driver {
 
 	const struct dev_pm_ops *pm;
 };
+
+#define __ATTR(_name, _mode, _show, _store) {                           \
+	.attr = {.name = __stringify(_name),                            \
+	.mode = VERIFY_OCTAL_PERMISSIONS(_mode) },             \
+	.show   = _show,                                                \
+	.store  = _store,                                               \
+}
+
+struct attribute {
+	const char              *name;
+	umode_t                 mode;
+};
+
+struct device_attribute {
+	struct attribute        attr;
+	ssize_t (*show)(struct device *dev, struct device_attribute *attr, char *buf);
+	ssize_t (*store)(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+};
+
+#define DEVICE_ATTR(_name, _mode, _show, _store) \
+  struct device_attribute dev_attr_##_name =  {                           \
+		  .attr = {.name = __stringify(_name),                            \
+			.mode = VERIFY_OCTAL_PERMISSIONS(_mode) },             \
+			.show   = _show,                                                \
+			.store  = _store,                                               \
+		}
 
 static inline void *dev_get_drvdata(struct device *dev);
 static inline void dev_set_drvdata(struct device *dev, void *data);

@@ -7,6 +7,7 @@
  */
 
 #include <linux/list.h>
+#include <linux/stat.h>
 #include <linux/mutex.h>
 #include <linux/ioctl.h>
 #include <linux/types.h>
@@ -79,6 +80,30 @@ MS_VERBOSE is deprecated. */
 #define FMODE_LSEEK	4
 #define FMODE_PREAD	8
 #define FMODE_PWRITE	FMODE_PREAD	/* These go hand in hand */
+
+/* file is open for reading */
+#define FMODE_READ		((__force fmode_t)0x1)
+/* file is open for writing */
+#define FMODE_WRITE		((__force fmode_t)0x2)
+/* file is seekable */
+#define FMODE_LSEEK		((__force fmode_t)0x4)
+/* file can be accessed using pread */
+#define FMODE_PREAD		((__force fmode_t)0x8)
+/* file can be accessed using pwrite */
+#define FMODE_PWRITE		((__force fmode_t)0x10)
+/* File is opened for execution with sys_execve / sys_uselib */
+#define FMODE_EXEC		((__force fmode_t)0x20)
+/* File is opened with O_NDELAY (only set for block devices) */
+#define FMODE_NDELAY		((__force fmode_t)0x40)
+/* File is opened with O_EXCL (only set for block devices) */
+#define FMODE_EXCL		((__force fmode_t)0x80)
+/* File is opened using open(.., 3, ..) and is writeable only for ioctls
+(specialy hack for floppy.c) */
+#define FMODE_WRITE_IOCTL	((__force fmode_t)0x100)
+/* 32bit hashes as llseek() offset (for directories) */
+#define FMODE_32BITHASH         ((__force fmode_t)0x200)
+/* 64bit hashes as llseek() offset (for directories) */
+#define FMODE_64BITHASH         ((__force fmode_t)0x400)
 
 #define RW_MASK		1
 #define RWA_MASK	2
@@ -240,6 +265,7 @@ struct block_device_operations {
 	long (*unlocked_ioctl) (struct file *, unsigned, unsigned long);
 	long (*compat_ioctl) (struct file *, unsigned, unsigned long);
 	int (*direct_access) (struct block_device *, sector_t, unsigned long *);
+  unsigned int (*check_events) (struct gendisk *disk, unsigned int clearing);
 	int (*media_changed) (struct gendisk *);
 	int (*revalidate_disk) (struct gendisk *);
 	int (*getgeo)(struct block_device *, struct hd_geometry *);

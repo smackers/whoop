@@ -12,4 +12,6 @@
 #include <asm/uaccess.h>
 #include <linux/gfp.h>
 
+#define PAGE_OFFSET             (0)
+
 #endif /* _LINUX_PAGEMAP_H */

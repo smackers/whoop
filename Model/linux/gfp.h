@@ -59,4 +59,7 @@
 
 #define GFP_ATOMIC (__GFP_HIGH)
 
+#define GFP_NOIO        (__GFP_WAIT)
+#define GFP_USER        (__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL)
+
 #endif /* __LINUX_GFP_H */

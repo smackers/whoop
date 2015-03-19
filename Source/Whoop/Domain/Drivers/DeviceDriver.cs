@@ -248,6 +248,8 @@ namespace Whoop.Domain.Drivers
 
       if (DeviceDriver.IsFileOperationsSerialised(ep1, ep2))
         return false;
+      if (DeviceDriver.IsBlockOperationsSerialised(ep1, ep2))
+        return false;
 
       return true;
     }
@@ -372,6 +374,29 @@ namespace Whoop.Domain.Drivers
         return false;
 
       if (ep1.KernelFunc.Equals("release") || ep2.KernelFunc.Equals("release"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the block operation entry points have been serialised by
+    /// the kernel.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsBlockOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
+    {
+      // file_operations API
+      if (!ep1.Module.Name.Equals("block_device_operations") ||
+        !ep2.Module.Name.Equals("block_device_operations"))
+        return false;
+
+      if (ep1.KernelFunc.Equals("release") || ep2.KernelFunc.Equals("release"))
+        return true;
+      if (ep1.KernelFunc.Equals("open") && ep2.KernelFunc.Equals("release"))
+        return true;
+      if (ep1.KernelFunc.Equals("release") && ep2.KernelFunc.Equals("open"))
         return true;
 
       return false;

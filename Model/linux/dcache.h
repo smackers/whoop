@@ -158,7 +158,7 @@ struct dentry_operations {
 	char *(*d_dname)(struct dentry *, char *, int);
 	struct vfsmount *(*d_automount)(struct path *);
 	int (*d_manage)(struct dentry *, bool);
-} ____cacheline_aligned;
+};
 
 /*
  * Locking rules for dentry_operations callbacks are to be found in

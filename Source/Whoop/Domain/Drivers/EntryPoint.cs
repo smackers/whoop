@@ -62,7 +62,8 @@ namespace Whoop.Domain.Drivers
       this.KernelFunc = kernelFunc;
       this.Module = module;
 
-      if (kernelFunc.Equals("probe"))
+      if (kernelFunc.Equals("probe") &&
+          (module.Name.Equals("whoop_driver_ops") || module.Name.Equals("pci_driver")))
       {
         this.IsInit = true;
         DeviceDriver.SetInitEntryPoint(name);
@@ -72,7 +73,8 @@ namespace Whoop.Domain.Drivers
         this.IsInit = false;
       }
 
-      if (kernelFunc.Equals("remove"))
+      if (kernelFunc.Equals("remove") &&
+        (module.Name.Equals("whoop_driver_ops") || module.Name.Equals("pci_driver")))
         this.IsExit = true;
       else
         this.IsExit = false;

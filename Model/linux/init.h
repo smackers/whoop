@@ -3,6 +3,7 @@
 
 #include <linux/types.h>
 #include <linux/compiler.h>
+#include <linux/capability.h>
 
 #define __init
 #define __initdata

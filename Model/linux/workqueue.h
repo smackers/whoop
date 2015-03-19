@@ -4,6 +4,8 @@
 #include <linux/timer.h>
 #include <linux/atomic.h>
 
+typedef void (*work_func_t)(struct work_struct *work);
+
 struct work_struct {
     void (*func)(void *);
     void *data;
@@ -16,10 +18,15 @@ struct delayed_work {
   int cpu;
 };
 
-#define DECLARE_WORK(_work, _func, _data) \
+#define DECLARE_WORK(_work, _func) \
 	struct work_struct _work = { \
            .func = (_func), \
-           .data = (_data), \
+           .data = (0), \
+        }
+
+#define DECLARE_DELAYED_WORK(_work, _func) \
+  struct delayed_work _work = { \
+          .work = { _func }, \
         }
 
 #define PREPARE_WORK(_work, _func, _data) \

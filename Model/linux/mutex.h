@@ -21,6 +21,8 @@ struct mutex
 	int locked;
 };
 
+#define DEFINE_MUTEX(x) struct mutex x = { MUTEX_INITIALIZED, MUTEX_UNLOCKED }
+
 void mutex_init(struct mutex *lock)
 {
 	lock = (struct mutex *) malloc(sizeof(struct mutex *));
