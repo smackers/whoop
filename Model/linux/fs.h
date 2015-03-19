@@ -8,7 +8,6 @@
 
 #include <linux/list.h>
 #include <linux/mutex.h>
-#include <linux/spinlock_types.h>
 #include <linux/ioctl.h>
 #include <linux/types.h>
 #include <linux/sched.h>
