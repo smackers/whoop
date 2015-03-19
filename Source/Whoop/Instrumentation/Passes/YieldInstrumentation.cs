@@ -49,9 +49,15 @@ namespace Whoop.Instrumentation
 
       foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
-        if (impl.Name.Equals(DeviceDriver.InitEntryPoint))
+        if (impl.Name.Equals(DeviceDriver.InitEntryPoint) &&
+            !(this.Pair.EntryPoint1.IsInit || this.Pair.EntryPoint2.IsInit))
           continue;
         if (impl.Equals(this.AC.Checker))
+          continue;
+        if (impl.Name.Equals("$static_init"))
+          continue;
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock") ||
+            impl.Name.Equals("spin_lock_irqsave") || impl.Name.Equals("spin_unlock_irqrestore"))
           continue;
 
         this.InstrumentImplementation(impl);
