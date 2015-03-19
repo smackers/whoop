@@ -40,6 +40,7 @@ namespace Whoop
     public bool SkipInference = false;
     public bool InlineHelperFunctions = false;
     public bool DebugWhoop = false;
+    public bool ShowErrorModel = false;
 
     public bool MeasurePassExecutionTime = false;
 
@@ -173,6 +174,12 @@ namespace Whoop
       if (option == "debugWhoop")
       {
         this.DebugWhoop = true;
+        return true;
+      }
+
+      if (option == "showErrorModel")
+      {
+        this.ShowErrorModel = true;
         return true;
       }
 

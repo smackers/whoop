@@ -92,10 +92,9 @@ namespace Whoop
       this.UnprotectedResources.Add(resource);
 
       if (WhoopCommandLineOptions.Get().DebugWhoop)
-      {
         Console.WriteLine("Conflict in resource: " + resource);
+      if (WhoopCommandLineOptions.Get().ShowErrorModel)
         this.Write(cex.Model, conflictingActions);
-      }
 
       int errorCounter = 0;
       foreach (var action1 in conflictingActions)
