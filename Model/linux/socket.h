@@ -3,8 +3,10 @@
 
 #include <linux/sockios.h>
 
+typedef short sa_family_t;
+
 struct sockaddr {
-	short	sa_family;
+	sa_family_t	sa_family;
 	char sa_data[14];
 };
 

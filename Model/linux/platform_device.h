@@ -172,17 +172,17 @@ struct platform_device {
 // extern int platform_device_add(struct platform_device *pdev);
 // extern void platform_device_del(struct platform_device *pdev);
 // extern void platform_device_put(struct platform_device *pdev);
-//
-// struct platform_driver {
-// 	int (*probe)(struct platform_device *);
-// 	int (*remove)(struct platform_device *);
-// 	void (*shutdown)(struct platform_device *);
-// 	int (*suspend)(struct platform_device *, pm_message_t state);
-// 	int (*resume)(struct platform_device *);
-// 	struct device_driver driver;
-// 	const struct platform_device_id *id_table;
-// 	bool prevent_deferred_probe;
-// };
+
+struct platform_driver {
+	int (*probe)(struct platform_device *);
+	int (*remove)(struct platform_device *);
+	void (*shutdown)(struct platform_device *);
+	int (*suspend)(struct platform_device *, pm_message_t state);
+	int (*resume)(struct platform_device *);
+	struct device_driver driver;
+	const struct platform_device_id *id_table;
+	bool prevent_deferred_probe;
+};
 //
 // #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
 // 				 driver))

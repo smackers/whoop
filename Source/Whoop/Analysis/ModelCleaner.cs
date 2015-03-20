@@ -73,8 +73,10 @@ namespace Whoop.Analysis
 
       toRemove.Add("register_netdev");
       toRemove.Add("misc_register");
+      toRemove.Add("nfc_register_device");
       toRemove.Add("unregister_netdev");
       toRemove.Add("misc_deregister");
+      toRemove.Add("nfc_free_device");
 
       foreach (var impl in ac.TopLevelDeclarations.OfType<Implementation>())
       {
@@ -263,6 +265,8 @@ namespace Whoop.Analysis
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
         (val as Implementation).Name.Equals("mutex_lock"));
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("mutex_lock_interruptible"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
         (val as Implementation).Name.Equals("mutex_unlock"));
 
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
@@ -291,7 +295,8 @@ namespace Whoop.Analysis
         if (!(proc.Name.Contains("$memcpy") || proc.Name.Contains("memcpy_fromio") ||
           proc.Name.Contains("$memset") ||
           proc.Name.Equals("alloc_etherdev") || proc.Name.Equals("alloc_testdev") ||
-          proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_unlock") ||
+          proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_lock_interruptible") ||
+          proc.Name.Equals("mutex_unlock") ||
           proc.Name.Equals("spin_lock_irqsave") || proc.Name.Equals("spin_unlock_irqrestore") ||
           proc.Name.Equals("ASSERT_RTNL") ||
           proc.Name.Equals("netif_device_attach") || proc.Name.Equals("netif_device_detach") ||
@@ -299,7 +304,8 @@ namespace Whoop.Analysis
           proc.Name.Equals("pm_runtime_get_sync") || proc.Name.Equals("pm_runtime_get_noresume") ||
           proc.Name.Equals("pm_runtime_put_sync") || proc.Name.Equals("pm_runtime_put_noidle") ||
           proc.Name.Equals("register_netdev") || proc.Name.Equals("unregister_netdev") ||
-          proc.Name.Equals("misc_register") || proc.Name.Equals("misc_deregister")))
+          proc.Name.Equals("misc_register") || proc.Name.Equals("misc_deregister") ||
+          proc.Name.Equals("nfc_register_device") || proc.Name.Equals("nfc_free_device")))
           continue;
         proc.Modifies.Clear();
         proc.Requires.Clear();

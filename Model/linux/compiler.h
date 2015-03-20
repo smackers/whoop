@@ -24,5 +24,6 @@
 #define __noreturn __attribute__((noreturn))
 
 #define DUMP_PREFIX_NONE 0
+#define CPU_IS_060 (0)
 
 #endif /* __LINUX_COMPILER_H */

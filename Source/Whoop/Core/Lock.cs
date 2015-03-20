@@ -44,13 +44,25 @@ namespace Whoop
 
     public bool IsEqual(AnalysisContext ac, Implementation impl, Expr lockExpr)
     {
+      if (lockExpr == null)
+        return false;
       if (this.IsKernelSpecific)
         return false;
 
-      IdentifierExpr ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
-      int ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+      IdentifierExpr ptr = null;
+      if (lockExpr is NAryExpr)
+      {
+        ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
+        int ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+        if (this.Ixs != ixs)
+          return false;
+      }
+      else
+      {
+        ptr = lockExpr as IdentifierExpr;
+      }
 
-      if (this.Ixs != ixs)
+      if (ptr == null)
         return false;
 
       int index = -1;

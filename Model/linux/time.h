@@ -5,7 +5,10 @@
 #include <linux/cache.h>
 #include <linux/seqlock.h>
 
-extern struct timezone sys_tz;
+struct timespec {
+  long long   tv_sec;                 /* seconds */
+  long        tv_nsec;                /* nanoseconds */
+};
 
 /* Parameters used to convert the timespec values: */
 #define MSEC_PER_SEC	1000L
@@ -18,11 +21,6 @@ extern struct timezone sys_tz;
 
 #define TIME_T_MAX	(time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1)
 
-struct timespec {
-  long long   tv_sec;                 /* seconds */
-  long        tv_nsec;                /* nanoseconds */
-};
-
 struct timeval {
   long long         tv_sec;         /* seconds */
   long long    tv_usec;        /* microseconds */
@@ -32,7 +30,6 @@ struct timezone {
     int     tz_minuteswest; /* minutes west of Greenwich */
     int     tz_dsttime;     /* type of dst correction */
 };
-
 
 static inline int timespec_equal(const struct timespec *a,
                                  const struct timespec *b)

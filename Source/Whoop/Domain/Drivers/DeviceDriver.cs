@@ -29,6 +29,8 @@ namespace Whoop.Domain.Drivers
     public static List<EntryPoint> EntryPoints;
     public static List<EntryPointPair> EntryPointPairs;
 
+    public static List<Module> Modules;
+
     public static string InitEntryPoint
     {
       get;
@@ -64,7 +66,31 @@ namespace Whoop.Domain.Drivers
         files[files.Count - 1].IndexOf(".")) + ".info";
 
       DeviceDriver.EntryPoints = new List<EntryPoint>();
+      DeviceDriver.Modules = new List<Module>();
       DeviceDriver.SharedStructInitialiseFunc = "";
+
+      bool whoopInit = true;
+      using(StreamReader file = new StreamReader(driverInfoFile))
+      {
+        string line;
+
+        while ((line = file.ReadLine()) != null)
+        {
+          string type = line.Trim(new char[] { '<', '>' });
+          Module module = new Module(type);
+          DeviceDriver.Modules.Add(module);
+
+          if (type.Equals("pci_driver") || type.Equals("ps3_system_bus_driver") ||
+            type.Equals("cx_drv"))
+          {
+            whoopInit = false;
+            break;
+          }
+
+          while ((line = file.ReadLine()) != null)
+            if (line.Equals("</>")) break;
+        }
+      }
 
       using(StreamReader file = new StreamReader(driverInfoFile))
       {
@@ -80,14 +106,14 @@ namespace Whoop.Domain.Drivers
             DeviceDriver.SharedStructInitialiseFunc = info.Remove(0, 2);
           }
 
-          Module module = new Module(type);
+          Module module = DeviceDriver.Modules.First(val => val.Name.Equals(type));
 
           while ((line = file.ReadLine()) != null)
           {
             if (line.Equals("</>")) break;
             string[] pair = line.Split(new string[] { "::" }, StringSplitOptions.None);
 
-            var ep = new EntryPoint(pair[1], pair[0], module);
+            var ep = new EntryPoint(pair[1], pair[0], module, whoopInit);
             module.EntryPoints.Add(ep);
 
             if (DeviceDriver.EntryPoints.Any(val => val.Name.Equals(ep.Name)))
@@ -97,7 +123,7 @@ namespace Whoop.Domain.Drivers
 
             if (ep.IsCalledWithNetworkDisabled || ep.IsGoingToDisableNetwork)
             {
-              var epClone = new EntryPoint(pair[1] + "#net", pair[0], module, true);
+              var epClone = new EntryPoint(pair[1] + "#net", pair[0], module, whoopInit, true);
               module.EntryPoints.Add(epClone);
               DeviceDriver.EntryPoints.Add(epClone);
             }
@@ -223,11 +249,13 @@ namespace Whoop.Domain.Drivers
     /// <param name="ep2">Second entry point</param>
     private static bool CanRunConcurrently(EntryPoint ep1, EntryPoint ep2)
     {
+      if (ep1.IsInit && ep2.IsInit)
+        return false;
       if (ep1.IsExit || ep2.IsExit)
         return false;
 
-      if (DeviceDriver.HasKernelImposedDeviceLock(ep1.KernelFunc) &&
-          DeviceDriver.HasKernelImposedDeviceLock(ep2.KernelFunc))
+      if (DeviceDriver.HasKernelImposedDeviceLock(ep1.KernelFunc, ep1.Module) &&
+          DeviceDriver.HasKernelImposedDeviceLock(ep2.KernelFunc, ep2.Module))
         return false;
       if (DeviceDriver.HasKernelImposedPowerLock(ep1.KernelFunc) &&
           DeviceDriver.HasKernelImposedPowerLock(ep2.KernelFunc))
@@ -257,22 +285,28 @@ namespace Whoop.Domain.Drivers
     /// <summary>
     /// Checks if the entry point has been serialised by the device_lock(dev) lock.
     /// </summary>
-    /// <returns>Boolean value</returns>
-    /// <param name="ep">Name of entry point</param>
-    internal static bool HasKernelImposedDeviceLock(string ep)
+    internal static bool HasKernelImposedDeviceLock(string name, Module module)
     {
-      // pci driver API
-      if (ep.Equals("probe") || ep.Equals("remove") ||
-          ep.Equals("shutdown"))
+      if (name.Equals("probe") || name.Equals("remove") ||
+          name.Equals("shutdown"))
         return true;
 
       // power management API
-      if (ep.Equals("prepare") || ep.Equals("complete") ||
-          ep.Equals("resume") || ep.Equals("suspend") ||
-          ep.Equals("freeze") || ep.Equals("poweroff") ||
-          ep.Equals("restore") || ep.Equals("thaw") ||
-          ep.Equals("runtime_resume") || ep.Equals("runtime_suspend") ||
-          ep.Equals("runtime_idle"))
+      if (name.Equals("prepare") || name.Equals("complete") ||
+          name.Equals("resume") || name.Equals("suspend") ||
+          name.Equals("freeze") || name.Equals("poweroff") ||
+          name.Equals("restore") || name.Equals("thaw") ||
+          name.Equals("runtime_resume") || name.Equals("runtime_suspend") ||
+          name.Equals("runtime_idle"))
+        return true;
+
+      // NFC API
+      if (module.Name.Equals("nfc_ops") &&
+          (name.Equals("dev_up") || name.Equals("dev_down") ||
+          name.Equals("dep_link_up") || name.Equals("dep_link_down") ||
+          name.Equals("activate_target") || name.Equals("deactivate_target") ||
+          name.Equals("im_transceive") || name.Equals("tm_send") ||
+          name.Equals("start_poll") || name.Equals("stop_poll")))
         return true;
 
       return false;
@@ -443,6 +477,9 @@ namespace Whoop.Domain.Drivers
     /// <param name="ep">Name of entry point</param>
     internal static bool IsGoingToDisableNetwork(string ep)
     {
+      if (!DeviceDriver.Modules.Any(val => val.Name.Equals("net_device_ops")))
+        return false;
+
       if (ep.Equals("suspend") || ep.Equals("freeze") ||
           ep.Equals("poweroff") || ep.Equals("runtime_suspend") ||
           ep.Equals("shutdown"))

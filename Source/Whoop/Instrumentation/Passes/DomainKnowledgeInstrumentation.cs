@@ -65,12 +65,15 @@ namespace Whoop.Instrumentation
       }
 
       this.AnalyseDomainSpecificEnableUsage("register_netdev");
-      this.AnalyseDomainSpecificDisableUsage("unregister_netdev");
+//      this.AnalyseDomainSpecificDisableUsage("unregister_netdev");
 
       this.AnalyseDomainSpecificEnableUsage("network");
 
       this.AnalyseDomainSpecificEnableUsage("misc_register");
-      this.AnalyseDomainSpecificDisableUsage("misc_deregister");
+//      this.AnalyseDomainSpecificDisableUsage("misc_deregister");
+
+      this.AnalyseDomainSpecificEnableUsage("nfc_register_device");
+//      this.AnalyseDomainSpecificDisableUsage("nfc_free_device");
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
@@ -122,7 +125,8 @@ namespace Whoop.Instrumentation
             continue;
           var call = block.Cmds[idx] as CallCmd;
           if (call.callee.Equals("register_netdev") ||
-            call.callee.Equals("misc_register"))
+            call.callee.Equals("misc_register") ||
+            call.callee.Equals("nfc_register_device"))
           {
             call.callee = "_REGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
@@ -134,7 +138,8 @@ namespace Whoop.Instrumentation
             this.EP.IsEnablingDevice = true;
           }
           else if (call.callee.Equals("unregister_netdev") ||
-            call.callee.Equals("misc_deregister"))
+            call.callee.Equals("misc_deregister") ||
+            call.callee.Equals("nfc_free_device"))
           {
             call.callee = "_UNREGISTER_DEVICE_$" + this.EP.Name;
             call.Ins.Clear();
@@ -205,18 +210,21 @@ namespace Whoop.Instrumentation
 
     private void AnalyseDomainSpecificDisableUsage(string type)
     {
-      if ((type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
+      if ((type.Equals("unregister_netdev") || type.Equals("misc_deregister") ||
+        type.Equals("nfc_free_device"))
         && this.DeviceUnregisterRegion == null)
         return;
 
       InstrumentationRegion hotRegion = null;
-      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
+      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister") ||
+        type.Equals("nfc_free_device"))
         hotRegion = this.DeviceUnregisterRegion;
 
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
-      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
+      if (type.Equals("unregister_netdev") || type.Equals("misc_deregister") ||
+        type.Equals("nfc_free_device"))
         this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, false,
           predecessorCallees, successorCallees);
 
@@ -238,21 +246,24 @@ namespace Whoop.Instrumentation
 
       foreach (var succ in successorCallees)
       {
-        if (type.Equals("unregister_netdev") || type.Equals("misc_deregister"))
+        if (type.Equals("unregister_netdev") || type.Equals("misc_deregister") ||
+          type.Equals("nfc_free_device"))
           succ.IsDeviceRegistered = false;
       }
     }
 
     private void AnalyseDomainSpecificEnableUsage(string type)
     {
-      if ((type.Equals("register_netdev") || type.Equals("misc_register"))
+      if ((type.Equals("register_netdev") || type.Equals("misc_register") ||
+        type.Equals("nfc_register_device"))
         && this.DeviceRegisterRegion == null)
         return;
       if (type.Equals("network") && this.NetworkEnableRegion == null)
         return;
 
       InstrumentationRegion hotRegion = null;
-      if (type.Equals("register_netdev") || type.Equals("misc_register"))
+      if (type.Equals("register_netdev") || type.Equals("misc_register") ||
+        type.Equals("nfc_register_device"))
         hotRegion = this.DeviceRegisterRegion;
       if (type.Equals("network"))
         hotRegion = this.NetworkEnableRegion;
@@ -260,7 +271,8 @@ namespace Whoop.Instrumentation
       var predecessorCallees = new HashSet<InstrumentationRegion>();
       var successorCallees = new HashSet<InstrumentationRegion>();
 
-      if (type.Equals("register_netdev") || type.Equals("misc_register"))
+      if (type.Equals("register_netdev") || type.Equals("misc_register") ||
+        type.Equals("nfc_register_device"))
         this.AnalyseBlocksForDeviceRegisterRegion(hotRegion, true,
           predecessorCallees, successorCallees);
 
@@ -326,7 +338,8 @@ namespace Whoop.Instrumentation
       {
         if (pred.Equals(hotRegion))
           continue;
-        if (type.Equals("register_netdev") || type.Equals("misc_register"))
+        if (type.Equals("register_netdev") || type.Equals("misc_register") ||
+          type.Equals("nfc_register_device"))
           pred.IsDeviceRegistered = false;
         if (type.Equals("network"))
           pred.IsDisablingNetwork = true;

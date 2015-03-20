@@ -56,14 +56,17 @@ namespace Whoop.Domain.Drivers
     public bool IsEnablingDevice;
     public bool IsDisablingDevice;
 
-    public EntryPoint(string name, string kernelFunc, Module module, bool isClone = false)
+    public EntryPoint(string name, string kernelFunc, Module module, bool whoopInit, bool isClone = false)
     {
       this.Name = name;
       this.KernelFunc = kernelFunc;
       this.Module = module;
 
       if (kernelFunc.Equals("probe") &&
-          (module.Name.Equals("whoop_driver_ops") || module.Name.Equals("pci_driver")))
+          ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
+          module.Name.Equals("pci_driver") ||
+          module.Name.Equals("ps3_system_bus_driver") ||
+          module.Name.Equals("cx_drv")))
       {
         this.IsInit = true;
         DeviceDriver.SetInitEntryPoint(name);
@@ -74,14 +77,17 @@ namespace Whoop.Domain.Drivers
       }
 
       if (kernelFunc.Equals("remove") &&
-        (module.Name.Equals("whoop_driver_ops") || module.Name.Equals("pci_driver")))
+          ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
+          module.Name.Equals("pci_driver") ||
+          module.Name.Equals("ps3_system_bus_driver") ||
+          module.Name.Equals("cx_drv")))
         this.IsExit = true;
       else
         this.IsExit = false;
 
       this.IsClone = isClone;
 
-      if (DeviceDriver.HasKernelImposedDeviceLock(kernelFunc))
+      if (DeviceDriver.HasKernelImposedDeviceLock(kernelFunc, module))
         this.IsDeviceLocked = true;
       else
         this.IsDeviceLocked = false;

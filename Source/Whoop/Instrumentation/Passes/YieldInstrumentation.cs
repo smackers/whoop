@@ -54,9 +54,10 @@ namespace Whoop.Instrumentation
           continue;
         if (impl.Equals(this.AC.Checker))
           continue;
-        if (impl.Name.Equals("$static_init"))
+        if (impl.Name.Equals("$static_init") || impl.Name.Equals("__SMACK_nondet"))
           continue;
-        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_unlock") ||
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
+            impl.Name.Equals("mutex_unlock") ||
             impl.Name.Equals("spin_lock_irqsave") || impl.Name.Equals("spin_unlock_irqrestore"))
           continue;
 
@@ -94,6 +95,7 @@ namespace Whoop.Instrumentation
 
           var call = block.Cmds[idx] as CallCmd;
           if (!call.callee.Equals("mutex_lock") &&
+              !call.callee.Equals("mutex_lock_interruptible") &&
               !call.callee.Equals("mutex_unlock") &&
               !call.callee.Equals("spin_lock_irqsave") &&
               !call.callee.Equals("spin_unlock_irqrestore"))

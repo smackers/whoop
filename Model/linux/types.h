@@ -49,6 +49,8 @@ typedef __u64 __bitwise __be64;
 typedef __u16 __bitwise __sum16;
 typedef __u32 __bitwise __wsum;
 
+typedef long long uint64_t;
+
 #define __aligned_u64 __u64 __attribute__((aligned(8)))
 #define __aligned_be64 __be64 __attribute__((aligned(8)))
 #define __aligned_le64 __le64 __attribute__((aligned(8)))
@@ -226,6 +228,9 @@ struct callback_head {
 	struct callback_head *next;
 	void (*func)(struct callback_head *head);
 };
+
 #define rcu_head callback_head
+
+#define BITS_PER_LONG 32
 
 #endif /* _LINUX_TYPES_H */

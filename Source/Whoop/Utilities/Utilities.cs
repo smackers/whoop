@@ -36,7 +36,8 @@ namespace Whoop
     /// <param name="funcName">Function name</param>
     public static bool IsDeviceRegistrationFunction(string funcName)
     {
-      if (funcName.Equals("register_netdev") || funcName.Equals("misc_register"))
+      if (funcName.Equals("register_netdev") || funcName.Equals("misc_register") ||
+          funcName.Equals("nfc_register_device"))
         return true;
       return false;
     }
@@ -53,7 +54,8 @@ namespace Whoop
         funcName.Contains("$malloc") || funcName.Contains("$alloca") ||
         funcName.Contains("$free") ||
         funcName.Equals("alloc_etherdev") || funcName.Equals("alloc_testdev") ||
-        funcName.Equals("mutex_lock") || funcName.Equals("mutex_unlock") ||
+        funcName.Equals("mutex_lock") || funcName.Equals("mutex_lock_interruptible") ||
+        funcName.Equals("mutex_unlock") ||
         funcName.Equals("spin_lock_irqsave") || funcName.Equals("spin_unlock_irqrestore") ||
         funcName.Equals("ASSERT_RTNL") ||
         funcName.Equals("netif_device_attach") || funcName.Equals("netif_device_detach") ||
@@ -61,7 +63,8 @@ namespace Whoop
         funcName.Equals("pm_runtime_get_sync") || funcName.Equals("pm_runtime_get_noresume") ||
         funcName.Equals("pm_runtime_put_sync") || funcName.Equals("pm_runtime_put_noidle") ||
         funcName.Equals("register_netdev") || funcName.Equals("unregister_netdev") ||
-        funcName.Equals("misc_register") || funcName.Equals("misc_deregister"))
+        funcName.Equals("misc_register") || funcName.Equals("misc_deregister") ||
+        funcName.Equals("nfc_register_device") || funcName.Equals("nfc_free_device"))
         return false;
       return true;
     }

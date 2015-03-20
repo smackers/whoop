@@ -2,6 +2,7 @@
 #define _I386_SCATTERLIST_H
 
 struct scatterlist {
+    unsigned long   page_link;
     struct page		*page;
     unsigned int	offset;
     dma_addr_t		dma_address;

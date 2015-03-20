@@ -174,7 +174,7 @@ namespace Whoop.Instrumentation
     {
       foreach (var c in region.Cmds().OfType<CallCmd>())
       {
-        if (c.callee.Equals("mutex_lock"))
+        if (c.callee.Equals("mutex_lock") || c.callee.Equals("mutex_lock_interruptible"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.True);

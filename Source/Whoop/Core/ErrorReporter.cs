@@ -154,7 +154,9 @@ namespace Whoop
             continue;
 
           var state = this.GetAccessStateName(assume.Attributes);
-          assumes.Add(state, assume);
+
+          if (!assumes.ContainsKey(state))
+            assumes.Add(state, assume);
         }
       }
 

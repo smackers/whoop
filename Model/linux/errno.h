@@ -3,6 +3,9 @@
 
 #include <linux/errno-base.h>
 
+#define ERESTARTSYS     512
+#define ENOTSUPP        524     /* Operation is not supported */
+
 #define	EDEADLK		35	/* Resource deadlock would occur */
 #define	ENAMETOOLONG	36	/* File name too long */
 #define	ENOLCK		37	/* No record locks available */

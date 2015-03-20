@@ -540,4 +540,10 @@ extern int generic_readlink(struct dentry *, char __user *, int);
 extern void *page_follow_link_light(struct dentry *, struct nameidata *);
 extern void page_put_link(struct dentry *, struct nameidata *, void *);
 
+struct timespec current_fs_time(struct super_block *sb)
+{
+  struct timespec now = current_kernel_time();
+  return timespec_trunc(now, sb->s_time_gran);
+}
+
 #endif

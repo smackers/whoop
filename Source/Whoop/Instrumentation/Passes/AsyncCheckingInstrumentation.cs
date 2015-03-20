@@ -111,6 +111,7 @@ namespace Whoop.Instrumentation
             idx--;
           }
           else if (call.callee.Equals("$static_init") ||
+            call.callee.Equals("__SMACK_nondet") ||
             call.callee.Equals("$malloc"))
           {
             continue;
@@ -342,6 +343,8 @@ namespace Whoop.Instrumentation
       var inParams = new List<Expr>();
       foreach (var inParam in initImpl.InParams)
       {
+        if (this.AC.Checker.InParams.Count <= inParams.Count)
+          break;
         inParams.Add(new IdentifierExpr(inParam.tok, inParam));
       }
 

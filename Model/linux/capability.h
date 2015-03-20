@@ -37,6 +37,14 @@ struct task_struct;
 #define _LINUX_CAPABILITY_VERSION_3  0x20080522
 #define _LINUX_CAPABILITY_U32S_3     2
 
+#define _KERNEL_CAPABILITY_VERSION _LINUX_CAPABILITY_VERSION_3
+#define _KERNEL_CAPABILITY_U32S    _LINUX_CAPABILITY_U32S_3
+
+typedef struct kernel_cap_struct {
+	__u32 cap[_KERNEL_CAPABILITY_U32S];
+} kernel_cap_t;
+
+
 typedef struct __user_cap_header_struct {
 	__u32 version;
 	int pid;
