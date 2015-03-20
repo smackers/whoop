@@ -270,7 +270,11 @@ namespace Whoop.Analysis
         (val as Implementation).Name.Equals("mutex_unlock"));
 
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("spin_lock"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
         (val as Implementation).Name.Equals("spin_lock_irqsave"));
+      ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
+        (val as Implementation).Name.Equals("spin_unlock"));
       ac.TopLevelDeclarations.RemoveAll(val => (val is Implementation) &&
         (val as Implementation).Name.Equals("spin_unlock_irqrestore"));
     }
@@ -297,7 +301,8 @@ namespace Whoop.Analysis
           proc.Name.Equals("alloc_etherdev") || proc.Name.Equals("alloc_testdev") ||
           proc.Name.Equals("mutex_lock") || proc.Name.Equals("mutex_lock_interruptible") ||
           proc.Name.Equals("mutex_unlock") ||
-          proc.Name.Equals("spin_lock_irqsave") || proc.Name.Equals("spin_unlock_irqrestore") ||
+          proc.Name.Equals("spin_lock") || proc.Name.Equals("spin_lock_irqsave") ||
+          proc.Name.Equals("spin_unlock") || proc.Name.Equals("spin_unlock_irqrestore") ||
           proc.Name.Equals("ASSERT_RTNL") ||
           proc.Name.Equals("netif_device_attach") || proc.Name.Equals("netif_device_detach") ||
           proc.Name.Equals("netif_stop_queue") ||

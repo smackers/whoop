@@ -58,7 +58,8 @@ namespace Whoop.Instrumentation
           continue;
         if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
             impl.Name.Equals("mutex_unlock") ||
-            impl.Name.Equals("spin_lock_irqsave") || impl.Name.Equals("spin_unlock_irqrestore"))
+            impl.Name.Equals("spin_lock") || impl.Name.Equals("spin_lock_irqsave") ||
+            impl.Name.Equals("spin_unlock") || impl.Name.Equals("spin_unlock_irqrestore"))
           continue;
 
         this.InstrumentImplementation(impl);
@@ -97,7 +98,9 @@ namespace Whoop.Instrumentation
           if (!call.callee.Equals("mutex_lock") &&
               !call.callee.Equals("mutex_lock_interruptible") &&
               !call.callee.Equals("mutex_unlock") &&
+              !call.callee.Equals("spin_lock") &&
               !call.callee.Equals("spin_lock_irqsave") &&
+              !call.callee.Equals("spin_unlock") &&
               !call.callee.Equals("spin_unlock_irqrestore"))
             continue;
 

@@ -56,7 +56,8 @@ namespace Whoop
         funcName.Equals("alloc_etherdev") || funcName.Equals("alloc_testdev") ||
         funcName.Equals("mutex_lock") || funcName.Equals("mutex_lock_interruptible") ||
         funcName.Equals("mutex_unlock") ||
-        funcName.Equals("spin_lock_irqsave") || funcName.Equals("spin_unlock_irqrestore") ||
+        funcName.Equals("spin_lock") || funcName.Equals("spin_unlock_irqrestore") ||
+        funcName.Equals("spin_unlock") || funcName.Equals("spin_unlock_irqrestore") ||
         funcName.Equals("ASSERT_RTNL") ||
         funcName.Equals("netif_device_attach") || funcName.Equals("netif_device_detach") ||
         funcName.Equals("netif_stop_queue") ||

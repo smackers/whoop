@@ -188,7 +188,8 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("spin_lock_irqsave"))
+        else if (c.callee.Equals("spin_lock") ||
+          c.callee.Equals("spin_lock_irqsave"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.RemoveAt(1);
@@ -196,7 +197,8 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("spin_unlock_irqrestore"))
+        else if (c.callee.Equals("spin_unlock") ||
+          c.callee.Equals("spin_unlock_irqrestore"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.RemoveAt(1);
