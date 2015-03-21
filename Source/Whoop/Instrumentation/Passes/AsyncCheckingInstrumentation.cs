@@ -355,8 +355,10 @@ namespace Whoop.Instrumentation
     {
       int counter = 0;
       var inParams = new List<Variable>();
+      var callInParams = new List<Expr>();
       foreach (var inParam in ep.Ins)
       {
+        callInParams.Add(new Duplicator().Visit(inParam.Clone()) as Expr);
         if (inParam is LiteralExpr ||
           inParams.Any(val => val.Name.Equals(inParam.ToString())))
         {
@@ -379,7 +381,9 @@ namespace Whoop.Instrumentation
       }
 
       var epProc = this.AC.GetImplementation(ep.callee).Proc;
-      var block = new Block(Token.NoToken, "_EP", new List<Cmd> { ep }, new ReturnCmd(Token.NoToken));
+      var call = new CallCmd(Token.NoToken, ep.callee, callInParams, ep.Outs);
+
+      var block = new Block(Token.NoToken, "_EP", new List<Cmd> { call }, new ReturnCmd(Token.NoToken));
       var blocks = new List<Block> { block };
 
       var asyncImpl = new Implementation(Token.NoToken, ep.callee + "$ep",
