@@ -21,6 +21,8 @@ struct exec_domain;
 #include <asm/processor.h>
 #include <linux/atomic.h>
 
+#define KERNEL_STACK_OFFSET     (5*(BITS_PER_LONG/8))
+
 struct thread_info {
 	struct task_struct	*task;		/* main task structure */
 	struct exec_domain	*exec_domain;	/* execution domain */
@@ -32,6 +34,12 @@ struct thread_info {
 	unsigned int		sig_on_uaccess_error:1;
 	unsigned int		uaccess_err:1;	/* uaccess failed */
 };
+
+static inline struct thread_info *current_thread_info(void)
+{
+	struct thread_info *ti = (struct thread_info *) malloc(sizeof(struct thread_info *));
+	return ti;
+}
 
 #define INIT_THREAD_INFO(tsk)			\
 {						\

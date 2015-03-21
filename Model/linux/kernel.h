@@ -7,6 +7,7 @@
 #include <asm/bitops.h>
 #include <asm/byteorder.h>
 #include <asm/bug.h>
+#include <asm/current.h>
 
 extern enum system_states {
 	SYSTEM_BOOTING,

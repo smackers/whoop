@@ -82,6 +82,7 @@ namespace Whoop.Domain.Drivers
 
           if (type.Equals("test_driver") ||
             type.Equals("pci_driver") ||
+            type.Equals("platform_driver") ||
             type.Equals("ps3_system_bus_driver") ||
             type.Equals("cx_drv"))
           {

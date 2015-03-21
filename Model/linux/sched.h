@@ -24,4 +24,8 @@
 #define TASK_STATE_MAX          1024
 #define TASK_STATE_TO_CHAR_STR "RSDTtXZxKWP"
 
+struct task_struct {
+  long state;
+};
+
 #endif /* _LINUX_SCHED_H */
