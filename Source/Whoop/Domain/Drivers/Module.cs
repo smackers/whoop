@@ -21,11 +21,13 @@ namespace Whoop.Domain.Drivers
 {
   public sealed class Module
   {
+    public readonly string API;
     public readonly string Name;
     public List<EntryPoint> EntryPoints;
 
-    public Module(string name)
+    public Module(string api, string name)
     {
+      this.API = api;
       this.Name = name;
       this.EntryPoints = new List<EntryPoint>();
     }

@@ -19,7 +19,10 @@ namespace Whoop.Domain.Drivers
 {
   public sealed class EntryPoint
   {
+    public readonly string Id;
+
     public readonly string Name;
+    public readonly string API;
     public readonly string KernelFunc;
 
     public readonly Module Module;
@@ -56,19 +59,24 @@ namespace Whoop.Domain.Drivers
     public bool IsEnablingDevice;
     public bool IsDisablingDevice;
 
-    public EntryPoint(string name, string kernelFunc, Module module, bool whoopInit, bool isClone = false)
+    public EntryPoint(string name, string api, string kernelFunc, Module module,
+      bool whoopInit, bool isClone = false)
     {
+      this.Id = kernelFunc.Equals("") ? name : name + "$" + kernelFunc;
+
       this.Name = name;
+      this.API = api;
       this.KernelFunc = kernelFunc;
+
       this.Module = module;
 
-      if (kernelFunc.Equals("probe") &&
-          ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
-          module.Name.Equals("test_driver") ||
-          module.Name.Equals("pci_driver") ||
-          module.Name.Equals("platform_driver") ||
-          module.Name.Equals("ps3_system_bus_driver") ||
-          module.Name.Equals("cx_drv")))
+      if (api.Equals("probe") &&
+          ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
+          module.API.Equals("test_driver") ||
+          module.API.Equals("pci_driver") ||
+          module.API.Equals("platform_driver") ||
+          module.API.Equals("ps3_system_bus_driver") ||
+          module.API.Equals("cx_drv")))
       {
         this.IsInit = true;
         DeviceDriver.SetInitEntryPoint(name);
@@ -78,50 +86,50 @@ namespace Whoop.Domain.Drivers
         this.IsInit = false;
       }
 
-      if (kernelFunc.Equals("remove") &&
-          ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
-          module.Name.Equals("test_driver") ||
-          module.Name.Equals("pci_driver") ||
-          module.Name.Equals("platform_driver") ||
-          module.Name.Equals("ps3_system_bus_driver") ||
-          module.Name.Equals("cx_drv")))
+      if (api.Equals("remove") &&
+          ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
+          module.API.Equals("test_driver") ||
+          module.API.Equals("pci_driver") ||
+          module.API.Equals("platform_driver") ||
+          module.API.Equals("ps3_system_bus_driver") ||
+          module.API.Equals("cx_drv")))
         this.IsExit = true;
       else
         this.IsExit = false;
 
       this.IsClone = isClone;
 
-      if (DeviceDriver.HasKernelImposedDeviceLock(kernelFunc, module))
+      if (DeviceDriver.HasKernelImposedDeviceLock(api, module))
         this.IsDeviceLocked = true;
       else
         this.IsDeviceLocked = false;
 
-      if (DeviceDriver.HasKernelImposedPowerLock(kernelFunc))
+      if (DeviceDriver.HasKernelImposedPowerLock(api))
         this.IsPowerLocked = true;
       else
         this.IsPowerLocked = false;
 
-      if (DeviceDriver.HasKernelImposedRTNL(kernelFunc))
+      if (DeviceDriver.HasKernelImposedRTNL(api))
         this.IsRtnlLocked = true;
       else
         this.IsRtnlLocked = false;
 
-      if (DeviceDriver.IsNetworkAPI(kernelFunc))
+      if (DeviceDriver.IsNetworkAPI(api))
         this.IsNetLocked = true;
       else
         this.IsNetLocked = false;
 
-      if (DeviceDriver.HasKernelImposedTxLock(kernelFunc))
+      if (DeviceDriver.HasKernelImposedTxLock(api))
         this.IsTxLocked = true;
       else
         this.IsTxLocked = false;
 
-      if (DeviceDriver.IsGoingToDisableNetwork(kernelFunc))
+      if (DeviceDriver.IsGoingToDisableNetwork(api))
         this.IsGoingToDisableNetwork = true;
       else
         this.IsGoingToDisableNetwork = false;
 
-      if (DeviceDriver.IsCalledWithNetworkDisabled(kernelFunc))
+      if (DeviceDriver.IsCalledWithNetworkDisabled(api))
         this.IsCalledWithNetworkDisabled = true;
       else
         this.IsCalledWithNetworkDisabled = false;

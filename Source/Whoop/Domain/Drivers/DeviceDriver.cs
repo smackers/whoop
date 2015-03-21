@@ -77,7 +77,21 @@ namespace Whoop.Domain.Drivers
         while ((line = file.ReadLine()) != null)
         {
           string type = line.Trim(new char[] { '<', '>' });
-          Module module = new Module(type);
+          string api = "";
+          string kernelFunc = "";
+
+          if (type.Contains("$"))
+          {
+            var moduleSplit = type.Split(new string[] { "$" }, StringSplitOptions.None);
+            api = moduleSplit[0];
+            kernelFunc = moduleSplit[1];
+          }
+          else
+          {
+            api = type;
+          }
+
+          Module module = new Module(api, kernelFunc);
           DeviceDriver.Modules.Add(module);
 
           if (type.Equals("test_driver") ||
@@ -101,21 +115,34 @@ namespace Whoop.Domain.Drivers
         while ((line = file.ReadLine()) != null)
         {
           string type = line.Trim(new char[] { '<', '>' });
+          string api = "";
+          string kernelFunc = "";
 
-          if (type.Equals("whoop_network_shared_struct"))
+          if (type.Contains("$"))
+          {
+            var moduleSplit = type.Split(new string[] { "$" }, StringSplitOptions.None);
+            api = moduleSplit[0];
+            kernelFunc = moduleSplit[1];
+          }
+          else
+          {
+            api = type;
+          }
+
+          if (api.Equals("whoop_network_shared_struct"))
           {
             var info = file.ReadLine();
             DeviceDriver.SharedStructInitialiseFunc = info.Remove(0, 2);
           }
 
-          Module module = DeviceDriver.Modules.First(val => val.Name.Equals(type));
+          Module module = DeviceDriver.Modules.First(val => val.API.Equals(api));
 
           while ((line = file.ReadLine()) != null)
           {
             if (line.Equals("</>")) break;
             string[] pair = line.Split(new string[] { "::" }, StringSplitOptions.None);
 
-            var ep = new EntryPoint(pair[1], pair[0], module, whoopInit);
+            var ep = new EntryPoint(pair[1], pair[0], kernelFunc, module, whoopInit);
             module.EntryPoints.Add(ep);
 
             if (DeviceDriver.EntryPoints.Any(val => val.Name.Equals(ep.Name)))
@@ -125,7 +152,7 @@ namespace Whoop.Domain.Drivers
 
             if (ep.IsCalledWithNetworkDisabled || ep.IsGoingToDisableNetwork)
             {
-              var epClone = new EntryPoint(pair[1] + "#net", pair[0], module, whoopInit, true);
+              var epClone = new EntryPoint(pair[1] + "#net", pair[0], kernelFunc, module, whoopInit, true);
               module.EntryPoints.Add(epClone);
               DeviceDriver.EntryPoints.Add(epClone);
             }
@@ -213,25 +240,25 @@ namespace Whoop.Domain.Drivers
     /// <param name="ep2">second entry point</param>
     private static bool CanBePaired(EntryPoint ep1, EntryPoint ep2)
     {
-      if (ep1.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep2.KernelFunc))
+      if (ep1.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep2.API))
       {
         if (ep1.IsClone) return true;
         else return false;
       }
 
-      if (ep2.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep1.KernelFunc))
+      if (ep2.IsCalledWithNetworkDisabled && DeviceDriver.IsNetworkAPI(ep1.API))
       {
         if (ep2.IsClone) return true;
         else return false;
       }
 
-      if (ep1.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep2.KernelFunc))
+      if (ep1.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep2.API))
       {
         if (ep1.IsClone) return true;
         else return false;
       }
 
-      if (ep2.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep1.KernelFunc))
+      if (ep2.IsGoingToDisableNetwork && DeviceDriver.IsNetworkAPI(ep1.API))
       {
         if (ep2.IsClone) return true;
         else return false;
@@ -256,24 +283,24 @@ namespace Whoop.Domain.Drivers
       if (ep1.IsExit || ep2.IsExit)
         return false;
 
-      if (DeviceDriver.HasKernelImposedDeviceLock(ep1.KernelFunc, ep1.Module) &&
-          DeviceDriver.HasKernelImposedDeviceLock(ep2.KernelFunc, ep2.Module))
+      if (DeviceDriver.HasKernelImposedDeviceLock(ep1.API, ep1.Module) &&
+          DeviceDriver.HasKernelImposedDeviceLock(ep2.API, ep2.Module))
         return false;
-      if (DeviceDriver.HasKernelImposedPowerLock(ep1.KernelFunc) &&
-          DeviceDriver.HasKernelImposedPowerLock(ep2.KernelFunc))
+      if (DeviceDriver.HasKernelImposedPowerLock(ep1.API) &&
+          DeviceDriver.HasKernelImposedPowerLock(ep2.API))
         return false;
-      if (DeviceDriver.HasKernelImposedRTNL(ep1.KernelFunc) &&
-          DeviceDriver.HasKernelImposedRTNL(ep2.KernelFunc))
+      if (DeviceDriver.HasKernelImposedRTNL(ep1.API) &&
+          DeviceDriver.HasKernelImposedRTNL(ep2.API))
         return false;
-      if (DeviceDriver.HasKernelImposedTxLock(ep1.KernelFunc) &&
-          DeviceDriver.HasKernelImposedTxLock(ep2.KernelFunc))
+      if (DeviceDriver.HasKernelImposedTxLock(ep1.API) &&
+          DeviceDriver.HasKernelImposedTxLock(ep2.API))
         return false;
 
-      if (DeviceDriver.IsPowerManagementAPI(ep1.KernelFunc) &&
-          DeviceDriver.IsPowerManagementAPI(ep2.KernelFunc))
+      if (DeviceDriver.IsPowerManagementAPI(ep1.API) &&
+          DeviceDriver.IsPowerManagementAPI(ep2.API))
         return false;
-      if (DeviceDriver.IsCalledWithNetpollDisabled(ep1.KernelFunc) &&
-          DeviceDriver.IsCalledWithNetpollDisabled(ep2.KernelFunc))
+      if (DeviceDriver.IsCalledWithNetpollDisabled(ep1.API) &&
+          DeviceDriver.IsCalledWithNetpollDisabled(ep2.API))
         return false;
 
       if (DeviceDriver.IsFileOperationsSerialised(ep1, ep2))
@@ -303,7 +330,7 @@ namespace Whoop.Domain.Drivers
         return true;
 
       // NFC API
-      if (module.Name.Equals("nfc_ops") &&
+      if (module.API.Equals("nfc_ops") &&
           (name.Equals("dev_up") || name.Equals("dev_down") ||
           name.Equals("dep_link_up") || name.Equals("dep_link_down") ||
           name.Equals("activate_target") || name.Equals("deactivate_target") ||
@@ -405,11 +432,11 @@ namespace Whoop.Domain.Drivers
     internal static bool IsFileOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
     {
       // file_operations API
-      if (!ep1.Module.Name.Equals("file_operations") ||
-          !ep2.Module.Name.Equals("file_operations"))
+      if (!ep1.Module.API.Equals("file_operations") ||
+          !ep2.Module.API.Equals("file_operations"))
         return false;
 
-      if (ep1.KernelFunc.Equals("release") || ep2.KernelFunc.Equals("release"))
+      if (ep1.API.Equals("release") || ep2.API.Equals("release"))
         return true;
 
       return false;
@@ -424,15 +451,15 @@ namespace Whoop.Domain.Drivers
     internal static bool IsBlockOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
     {
       // file_operations API
-      if (!ep1.Module.Name.Equals("block_device_operations") ||
-        !ep2.Module.Name.Equals("block_device_operations"))
+      if (!ep1.Module.API.Equals("block_device_operations") ||
+        !ep2.Module.API.Equals("block_device_operations"))
         return false;
 
-      if (ep1.KernelFunc.Equals("release") || ep2.KernelFunc.Equals("release"))
+      if (ep1.API.Equals("release") || ep2.API.Equals("release"))
         return true;
-      if (ep1.KernelFunc.Equals("open") && ep2.KernelFunc.Equals("release"))
+      if (ep1.API.Equals("open") && ep2.API.Equals("release"))
         return true;
-      if (ep1.KernelFunc.Equals("release") && ep2.KernelFunc.Equals("open"))
+      if (ep1.API.Equals("release") && ep2.API.Equals("open"))
         return true;
 
       return false;
@@ -479,7 +506,7 @@ namespace Whoop.Domain.Drivers
     /// <param name="ep">Name of entry point</param>
     internal static bool IsGoingToDisableNetwork(string ep)
     {
-      if (!DeviceDriver.Modules.Any(val => val.Name.Equals("net_device_ops")))
+      if (!DeviceDriver.Modules.Any(val => val.API.Equals("net_device_ops")))
         return false;
 
       if (ep.Equals("suspend") || ep.Equals("freeze") ||
