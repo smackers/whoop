@@ -87,7 +87,6 @@ namespace Whoop.Domain.Drivers
             type.Equals("cx_drv"))
           {
             whoopInit = false;
-            break;
           }
 
           while ((line = file.ReadLine()) != null)
