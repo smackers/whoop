@@ -728,6 +728,7 @@ namespace Whoop.Analysis
           expr.Fun.FunctionName == "$xor" ||
           expr.Fun.FunctionName == "$lshr" ||
           expr.Fun.FunctionName == "$i2p" || expr.Fun.FunctionName == "$p2i" ||
+          expr.Fun.FunctionName == "$b2p" ||
           expr.Fun.FunctionName == "$trunc" ||
           expr.Fun.FunctionName == "$ashr" || expr.Fun.FunctionName == "$urem" ||
           expr.Fun.FunctionName == "$udiv" ||

@@ -7,6 +7,8 @@ typedef unsigned long kernel_ulong_t;
 
 #define PCI_ANY_ID (~0)
 
+#define I2C_NAME_SIZE   20
+
 #define IEEE1394_MATCH_VENDOR_ID	0x0001
 #define IEEE1394_MATCH_MODEL_ID		0x0002
 #define IEEE1394_MATCH_SPECIFIER_ID	0x0004
@@ -27,6 +29,12 @@ struct ieee1394_device_id {
 	__u32 version;
 	kernel_ulong_t driver_data;
 };
+
+struct i2c_device_id {
+	char name[I2C_NAME_SIZE];
+	kernel_ulong_t driver_data;     /* Data private to the driver */
+};
+
 
 /* dmi */
 enum dmi_field {

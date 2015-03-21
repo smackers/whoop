@@ -194,6 +194,10 @@ typedef u32 phys_addr_t;
 
 typedef phys_addr_t resource_size_t;
 
+struct list_head {
+	struct list_head *next, *prev;
+};
+
 struct hlist_head {
 	struct hlist_node *first;
 };

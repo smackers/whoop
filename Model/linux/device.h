@@ -8,6 +8,13 @@
 #include <linux/pm_wakeup.h>
 #include <linux/pm_runtime.h>
 #include <linux/list.h>
+#include <linux/sysfs.h>
+#include <linux/kobject.h>
+
+struct acpi_device;
+struct acpi_dev_node {
+	struct acpi_device *companion;
+};
 
 struct device_driver;
 
@@ -18,14 +25,20 @@ struct device_private {
 
 struct device {
 	struct device *parent;
+	struct kobject kobj;
 	struct device_private *p;
 	struct device_driver *driver;
+
+	void            *platform_data;
+	struct device_node      *of_node;
+
 	void (*release)(struct device * dev);
 };
 
 struct device_driver {
 	const char *name;
 	struct module           *owner;
+	const struct of_device_id       *of_match_table;
 
 	int (*probe) (struct device *dev);
 	int (*remove) (struct device *dev);
@@ -43,11 +56,6 @@ struct device_driver {
 	.show   = _show,                                                \
 	.store  = _store,                                               \
 }
-
-struct attribute {
-	const char              *name;
-	umode_t                 mode;
-};
 
 struct device_attribute {
 	struct attribute        attr;

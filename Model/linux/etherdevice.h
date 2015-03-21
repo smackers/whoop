@@ -22,6 +22,8 @@ static inline int ether_crc(length, data)
 	return 0;
 }
 
+int eth_mac_addr(struct net_device *dev, void *p);
+int eth_change_mtu(struct net_device *dev, int new_mtu);
 int eth_validate_addr(struct net_device *dev);
 
 #endif	/* _LINUX_ETHERDEVICE_H */

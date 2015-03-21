@@ -2,6 +2,7 @@
 #define _LINUX_NETDEVICE_H
 
 #include <linux/kernel.h>
+#include <linux/device.h>
 #include <linux/timer.h>
 #include <linux/netdev_features.h>
 #include <linux/socket.h>
@@ -72,6 +73,9 @@ while (true)
 struct net_device {
 	char name[IFNAMSIZ];
 
+	unsigned long base_addr;
+	int irq;
+
 	struct list_head dev_list;
 	struct list_head napi_list;
 	struct list_head unreg_list;
@@ -100,6 +104,8 @@ struct net_device {
 	unsigned char perm_addr[MAX_ADDR_LEN]; // permanent hw address
 	unsigned char addr_len;	// hardware address length
 	unsigned char *dev_addr; // hw address
+
+	unsigned long trans_start;
 
 	int watchdog_timeo;
 
