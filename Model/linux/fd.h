@@ -8,7 +8,6 @@
 
 #define FD_SECTBASEMASK 0x3FC
 #define FD_OPEN_SHOULD_FAIL_BIT	 1
-#define DISK_EVENT_MEDIA_CHANGE	 1
 
 /*
  * Geometry

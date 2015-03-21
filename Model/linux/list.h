@@ -52,4 +52,7 @@ static inline int list_empty(const struct list_head *head)
 	return head->next == head;
 }
 
+#define list_for_each_safe(pos, n, head) \
+  for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
+
 #endif /* _LINUX_LIST_H */

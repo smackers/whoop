@@ -58,8 +58,6 @@ namespace Whoop.Instrumentation
 
       this.InstrumentCheckerFunction();
       this.InstrumentInitFunction(initImpl);
-      this.RemoveResultFromEntryPoint(this.EP1);
-      this.RemoveResultFromEntryPoint(this.EP2);
       this.VisitFunctionsInImplementation(initImpl);
       this.SimplifyProgram();
 
@@ -124,8 +122,9 @@ namespace Whoop.Instrumentation
           }
           else
           {
-            call.IsAsync = true;
-            call.Outs.Clear();
+            block.Cmds[idx] = this.CreateAsyncEntryPoint(call);
+            (block.Cmds[idx] as CallCmd).IsAsync = true;
+            (block.Cmds[idx] as CallCmd).Outs.Clear();
           }
         }
       }
@@ -352,26 +351,49 @@ namespace Whoop.Instrumentation
         new List<IdentifierExpr>(), null, false);
     }
 
-    private void RemoveResultFromEntryPoint(EntryPoint ep)
+    private CallCmd CreateAsyncEntryPoint(CallCmd ep)
     {
-      if (ep.Name.Equals(DeviceDriver.InitEntryPoint))
-        return;
-
-      string name = ep.Name;
-      if (ep.IsClone)
+      int counter = 0;
+      var inParams = new List<Variable>();
+      foreach (var inParam in ep.Ins)
       {
-        name = name.Replace("#net", "");
+        if (inParam is LiteralExpr ||
+          inParams.Any(val => val.Name.Equals(inParam.ToString())))
+        {
+          inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(
+            Token.NoToken, "dummy" + counter, inParam.Type)));
+          counter++;
+        }
+        else if (inParam is IdentifierExpr)
+        {
+          inParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(
+            Token.NoToken, (inParam as IdentifierExpr).Name, inParam.Type)));
+        }
       }
 
-      var impl = this.AC.GetImplementation(name);
-      impl.OutParams.Clear();
-      impl.Proc.OutParams.Clear();
-
-      foreach (var b in impl.Blocks)
+      var outParams = new List<Variable>();
+      if (ep.Outs.Count > 0)
       {
-        b.Cmds.RemoveAll(cmd => (cmd is AssignCmd) && (cmd as AssignCmd).
-          Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"));
+        outParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(
+          Token.NoToken, ep.Outs[0].Name, ep.Outs[0].Type)));
       }
+
+      var epProc = this.AC.GetImplementation(ep.callee).Proc;
+      var block = new Block(Token.NoToken, "_EP", new List<Cmd> { ep }, new ReturnCmd(Token.NoToken));
+      var blocks = new List<Block> { block };
+
+      var asyncImpl = new Implementation(Token.NoToken, ep.callee + "$ep",
+        new List<TypeVariable>(), inParams, new List<Variable>(),
+        outParams, blocks);
+      var asyncProc = new Procedure(Token.NoToken, ep.callee + "$ep",
+        new List<TypeVariable>(), inParams, new List<Variable>(),
+        epProc.Requires, epProc.Modifies, epProc.Ensures);
+      asyncImpl.Proc = asyncProc;
+
+      this.AC.TopLevelDeclarations.Add(asyncProc);
+      this.AC.TopLevelDeclarations.Add(asyncImpl);
+
+      return new CallCmd(Token.NoToken, ep.callee + "$ep", ep.Ins, new List<IdentifierExpr>());
     }
   }
 }

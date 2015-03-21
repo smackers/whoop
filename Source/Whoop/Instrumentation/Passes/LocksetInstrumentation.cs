@@ -174,22 +174,24 @@ namespace Whoop.Instrumentation
     {
       foreach (var c in region.Cmds().OfType<CallCmd>())
       {
-        if (c.callee.Equals("mutex_lock") || c.callee.Equals("mutex_lock_interruptible"))
+        if (c.callee.Equals("mutex_lock") ||
+          c.callee.Equals("mutex_lock_interruptible") ||
+          c.callee.Equals("spin_lock"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.True);
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("mutex_unlock"))
+        else if (c.callee.Equals("mutex_unlock") ||
+          c.callee.Equals("spin_unlock"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.Add(Expr.False);
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("spin_lock") ||
-          c.callee.Equals("spin_lock_irqsave"))
+        else if (c.callee.Equals("spin_lock_irqsave"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.RemoveAt(1);
@@ -197,8 +199,7 @@ namespace Whoop.Instrumentation
 
           this.EP.IsHoldingLock = true;
         }
-        else if (c.callee.Equals("spin_unlock") ||
-          c.callee.Equals("spin_unlock_irqrestore"))
+        else if (c.callee.Equals("spin_unlock_irqrestore"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
           c.Ins.RemoveAt(1);

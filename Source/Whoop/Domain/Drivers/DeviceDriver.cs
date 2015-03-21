@@ -80,7 +80,9 @@ namespace Whoop.Domain.Drivers
           Module module = new Module(type);
           DeviceDriver.Modules.Add(module);
 
-          if (type.Equals("pci_driver") || type.Equals("ps3_system_bus_driver") ||
+          if (type.Equals("test_driver") ||
+            type.Equals("pci_driver") ||
+            type.Equals("ps3_system_bus_driver") ||
             type.Equals("cx_drv"))
           {
             whoopInit = false;

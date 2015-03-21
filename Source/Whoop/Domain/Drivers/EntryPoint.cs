@@ -64,6 +64,7 @@ namespace Whoop.Domain.Drivers
 
       if (kernelFunc.Equals("probe") &&
           ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
+          module.Name.Equals("test_driver") ||
           module.Name.Equals("pci_driver") ||
           module.Name.Equals("ps3_system_bus_driver") ||
           module.Name.Equals("cx_drv")))
@@ -78,6 +79,7 @@ namespace Whoop.Domain.Drivers
 
       if (kernelFunc.Equals("remove") &&
           ((whoopInit && module.Name.Equals("whoop_driver_ops")) ||
+          module.Name.Equals("test_driver") ||
           module.Name.Equals("pci_driver") ||
           module.Name.Equals("ps3_system_bus_driver") ||
           module.Name.Equals("cx_drv")))
