@@ -100,11 +100,21 @@ namespace Whoop
     {
       Program.StartTimer("ParsingEngine");
 
+      AnalysisContext programAC = null;
+      new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1],
+        "bpl").TryParseNew(ref programAC);
+
+      Refactoring.Factory.CreateProgramSimplifier(programAC).Run();
+      Analysis.ModelCleaner.RemoveCorralFunctions(programAC);
+
+      Whoop.IO.BoogieProgramEmitter.Emit(programAC.TopLevelDeclarations, WhoopEngineCommandLineOptions.Get().Files[
+        WhoopEngineCommandLineOptions.Get().Files.Count - 1],"wbpl");
+
       foreach (var ep in DeviceDriver.EntryPoints)
       {
         AnalysisContext ac = null;
         new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1],
-          "bpl").TryParseNew(ref ac);
+          "wbpl").TryParseNew(ref ac);
         new ParsingEngine(ac, ep).Run();
       }
 
@@ -167,7 +177,8 @@ namespace Whoop
       Program.StartTimer("PairWiseCheckingInstrumentationEngine");
 
       AnalysisContext analysisContext = null;
-      new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1], "bpl").TryParseNew(ref analysisContext);
+      new AnalysisContextParser(Program.FileList[Program.FileList.Count - 1],
+        "wbpl").TryParseNew(ref analysisContext);
 
       foreach (var pair in DeviceDriver.EntryPointPairs)
       {

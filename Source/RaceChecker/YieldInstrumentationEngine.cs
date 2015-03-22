@@ -50,7 +50,6 @@ namespace Whoop
         this.Timer.Start();
       }
 
-      Refactoring.Factory.CreateProgramSimplifier(this.AC).Run();
       Instrumentation.Factory.CreateAsyncCheckingInstrumentation(this.AC, this.Pair).Run();
       Instrumentation.Factory.CreateYieldInstrumentation(this.AC, this.Pair, this.ErrorReporter).Run();
 

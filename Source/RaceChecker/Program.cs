@@ -130,7 +130,8 @@ namespace Whoop
           foreach (var pair in pairMap)
           {
             AnalysisContext ac = null;
-            new AnalysisContextParser(fileList[fileList.Count - 1], "bpl").TryParseNew(ref ac);
+            new AnalysisContextParser(fileList[fileList.Count - 1],
+              "wbpl").TryParseNew(ref ac);
 
             new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
           }

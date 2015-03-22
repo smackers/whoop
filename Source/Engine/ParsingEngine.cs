@@ -47,7 +47,6 @@ namespace Whoop
         this.Timer.Start();
       }
 
-      Refactoring.Factory.CreateProgramSimplifier(this.AC).Run();
       Analysis.Factory.CreateLockAbstraction(this.AC).Run();
       Refactoring.Factory.CreateLockRefactoring(this.AC, this.EP).Run();
       Refactoring.Factory.CreateFunctionPointerRefactoring(this.AC, this.EP).Run();
