@@ -112,4 +112,6 @@
 
 #define EHWPOISON	133	/* Memory page has hardware error */
 
+#define ENOIOCTLCMD     515
+
 #endif /* _ASM_GENERIC_ERRNO_H */

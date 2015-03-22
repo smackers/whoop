@@ -96,6 +96,7 @@ namespace Whoop.Domain.Drivers
 
           if (api.Equals("test_driver") ||
             api.Equals("pci_driver") ||
+            api.Equals("usb_serial_driver") ||
             api.Equals("platform_driver") ||
             api.Equals("ps3_system_bus_driver") ||
             api.Equals("cx_drv"))
@@ -307,6 +308,8 @@ namespace Whoop.Domain.Drivers
         return false;
       if (DeviceDriver.IsBlockOperationsSerialised(ep1, ep2))
         return false;
+      if (DeviceDriver.IsUSBOperationsSerialised(ep1, ep2))
+        return false;
 
       return true;
     }
@@ -440,6 +443,42 @@ namespace Whoop.Domain.Drivers
         return true;
 
       if (ep1.API.Equals("mmap") && ep2.API.Equals("mmap"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the usb operation entry points have been serialised by
+    /// the kernel.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsUSBOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
+    {
+      // usb_serial_driver API
+      if (!ep1.Module.API.Equals("usb_serial_driver") ||
+        !ep2.Module.API.Equals("usb_serial_driver"))
+        return false;
+
+      if (ep1.API.Equals("port_probe") || ep2.API.Equals("port_probe"))
+        return true;
+      if (ep1.API.Equals("attach") || ep2.API.Equals("attach"))
+        return true;
+      if (ep1.API.Equals("port_remove") || ep2.API.Equals("port_remove"))
+        return true;
+      if (ep1.API.Equals("open") || ep2.API.Equals("open"))
+        return true;
+
+      if ((ep1.API.Equals("tiocmget") || ep1.API.Equals("tiocmset") ||
+          ep1.API.Equals("tiocmiwait") || ep1.API.Equals("get_icount") ||
+          ep1.API.Equals("ioctl")) &&
+          (ep2.API.Equals("tiocmget") || ep2.API.Equals("tiocmset") ||
+          ep2.API.Equals("tiocmiwait") || ep2.API.Equals("get_icount") ||
+          ep2.API.Equals("ioctl")))
+        return true;
+
+      if (ep1.API.Equals("set_termios") && ep2.API.Equals("set_termios"))
         return true;
 
       return false;

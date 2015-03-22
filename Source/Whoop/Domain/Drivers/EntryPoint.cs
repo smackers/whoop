@@ -70,10 +70,11 @@ namespace Whoop.Domain.Drivers
 
       this.Module = module;
 
-      if (api.Equals("probe") &&
+      if ((api.Equals("probe") || api.Equals("port_probe")) &&
           ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
           module.API.Equals("test_driver") ||
           module.API.Equals("pci_driver") ||
+          module.API.Equals("usb_serial_driver") ||
           module.API.Equals("platform_driver") ||
           module.API.Equals("ps3_system_bus_driver") ||
           module.API.Equals("cx_drv")))
@@ -90,6 +91,7 @@ namespace Whoop.Domain.Drivers
           ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
           module.API.Equals("test_driver") ||
           module.API.Equals("pci_driver") ||
+          module.API.Equals("usb_serial_driver") ||
           module.API.Equals("platform_driver") ||
           module.API.Equals("ps3_system_bus_driver") ||
           module.API.Equals("cx_drv")))

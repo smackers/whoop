@@ -19,6 +19,23 @@ typedef unsigned long kernel_ulong_t;
 #define CCW_DEVICE_ID_MATCH_DEVICE_TYPE         0x04
 #define CCW_DEVICE_ID_MATCH_DEVICE_MODEL        0x08
 
+/* Some useful macros to use to create struct usb_device_id */
+#define USB_DEVICE_ID_MATCH_VENDOR		0x0001
+#define USB_DEVICE_ID_MATCH_PRODUCT		0x0002
+#define USB_DEVICE_ID_MATCH_DEV_LO		0x0004
+#define USB_DEVICE_ID_MATCH_DEV_HI		0x0008
+#define USB_DEVICE_ID_MATCH_DEV_CLASS		0x0010
+#define USB_DEVICE_ID_MATCH_DEV_SUBCLASS	0x0020
+#define USB_DEVICE_ID_MATCH_DEV_PROTOCOL	0x0040
+#define USB_DEVICE_ID_MATCH_INT_CLASS		0x0080
+#define USB_DEVICE_ID_MATCH_INT_SUBCLASS	0x0100
+#define USB_DEVICE_ID_MATCH_INT_PROTOCOL	0x0200
+#define USB_DEVICE_ID_MATCH_INT_NUMBER		0x0400
+
+#define HID_ANY_ID				(~0)
+#define HID_BUS_ANY				0xffff
+#define HID_GROUP_ANY				0x0000
+
 struct pci_device_id {
 	__u32 vendor, device;		/* Vendor and device ID or PCI_ANY_ID*/
 	__u32 subvendor, subdevice;	/* Subsystem ID's or PCI_ANY_ID */
@@ -40,6 +57,33 @@ struct i2c_device_id {
 	kernel_ulong_t driver_data;     /* Data private to the driver */
 };
 
+struct usb_device_id {
+	/* which fields to match against? */
+	__u16		match_flags;
+
+	/* Used for product specific matches; range is inclusive */
+	__u16		idVendor;
+	__u16		idProduct;
+	__u16		bcdDevice_lo;
+	__u16		bcdDevice_hi;
+
+	/* Used for device class matches */
+	__u8		bDeviceClass;
+	__u8		bDeviceSubClass;
+	__u8		bDeviceProtocol;
+
+	/* Used for interface class matches */
+	__u8		bInterfaceClass;
+	__u8		bInterfaceSubClass;
+	__u8		bInterfaceProtocol;
+
+	/* Used for vendor-specific interface matches */
+	__u8		bInterfaceNumber;
+
+	/* not matched against */
+	kernel_ulong_t	driver_info
+	__attribute__((aligned(sizeof(kernel_ulong_t))));
+};
 
 /* dmi */
 enum dmi_field {
