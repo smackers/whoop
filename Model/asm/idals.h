@@ -32,11 +32,7 @@
 static inline int
 idal_is_needed(void *vaddr, unsigned int length)
 {
-#ifdef CONFIG_64BIT
-	return ((__pa(vaddr) + length - 1) >> 31) != 0;
-#else
-	return 0;
-#endif
+	return __SMACK_nondet();
 }
 
 
@@ -45,8 +41,7 @@ idal_is_needed(void *vaddr, unsigned int length)
  */
 static inline unsigned int idal_nr_words(void *vaddr, unsigned int length)
 {
-	return ((__pa(vaddr) & (IDA_BLOCK_SIZE-1)) + length +
-		(IDA_BLOCK_SIZE-1)) >> IDA_SIZE_LOG;
+	return __SMACK_nondet();
 }
 
 /*
@@ -55,19 +50,7 @@ static inline unsigned int idal_nr_words(void *vaddr, unsigned int length)
 static inline unsigned long *idal_create_words(unsigned long *idaws,
 					       void *vaddr, unsigned int length)
 {
-	unsigned long paddr;
-	unsigned int cidaw;
-
-	paddr = __pa(vaddr);
-	cidaw = ((paddr & (IDA_BLOCK_SIZE-1)) + length +
-		 (IDA_BLOCK_SIZE-1)) >> IDA_SIZE_LOG;
-	*idaws++ = paddr;
-	paddr &= -IDA_BLOCK_SIZE;
-	while (--cidaw > 0) {
-		paddr += IDA_BLOCK_SIZE;
-		*idaws++ = paddr;
-	}
-	return idaws;
+	return __SMACK_nondet();
 }
 
 /*
@@ -77,7 +60,6 @@ static inline unsigned long *idal_create_words(unsigned long *idaws,
 static inline int
 set_normalized_cda(struct ccw1 * ccw, void *vaddr)
 {
-	ccw->cda = (__u32)(unsigned long) vaddr;
 	return 0;
 }
 
@@ -87,13 +69,7 @@ set_normalized_cda(struct ccw1 * ccw, void *vaddr)
 static inline void
 clear_normalized_cda(struct ccw1 * ccw)
 {
-#ifdef CONFIG_64BIT
-	if (ccw->flags & CCW_FLAG_IDA) {
-		kfree((void *)(unsigned long) ccw->cda);
-		ccw->flags &= ~CCW_FLAG_IDA;
-	}
-#endif
-	ccw->cda = 0;
+
 }
 
 /*
@@ -111,35 +87,7 @@ struct idal_buffer {
 static inline struct idal_buffer *
 idal_buffer_alloc(size_t size, int page_order)
 {
-	struct idal_buffer *ib;
-	int nr_chunks, nr_ptrs, i;
-
-	nr_ptrs = (size + IDA_BLOCK_SIZE - 1) >> IDA_SIZE_LOG;
-	nr_chunks = (4096 << page_order) >> IDA_SIZE_LOG;
-	ib = kmalloc(sizeof(struct idal_buffer) + nr_ptrs*sizeof(void *),
-	  0x01u | GFP_KERNEL);
-	if (ib == NULL)
-		return ERR_PTR(-ENOMEM);
-	ib->size = size;
-	ib->page_order = page_order;
-	for (i = 0; i < nr_ptrs; i++) {
-		if ((i & (nr_chunks - 1)) != 0) {
-			ib->data[i] = ib->data[i-1] + IDA_BLOCK_SIZE;
-			continue;
-		}
-		ib->data[i] = (void *)
-			__get_free_pages(GFP_KERNEL, page_order);
-		if (ib->data[i] != NULL)
-			continue;
-		// Not enough memory
-		while (i >= nr_chunks) {
-			i -= nr_chunks;
-			free_pages((unsigned long) ib->data[i],
-				   ib->page_order);
-		}
-		kfree(ib);
-		return ERR_PTR(-ENOMEM);
-	}
+	struct idal_buffer *ib = (struct idal_buffer *)malloc(sizeof(struct idal_buffer *));
 	return ib;
 }
 
@@ -149,13 +97,7 @@ idal_buffer_alloc(size_t size, int page_order)
 static inline void
 idal_buffer_free(struct idal_buffer *ib)
 {
-	int nr_chunks, nr_ptrs, i;
 
-	nr_ptrs = (ib->size + IDA_BLOCK_SIZE - 1) >> IDA_SIZE_LOG;
-	nr_chunks = (4096 << ib->page_order) >> IDA_SIZE_LOG;
-	for (i = 0; i < nr_ptrs; i += nr_chunks)
-		free_pages((unsigned long) ib->data[i], ib->page_order);
-	kfree(ib);
 }
 
 /*
@@ -164,12 +106,7 @@ idal_buffer_free(struct idal_buffer *ib)
 static inline int
 __idal_buffer_is_needed(struct idal_buffer *ib)
 {
-#ifdef CONFIG_64BIT
-	return ib->size > (4096ul << ib->page_order) ||
-		idal_is_needed(ib->data[0], ib->size);
-#else
-	return ib->size > (4096ul << ib->page_order);
-#endif
+	return __SMACK_nondet();
 }
 
 /*
@@ -185,40 +122,12 @@ idal_buffer_set_cda(struct idal_buffer *ib, struct ccw1 *ccw)
  * Copy count bytes from an idal buffer to user memory
  */
 static inline size_t
-idal_buffer_to_user(struct idal_buffer *ib, void __user *to, size_t count)
-{
-	size_t left;
-	int i;
-
-	BUG_ON(count > ib->size);
-	for (i = 0; count > IDA_BLOCK_SIZE; i++) {
-		left = copy_to_user(to, ib->data[i], IDA_BLOCK_SIZE);
-		if (left)
-			return left + count - IDA_BLOCK_SIZE;
-		to = (void __user *) to + IDA_BLOCK_SIZE;
-		count -= IDA_BLOCK_SIZE;
-	}
-	return copy_to_user(to, ib->data[i], count);
-}
+idal_buffer_to_user(struct idal_buffer *ib, void __user *to, size_t count);
 
 /*
  * Copy count bytes from user memory to an idal buffer
  */
 static inline size_t
-idal_buffer_from_user(struct idal_buffer *ib, const void __user *from, size_t count)
-{
-	size_t left;
-	int i;
-
-	BUG_ON(count > ib->size);
-	for (i = 0; count > IDA_BLOCK_SIZE; i++) {
-		left = copy_from_user(ib->data[i], from, IDA_BLOCK_SIZE);
-		if (left)
-			return left + count - IDA_BLOCK_SIZE;
-		from = (void __user *) from + IDA_BLOCK_SIZE;
-		count -= IDA_BLOCK_SIZE;
-	}
-	return copy_from_user(ib->data[i], from, count);
-}
+idal_buffer_from_user(struct idal_buffer *ib, const void __user *from, size_t count);
 
 #endif
