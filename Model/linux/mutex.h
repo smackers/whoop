@@ -1,6 +1,7 @@
 #ifndef __LINUX_MUTEX_H
 #define __LINUX_MUTEX_H
 
+#include <linux/types.h>
 #include <smack.h>
 
 #ifndef MUTEX_UNINITIALIZED

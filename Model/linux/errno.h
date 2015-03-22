@@ -1,5 +1,5 @@
-#ifndef _ASM_GENERIC_ERRNO_H
-#define _ASM_GENERIC_ERRNO_H
+#ifndef _LINUX_ERRNO_H
+#define _LINUX_ERRNO_H
 
 #include <linux/errno-base.h>
 
@@ -114,4 +114,4 @@
 
 #define ENOIOCTLCMD     515
 
-#endif /* _ASM_GENERIC_ERRNO_H */
+#endif /* _LINUX_ERRNO_H */

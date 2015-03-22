@@ -40,14 +40,23 @@
 #define SLAB_RECLAIM_ACCOUNT	0x00020000UL		/* Objects are reclaimable */
 #define SLAB_TEMPORARY		SLAB_RECLAIM_ACCOUNT	/* Objects are short-lived */
 
-inline void *kmalloc(size_t size, gfp_t flags);
+inline void *kmalloc(size_t size, gfp_t flags)
+{
+  return (void *)malloc(sizeof(size));
+}
 
-inline void *kzalloc(size_t size, gfp_t flags);
+inline void *kzalloc(size_t size, gfp_t flags)
+{
+  return (void *)malloc(sizeof(size));
+}
 
 inline void *kmalloc_node(size_t size, gfp_t flags, int node);
 
 inline unsigned int ksize(const void *);
 
-inline void kfree(const void *);
+inline void kfree(const void *ptr)
+{
+  free(ptr);
+}
 
 #endif

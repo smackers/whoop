@@ -311,6 +311,8 @@ namespace Whoop.Domain.Drivers
         return false;
       if (DeviceDriver.IsUSBOperationsSerialised(ep1, ep2))
         return false;
+      if (DeviceDriver.IsNFCOperationsSerialised(ep1, ep2))
+        return false;
 
       return true;
     }
@@ -331,15 +333,6 @@ namespace Whoop.Domain.Drivers
           name.Equals("restore") || name.Equals("thaw") ||
           name.Equals("runtime_resume") || name.Equals("runtime_suspend") ||
           name.Equals("runtime_idle"))
-        return true;
-
-      // NFC API
-      if (module.API.Equals("nfc_ops") &&
-          (name.Equals("dev_up") || name.Equals("dev_down") ||
-          name.Equals("dep_link_up") || name.Equals("dep_link_down") ||
-          name.Equals("activate_target") || name.Equals("deactivate_target") ||
-          name.Equals("im_transceive") || name.Equals("tm_send") ||
-          name.Equals("start_poll") || name.Equals("stop_poll")))
         return true;
 
       return false;
@@ -482,6 +475,35 @@ namespace Whoop.Domain.Drivers
       if (ep1.API.Equals("set_termios") && ep2.API.Equals("set_termios"))
         return true;
       if (ep1.API.Equals("dtr_rts") && ep2.API.Equals("dtr_rts"))
+        return true;
+
+      return false;
+    }
+
+    /// <summary>
+    /// Checks if the nfc operation entry points have been serialised by
+    /// the kernel.
+    /// </summary>
+    /// <returns>Boolean value</returns>
+    /// <param name="ep">Name of entry point</param>
+    internal static bool IsNFCOperationsSerialised(EntryPoint ep1, EntryPoint ep2)
+    {
+      // nfc_ops API
+      if (!ep1.Module.API.Equals("nfc_ops") ||
+        !ep2.Module.API.Equals("nfc_ops"))
+        return false;
+
+      // NFC API
+      if ((ep1.API.Equals("dev_up") || ep1.API.Equals("dev_down") ||
+          ep1.API.Equals("dep_link_up") || ep1.API.Equals("dep_link_down") ||
+          ep1.API.Equals("activate_target") || ep1.API.Equals("deactivate_target") ||
+          ep1.API.Equals("im_transceive") || ep1.API.Equals("tm_send") ||
+          ep1.API.Equals("start_poll") || ep1.API.Equals("stop_poll")) &&
+          (ep2.API.Equals("dev_up") || ep2.API.Equals("dev_down") ||
+          ep2.API.Equals("dep_link_up") || ep2.API.Equals("dep_link_down") ||
+          ep2.API.Equals("activate_target") || ep2.API.Equals("deactivate_target") ||
+          ep2.API.Equals("im_transceive") || ep2.API.Equals("tm_send") ||
+          ep2.API.Equals("start_poll") || ep2.API.Equals("stop_poll")))
         return true;
 
       return false;

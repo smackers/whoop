@@ -167,7 +167,12 @@ int raw3270_add_view(struct raw3270_view *, struct raw3270_fn *, int);
 int raw3270_activate_view(struct raw3270_view *);
 void raw3270_del_view(struct raw3270_view *);
 void raw3270_deactivate_view(struct raw3270_view *);
-struct raw3270_view *raw3270_find_view(struct raw3270_fn *, int);
+
+struct raw3270_view *raw3270_find_view(struct raw3270_fn *fn, int value)
+{
+	return (struct raw3270_view *)malloc(sizeof(struct raw3270_view));
+}
+
 int raw3270_start(struct raw3270_view *, struct raw3270_request *);
 int raw3270_start_locked(struct raw3270_view *, struct raw3270_request *);
 int raw3270_start_irq(struct raw3270_view *, struct raw3270_request *);

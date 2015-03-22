@@ -88,7 +88,7 @@ namespace Whoop.Domain.Drivers
         this.IsInit = false;
       }
 
-      if (api.Equals("remove") &&
+      if ((api.Equals("remove") || api.Equals("port_remove")) &&
           ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
           module.API.Equals("test_driver") ||
           module.API.Equals("pci_driver") ||

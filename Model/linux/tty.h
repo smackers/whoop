@@ -371,7 +371,6 @@ extern void tty_vhangup_self(void);
 extern void disassociate_ctty(int priv);
 extern dev_t tty_devnum(struct tty_struct *tty);
 extern void proc_clear_tty(struct task_struct *p);
-extern struct tty_struct *get_current_tty(void);
 /* tty_io.c */
 extern int __init tty_init(void);
 #else
@@ -390,7 +389,9 @@ static inline dev_t tty_devnum(struct tty_struct *tty)
 static inline void proc_clear_tty(struct task_struct *p)
 { }
 static inline struct tty_struct *get_current_tty(void)
-{ return NULL; }
+{
+	return (struct tty_struct *)malloc(sizeof(struct tty_struct));
+}
 /* tty_io.c */
 static inline int __init tty_init(void)
 { return 0; }

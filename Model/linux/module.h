@@ -5,10 +5,18 @@
 #include <linux/fcntl.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
+#include <linux/errno.h>
+
 #include <linux/platform_device.h>
 #include <linux/pci.h>
 #include <linux/poll.h>
+#include <linux/tty.h>
+#include <linux/cdrom.h>
+#include <linux/hdreg.h>
+#include <linux/usb.h>
+#include <linux/usb/serial.h>
 
+#include <asm/ps3.h>
 #include <asm/sn/tiocx.h>
 
 #define MODULE_INFO(tag, info) void
