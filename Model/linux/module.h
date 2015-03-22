@@ -11,7 +11,9 @@
 #define MODULE_VERSION(_version) void
 #define MODULE_FIRMWARE(_firmware) void
 #define MODULE_ALIAS(_alias) void
+#define MODULE_ALIAS_CHARDEV_MAJOR(_alias) void
 #define MODULE_ALIAS_BLOCKDEV_MAJOR(_alias) void
+#define MODULE_ALIAS_MISCDEV(_alias) void
 #define MODULE_SOFTDEP(_softdep) void
 #define MODULE_SUPPORTED_DEVICE(name) void
 #define MODULE_GENERIC_TABLE(gtype,name) void

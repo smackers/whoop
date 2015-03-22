@@ -94,11 +94,11 @@ namespace Whoop.Domain.Drivers
           Module module = new Module(api, kernelFunc);
           DeviceDriver.Modules.Add(module);
 
-          if (type.Equals("test_driver") ||
-            type.Equals("pci_driver") ||
-            type.Equals("platform_driver") ||
-            type.Equals("ps3_system_bus_driver") ||
-            type.Equals("cx_drv"))
+          if (api.Equals("test_driver") ||
+            api.Equals("pci_driver") ||
+            api.Equals("platform_driver") ||
+            api.Equals("ps3_system_bus_driver") ||
+            api.Equals("cx_drv"))
           {
             whoopInit = false;
           }
@@ -437,6 +437,9 @@ namespace Whoop.Domain.Drivers
         return false;
 
       if (ep1.API.Equals("release") || ep2.API.Equals("release"))
+        return true;
+
+      if (ep1.API.Equals("mmap") && ep2.API.Equals("mmap"))
         return true;
 
       return false;

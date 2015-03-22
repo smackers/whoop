@@ -24,7 +24,7 @@ enum blk_default_limits {
 	BLK_SAFE_MAX_SECTORS    = 255,
 	BLK_MAX_SEGMENT_SIZE    = 65536,
 	BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
-};	
+};
 
 struct request_queue;
 typedef struct request_queue request_queue_t;
@@ -118,6 +118,8 @@ struct request {
     unsigned short                 nr_phys_segments;
 
     unsigned char         cmd[BLK_MAX_CDB];
+
+		void *special;
 };
 
 

@@ -37,13 +37,23 @@ namespace Whoop
     {
       this.Id = id;
       this.Name = id.Name;
-      this.Ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
-      this.Ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
       this.IsKernelSpecific = false;
+
+      if (lockExpr is NAryExpr)
+      {
+        this.Ptr = (lockExpr as NAryExpr).Args[0] as IdentifierExpr;
+        this.Ixs = ((lockExpr as NAryExpr).Args[1] as LiteralExpr).asBigNum.ToInt;
+      }
+      else if (lockExpr is IdentifierExpr)
+      {
+        this.Ptr = lockExpr as IdentifierExpr;
+      }
     }
 
     public bool IsEqual(AnalysisContext ac, Implementation impl, Expr lockExpr)
     {
+      if (this.Ptr == null)
+        return false;
       if (lockExpr == null)
         return false;
       if (this.IsKernelSpecific)
@@ -60,6 +70,12 @@ namespace Whoop
       else
       {
         ptr = lockExpr as IdentifierExpr;
+        if (lockExpr is IdentifierExpr &&
+          ac.GetConstant((lockExpr as IdentifierExpr).Name) != null &&
+          this.Ptr.Name.Equals((lockExpr as IdentifierExpr).Name))
+        {
+          return true;
+        }
       }
 
       if (ptr == null)

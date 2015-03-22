@@ -176,6 +176,21 @@ namespace Whoop.Refactoring
                 }
               }
 
+              if (!matched && this.AC.GetConstant(lockExpr.ToString()) != null)
+              {
+                Lock newLock = new Lock(new Constant(Token.NoToken,
+                  new TypedIdent(Token.NoToken, "lock$" + this.AC.Locks.Count,
+                    Microsoft.Boogie.Type.Int), true), lockExpr);
+
+                newLock.Id.AddAttribute("lock", new object[] { });
+                this.AC.TopLevelDeclarations.Add(newLock.Id);
+                this.AC.Locks.Add(newLock);
+                AnalysisContext.GlobalLocks.Add(newLock);
+
+                call.Ins[0] = new IdentifierExpr(newLock.Id.tok, newLock.Id);
+                matched = true;
+              }
+
               if (!matched && this.AC.Locks.FindAll(val => !val.IsKernelSpecific).Count == 1)
               {
                 var l = this.AC.Locks.Find(val => !val.IsKernelSpecific);

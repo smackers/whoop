@@ -25,7 +25,6 @@ typedef struct
 
 void spin_lock_init(spinlock_t *lock)
 {
-  lock = (struct spinlock_t *) malloc(sizeof(struct spinlock_t *));
   lock->init = SPIN_LOCK_INITIALIZED;
   lock->lock = SPIN_LOCK_UNLOCKED;
 }

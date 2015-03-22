@@ -14,6 +14,11 @@
 #include <linux/string.h>
 #include <linux/list.h>
 
+#define PCI_DMA_BIDIRECTIONAL 0
+#define PCI_DMA_TODEVICE 1
+#define PCI_DMA_FROMDEVICE 2
+#define PCI_DMA_NONE 3
+
 #define DEVICE_COUNT_RESOURCE	11
 
 typedef int pci_power_t;
@@ -177,5 +182,9 @@ inline int pci_write_config_word(const struct pci_dev *dev, int where, u16 val);
 inline int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val);
 
 inline int pcie_capability_set_word(struct pci_dev *dev, int pos, u16 set);
+
+#define PCI_VDEVICE(vend, dev) \
+  .vendor = PCI_VENDOR_ID_##vend, .device = (dev), \
+  .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID, 0, 0
 
 #endif /* LINUX_PCI_H */

@@ -49,6 +49,7 @@ namespace Whoop.Instrumentation
       }
 
       this.AddUpdateLocksetFunc();
+      this.AddUpdateLocksetFunc(Microsoft.Boogie.Type.Bool);
       this.AddNonCheckedFunc();
       this.AddEnableNetworkFunc();
       this.AddDisableNetworkFunc();
@@ -75,19 +76,29 @@ namespace Whoop.Instrumentation
 
     #region lockset verification variables and methods
 
-    private void AddUpdateLocksetFunc()
+    private void AddUpdateLocksetFunc(Microsoft.Boogie.Type type = null)
     {
-      List<Variable> inParams = new List<Variable>();
-      Variable in1 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+      var str = "_UPDATE_CLS_$";
+
+      var inParams = new List<Variable>();
+      var outParams = new List<Variable>();
+      var in1 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
         "lock", this.AC.MemoryModelType));
-      Variable in2 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+      var in2 = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
         "isLocked", Microsoft.Boogie.Type.Bool));
+
+      if (type != null)
+      {
+        str += type.ToString() + "$";
+        outParams.Add(new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+          "$r", type)));
+      }
 
       inParams.Add(in1);
       inParams.Add(in2);
 
-      Procedure proc = new Procedure(Token.NoToken, "_UPDATE_CLS_$" + this.EP.Name,
-                         new List<TypeVariable>(), inParams, new List<Variable>(),
+      Procedure proc = new Procedure(Token.NoToken, str + this.EP.Name,
+                         new List<TypeVariable>(), inParams, outParams,
                          new List<Requires>(), new List<IdentifierExpr>(), new List<Ensures>());
       proc.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
 
@@ -123,9 +134,24 @@ namespace Whoop.Instrumentation
         b.Cmds.Add(assign);
       }
 
-      Implementation impl = new Implementation(Token.NoToken, "_UPDATE_CLS_$" + this.EP.Name,
-                              new List<TypeVariable>(), inParams, new List<Variable>(),
+      Implementation impl = new Implementation(Token.NoToken, str + this.EP.Name,
+                              new List<TypeVariable>(), inParams, outParams,
                               new List<Variable>(), new List<Block>());
+
+      if (type != null)
+      {
+        var bVar = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken,
+          "$b", Microsoft.Boogie.Type.Bool));
+        var bVarId = new IdentifierExpr(Token.NoToken, bVar);
+        impl.LocVars.Add(bVar);
+        b.Cmds.Add(new HavocCmd(Token.NoToken, new List<IdentifierExpr> { bVarId }));
+        b.Cmds.Add(new AssignCmd(Token.NoToken,
+          new List<AssignLhs> { new SimpleAssignLhs(Token.NoToken,
+              new IdentifierExpr(Token.NoToken, outParams[0]))
+          },
+          new List<Expr> { bVarId }));
+      }
+
       impl.Blocks.Add(b);
       impl.Proc = proc;
       impl.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
@@ -175,10 +201,16 @@ namespace Whoop.Instrumentation
       foreach (var c in region.Cmds().OfType<CallCmd>())
       {
         if (c.callee.Equals("mutex_lock") ||
-          c.callee.Equals("mutex_lock_interruptible") ||
           c.callee.Equals("spin_lock"))
         {
           c.callee = "_UPDATE_CLS_$" + this.EP.Name;
+          c.Ins.Add(Expr.True);
+
+          this.EP.IsHoldingLock = true;
+        }
+        else if (c.callee.Equals("mutex_lock_interruptible"))
+        {
+          c.callee = "_UPDATE_CLS_$bool$" + this.EP.Name;
           c.Ins.Add(Expr.True);
 
           this.EP.IsHoldingLock = true;

@@ -122,6 +122,9 @@ namespace Whoop
       string access1 = this.GetAccessType(assume1.Attributes);
       string access2 = this.GetAccessType(assume2.Attributes);
 
+      if (access1.Equals("read") && access2.Equals("read"))
+        return false;
+
       var sourceInfoForAccess1 = new SourceLocationInfo(assume1.Attributes);
       var sourceInfoForAccess2 = new SourceLocationInfo(assume2.Attributes);
 

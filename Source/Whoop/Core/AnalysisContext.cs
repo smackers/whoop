@@ -32,6 +32,8 @@ namespace Whoop
     private static Dictionary<PairCheckingRegion, Tuple<EntryPoint, EntryPoint>> PairRegistry =
       new Dictionary<PairCheckingRegion, Tuple<EntryPoint, EntryPoint>>();
 
+    internal static HashSet<Lock> GlobalLocks = new HashSet<Lock>();
+
     #endregion
 
     #region fields
@@ -173,7 +175,7 @@ namespace Whoop
     public Implementation GetImplementation(string name)
     {
       Contract.Requires(name != null);
-      Implementation impl = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Implementation) &&
+      var impl = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Implementation) &&
         (val as Implementation).Name.Equals(name)) as Implementation);
       return impl;
     }
@@ -181,9 +183,17 @@ namespace Whoop
     public Constant GetConstant(string name)
     {
       Contract.Requires(name != null);
-      Constant cons = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Constant) &&
+      var cons = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Constant) &&
         (val as Constant).Name.Equals(name)) as Constant);
       return cons;
+    }
+
+    public Axiom GetAxiom(string name)
+    {
+      Contract.Requires(name != null);
+      var axiom = (this.TopLevelDeclarations.FirstOrDefault(val => (val is Axiom) &&
+        (val as Axiom).Expr.ToString().Equals("$isExternal(" + name + ")")) as Axiom);
+      return axiom;
     }
 
     public bool IsAWhoopVariable(Variable v)

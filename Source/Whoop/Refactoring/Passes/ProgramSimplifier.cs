@@ -49,6 +49,7 @@ namespace Whoop.Refactoring
       {
         this.RemoveUnecesseryAssumes(impl);
         this.RemoveUnecesseryCalls(impl);
+        this.SimplifyPointersInImplementation(impl);
         this.SimplifyImplementation(impl);
       }
 
@@ -91,6 +92,39 @@ namespace Whoop.Refactoring
     /// of the type $p2 := $p1.
     /// </summary>
     /// <param name="impl">Implementation</param>
+    private void SimplifyPointersInImplementation(Implementation impl)
+    {
+      List<AssignCmd> toRemove = new List<AssignCmd>();
+
+      foreach (Block b in impl.Blocks)
+      {
+        for (int i = 0; i < b.Cmds.Count; i++)
+        {
+          if (!(b.Cmds[i] is AssignCmd))
+            continue;
+
+          var assign = b.Cmds[i] as AssignCmd;
+          if (assign.Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"))
+            continue;
+          if (assign.Lhss[0].DeepAssignedIdentifier.Name.StartsWith("$M."))
+            continue;
+
+          if (assign.Lhss[0].DeepAssignedIdentifier.Name.Equals("$exn"))
+          {
+            toRemove.Add(assign);
+          }
+        }
+
+        foreach (var r in toRemove)
+        {
+          b.Cmds.Remove(r);
+          impl.LocVars.RemoveAll(val => val.Name.Equals(r.Lhss[0].DeepAssignedIdentifier.Name));
+        }
+
+        toRemove.Clear();
+      }
+    }
+
     private void SimplifyImplementation(Implementation impl)
     {
       List<AssignCmd> toRemove = new List<AssignCmd>();
@@ -102,21 +136,39 @@ namespace Whoop.Refactoring
           if (!(b.Cmds[i] is AssignCmd))
             continue;
 
-          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$r"))
-            continue;
-          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.StartsWith("$M."))
-            continue;
+          var assign = b.Cmds[i] as AssignCmd;
 
-          if ((b.Cmds[i] as AssignCmd).Lhss[0].DeepAssignedIdentifier.Name.Equals("$exn"))
+          if (assign.Lhss[0] is MapAssignLhs)
           {
-            toRemove.Add(b.Cmds[i] as AssignCmd);
+            var lhss = assign.Lhss[0] as MapAssignLhs;
+            if (lhss.DeepAssignedIdentifier.Name.StartsWith("$M.") &&
+              lhss.Map is SimpleAssignLhs && lhss.Indexes.Count == 1)
+            {
+              if (this.AC.GetAxiom(lhss.Indexes[0].ToString()) != null)
+              {
+                toRemove.Add(assign);
+              }
+            }
+          }
+
+          if (assign.Rhss[0] is NAryExpr)
+          {
+            var rhss = assign.Rhss[0] as NAryExpr;
+            if (rhss.Fun is MapSelect && rhss.Args.Count == 2 &&
+              (rhss.Args[0] as IdentifierExpr).Name.StartsWith("$M."))
+            {
+              if (this.AC.GetAxiom(rhss.Args[1].ToString()) != null)
+              {
+                b.Cmds[i] = new HavocCmd(Token.NoToken,
+                  new List<IdentifierExpr> { assign.Lhss[0].DeepAssignedIdentifier });
+              }
+            }
           }
         }
 
         foreach (var r in toRemove)
         {
           b.Cmds.Remove(r);
-          impl.LocVars.RemoveAll(val => val.Name.Equals(r.Lhss[0].DeepAssignedIdentifier.Name));
         }
 
         toRemove.Clear();

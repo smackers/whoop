@@ -25,7 +25,6 @@ struct mutex
 
 void mutex_init(struct mutex *lock)
 {
-	lock = (struct mutex *) malloc(sizeof(struct mutex *));
 	lock->locked = MUTEX_UNLOCKED;
 	lock->init = MUTEX_INITIALIZED;
 }
@@ -39,6 +38,18 @@ void mutex_lock(struct mutex *lock)
 	__SMACK_code("assume @ == @;", lock->locked, MUTEX_UNLOCKED);
 	lock->locked = tid;
 	__SMACK_code("call corral_atomic_end();");
+}
+
+bool mutex_lock_interruptible(struct mutex *lock)
+{
+	int tid = __SMACK_nondet();
+	__SMACK_code("call @ := corral_getThreadID();", tid);
+	//__SMACK_code("assert @ != @;", tid, lock->locked);
+	__SMACK_code("call corral_atomic_begin();");
+	__SMACK_code("assume @ == @;", lock->locked, MUTEX_UNLOCKED);
+	lock->locked = tid;
+	__SMACK_code("call corral_atomic_end();");
+	return __SMACK_nondet();
 }
 
 void mutex_unlock(struct mutex *lock)
