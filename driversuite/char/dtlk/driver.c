@@ -56,15 +56,16 @@
 #include <linux/errno.h>	/* for -EBUSY */
 #include <linux/ioport.h>	/* for request_region */
 #include <linux/delay.h>	/* for loops_per_jiffy */
-#include <linux/io.h>		/* for inb_p, outb_p, inb, outb, etc. */
-#include <linux/uaccess.h>	/* for get_user, etc. */
+#include <linux/sched.h>
+#include <linux/mutex.h>
+#include <asm/io.h>		/* for inb_p, outb_p, inb, outb, etc. */
+#include <asm/uaccess.h>	/* for get_user, etc. */
 #include <linux/wait.h>		/* for wait_queue */
 #include <linux/init.h>		/* for __init, module_{init,exit} */
 #include <linux/poll.h>		/* for POLLIN, etc. */
-#include "dtlk.h"		/* local header file for DoubleTalk values */
-#include <linux/smp_lock.h>
+#include <linux/dtlk.h>		/* local header file for DoubleTalk values */
 
-#include <smack.h>
+#include <whoop.h>
 
 #ifdef TRACING
 #define TRACE_TEXT(str) printk(str);
@@ -74,57 +75,59 @@
 #define TRACE_RET ((void) 0)
 #endif				/* TRACING */
 
+static DEFINE_MUTEX(dtlk_mutex);
+static void dtlk_timer_tick(unsigned long data);
 
-int dtlk_major;
-int dtlk_port_lpc;
-int dtlk_port_tts;
-int dtlk_busy;
-int dtlk_has_indexing;
-unsigned int dtlk_portlist[] =
+static int dtlk_major;
+static int dtlk_port_lpc;
+static int dtlk_port_tts;
+static int dtlk_busy;
+static int dtlk_has_indexing;
+static unsigned int dtlk_portlist[] =
 {0x25e, 0x29e, 0x2de, 0x31e, 0x35e, 0x39e, 0};
-wait_queue_head_t dtlk_process_list;
-struct timer_list dtlk_timer;
+static wait_queue_head_t dtlk_process_list;
+static DEFINE_TIMER(dtlk_timer, dtlk_timer_tick, 0, 0);
 
 /* prototypes for file_operations struct */
-ssize_t dtlk_read(struct file *, char __user *,
+static ssize_t dtlk_read(struct file *, char __user *,
 			 size_t nbytes, loff_t * ppos);
-ssize_t dtlk_write(struct file *, const char __user *,
-		   size_t nbytes, loff_t * ppos);
-unsigned int dtlk_poll(struct file *, poll_table *);
-int dtlk_open(struct inode *, struct file *);
-int dtlk_release(struct inode *, struct file *);
-int dtlk_ioctl(struct inode *inode, struct file *file,
-		      unsigned int cmd, unsigned long arg);
+static ssize_t dtlk_write(struct file *, const char __user *,
+			  size_t nbytes, loff_t * ppos);
+static unsigned int dtlk_poll(struct file *, poll_table *);
+static int dtlk_open(struct inode *, struct file *);
+static int dtlk_release(struct inode *, struct file *);
+static long dtlk_ioctl(struct file *file,
+		       unsigned int cmd, unsigned long arg);
 
-const struct file_operations dtlk_fops =
+static const struct file_operations dtlk_fops =
 {
 	.owner		= THIS_MODULE,
 	.read		= dtlk_read,
 	.write		= dtlk_write,
 	.poll		= dtlk_poll,
-	.ioctl		= dtlk_ioctl,
+	.unlocked_ioctl	= dtlk_ioctl,
 	.open		= dtlk_open,
 	.release	= dtlk_release,
+	.llseek		= no_llseek,
 };
 
 /* local prototypes */
-int dtlk_dev_probe(void);
-struct dtlk_settings *dtlk_interrogate(void);
-int dtlk_readable(void);
-char dtlk_read_lpc(void);
-char dtlk_read_tts(void);
-int dtlk_writeable(void);
-char dtlk_write_bytes(const char *buf, int n);
-char dtlk_write_tts(char);
+static int dtlk_dev_probe(void);
+static struct dtlk_settings *dtlk_interrogate(void);
+static int dtlk_readable(void);
+static char dtlk_read_lpc(void);
+static char dtlk_read_tts(void);
+static int dtlk_writeable(void);
+static char dtlk_write_bytes(const char *buf, int n);
+static char dtlk_write_tts(char);
 /*
    static void dtlk_handle_error(char, char, unsigned int);
  */
-void dtlk_timer_tick(unsigned long data);
 
-ssize_t dtlk_read(struct file *file, char __user *buf,
+static ssize_t dtlk_read(struct file *file, char __user *buf,
 			 size_t count, loff_t * ppos)
 {
-	unsigned int minor = iminor(file->f_dentry->d_inode);
+	unsigned int minor = iminor(file_inode(file));
 	char ch;
 	int i = 0, retries;
 
@@ -154,7 +157,7 @@ ssize_t dtlk_read(struct file *file, char __user *buf,
 	return -EAGAIN;
 }
 
-ssize_t dtlk_write(struct file *file, const char __user *buf,
+static ssize_t dtlk_write(struct file *file, const char __user *buf,
 			  size_t count, loff_t * ppos)
 {
 	int i = 0, retries = 0, ch;
@@ -176,7 +179,7 @@ ssize_t dtlk_write(struct file *file, const char __user *buf,
 	}
 #endif
 
-	if (iminor(file->f_dentry->d_inode) != DTLK_MINOR)
+	if (iminor(file_inode(file)) != DTLK_MINOR)
 		return -EINVAL;
 
 	while (1) {
@@ -227,7 +230,7 @@ ssize_t dtlk_write(struct file *file, const char __user *buf,
 	return -EAGAIN;
 }
 
-unsigned int dtlk_poll(struct file *file, poll_table * wait)
+static unsigned int dtlk_poll(struct file *file, poll_table * wait)
 {
 	int mask = 0;
 	unsigned long expires;
@@ -258,16 +261,15 @@ unsigned int dtlk_poll(struct file *file, poll_table * wait)
 	return mask;
 }
 
-void dtlk_timer_tick(unsigned long data)
+static void dtlk_timer_tick(unsigned long data)
 {
 	TRACE_TEXT(" dtlk_timer_tick");
 	wake_up_interruptible(&dtlk_process_list);
 }
 
-int dtlk_ioctl(struct inode *inode,
-		      struct file *file,
-		      unsigned int cmd,
-		      unsigned long arg)
+static long dtlk_ioctl(struct file *file,
+		       unsigned int cmd,
+		       unsigned long arg)
 {
 	char __user *argp = (char __user *)arg;
 	struct dtlk_settings *sp;
@@ -277,7 +279,9 @@ int dtlk_ioctl(struct inode *inode,
 	switch (cmd) {
 
 	case DTLK_INTERROGATE:
+		mutex_lock(&dtlk_mutex);
 		sp = dtlk_interrogate();
+		mutex_unlock(&dtlk_mutex);
 		if (copy_to_user(argp, sp, sizeof(struct dtlk_settings)))
 			return -EINVAL;
 		return 0;
@@ -291,7 +295,8 @@ int dtlk_ioctl(struct inode *inode,
 	}
 }
 
-int dtlk_open(struct inode *inode, struct file *file)
+/* Note that nobody ever sets dtlk_busy... */
+static int dtlk_open(struct inode *inode, struct file *file)
 {
 	TRACE_TEXT("(dtlk_open");
 
@@ -307,7 +312,7 @@ int dtlk_open(struct inode *inode, struct file *file)
 	}
 }
 
-int dtlk_release(struct inode *inode, struct file *file)
+static int dtlk_release(struct inode *inode, struct file *file)
 {
 	TRACE_TEXT("(dtlk_release");
 
@@ -320,32 +325,36 @@ int dtlk_release(struct inode *inode, struct file *file)
 	}
 	TRACE_RET;
 
-	del_timer(&dtlk_timer);
+	del_timer_sync(&dtlk_timer);
 
 	return 0;
 }
 
-int __init dtlk_init(void)
+static int __init dtlk_init(void)
 {
+	int err;
+
 	dtlk_port_lpc = 0;
 	dtlk_port_tts = 0;
 	dtlk_busy = 0;
 	dtlk_major = register_chrdev(0, "dtlk", &dtlk_fops);
-	if (dtlk_major == 0) {
+	if (dtlk_major < 0) {
 		printk(KERN_ERR "DoubleTalk PC - cannot register device\n");
-		return 0;
+		return dtlk_major;
 	}
-	if (dtlk_dev_probe() == 0)
-		printk(", MAJOR %d\n", dtlk_major);
+	err = dtlk_dev_probe();
+	if (err) {
+		unregister_chrdev(dtlk_major, "dtlk");
+		return err;
+	}
+	printk(", MAJOR %d\n", dtlk_major);
 
-	init_timer(&dtlk_timer);
-	dtlk_timer.function = dtlk_timer_tick;
 	init_waitqueue_head(&dtlk_process_list);
 
 	return 0;
 }
 
-void __exit dtlk_cleanup (void)
+static void __exit dtlk_cleanup (void)
 {
 	dtlk_write_bytes("goodbye", 8);
 	msleep_interruptible(500);		/* nap 0.50 sec but
@@ -363,7 +372,7 @@ module_exit(dtlk_cleanup);
 
 /* ------------------------------------------------------------------------ */
 
-int dtlk_readable(void)
+static int dtlk_readable(void)
 {
 #ifdef TRACING
 	printk(" dtlk_readable=%u@%u", inb_p(dtlk_port_lpc) != 0x7f, jiffies);
@@ -371,7 +380,7 @@ int dtlk_readable(void)
 	return inb_p(dtlk_port_lpc) != 0x7f;
 }
 
-int dtlk_writeable(void)
+static int dtlk_writeable(void)
 {
 	/* TRACE_TEXT(" dtlk_writeable"); */
 #ifdef TRACINGMORE
@@ -380,7 +389,7 @@ int dtlk_writeable(void)
 	return inb_p(dtlk_port_tts) & TTS_WRITABLE;
 }
 
-int __init dtlk_dev_probe(void)
+static int __init dtlk_dev_probe(void)
 {
 	unsigned int testval = 0;
 	int i = 0;
@@ -501,7 +510,7 @@ for (i = 0; i < 10; i++)			\
  */
 
 /* interrogate the DoubleTalk PC and return its settings */
-struct dtlk_settings *dtlk_interrogate(void)
+static struct dtlk_settings *dtlk_interrogate(void)
 {
 	unsigned char *t;
 	static char buf[sizeof(struct dtlk_settings) + 1];
@@ -556,7 +565,7 @@ struct dtlk_settings *dtlk_interrogate(void)
 	return &status;
 }
 
-char dtlk_read_tts(void)
+static char dtlk_read_tts(void)
 {
 	int portval, retries = 0;
 	char ch;
@@ -567,7 +576,7 @@ char dtlk_read_tts(void)
 		portval = inb_p(dtlk_port_tts);
 	} while ((portval & TTS_READABLE) == 0 &&
 		 retries++ < DTLK_MAX_RETRIES);
-	if (retries == DTLK_MAX_RETRIES)
+	if (retries > DTLK_MAX_RETRIES)
 		printk(KERN_ERR "dtlk_read_tts() timeout\n");
 
 	ch = inb_p(dtlk_port_tts);	/* input from TTS port */
@@ -579,14 +588,14 @@ char dtlk_read_tts(void)
 		portval = inb_p(dtlk_port_tts);
 	} while ((portval & TTS_READABLE) != 0 &&
 		 retries++ < DTLK_MAX_RETRIES);
-	if (retries == DTLK_MAX_RETRIES)
+	if (retries > DTLK_MAX_RETRIES)
 		printk(KERN_ERR "dtlk_read_tts() timeout\n");
 
 	TRACE_RET;
 	return ch;
 }
 
-char dtlk_read_lpc(void)
+static char dtlk_read_lpc(void)
 {
 	int retries = 0;
 	char ch;
@@ -611,7 +620,7 @@ char dtlk_read_lpc(void)
 }
 
 /* write n bytes to tts port */
-char dtlk_write_bytes(const char *buf, int n)
+static char dtlk_write_bytes(const char *buf, int n)
 {
 	char val = 0;
 	/*  printk("dtlk_write_bytes(\"%-*s\", %d)\n", n, buf, n); */
@@ -622,7 +631,7 @@ char dtlk_write_bytes(const char *buf, int n)
 	return val;
 }
 
-char dtlk_write_tts(char ch)
+static char dtlk_write_tts(char ch)
 {
 	int retries = 0;
 #ifdef TRACINGMORE
@@ -636,7 +645,7 @@ char dtlk_write_tts(char ch)
 		while ((inb_p(dtlk_port_tts) & TTS_WRITABLE) == 0 &&
 		       retries++ < DTLK_MAX_RETRIES)	/* DT ready? */
 			;
-	if (retries == DTLK_MAX_RETRIES)
+	if (retries > DTLK_MAX_RETRIES)
 		printk(KERN_ERR "dtlk_write_tts() timeout\n");
 
 	outb_p(ch, dtlk_port_tts);	/* output to TTS port */

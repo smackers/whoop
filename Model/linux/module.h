@@ -2,6 +2,7 @@
 #define _LINUX_MODULE_H
 
 #include <linux/types.h>
+#include <linux/fcntl.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
 #include <linux/platform_device.h>

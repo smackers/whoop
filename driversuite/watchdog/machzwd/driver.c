@@ -45,7 +45,7 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
-#include <smack.h>
+#include <whoop.h>
 
 /* ports */
 #define ZF_IOBASE	0x218
