@@ -96,6 +96,7 @@ namespace Whoop.Domain.Drivers
 
           if (api.Equals("test_driver") ||
             api.Equals("pci_driver") ||
+            api.Equals("usb_driver") ||
             api.Equals("usb_serial_driver") ||
             api.Equals("platform_driver") ||
             api.Equals("ps3_system_bus_driver") ||
@@ -479,6 +480,8 @@ namespace Whoop.Domain.Drivers
         return true;
 
       if (ep1.API.Equals("set_termios") && ep2.API.Equals("set_termios"))
+        return true;
+      if (ep1.API.Equals("dtr_rts") && ep2.API.Equals("dtr_rts"))
         return true;
 
       return false;

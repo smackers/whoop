@@ -22,6 +22,8 @@ struct file;
 struct videomode;
 struct device_node;
 
+#define FB_MAX                  32
+
 /* Definitions below are used in the parsed monitor specs */
 #define FB_DPMS_ACTIVE_OFF	1
 #define FB_DPMS_SUSPEND		2

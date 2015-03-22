@@ -74,6 +74,7 @@ namespace Whoop.Domain.Drivers
           ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
           module.API.Equals("test_driver") ||
           module.API.Equals("pci_driver") ||
+          module.API.Equals("usb_driver") ||
           module.API.Equals("usb_serial_driver") ||
           module.API.Equals("platform_driver") ||
           module.API.Equals("ps3_system_bus_driver") ||
@@ -91,6 +92,7 @@ namespace Whoop.Domain.Drivers
           ((whoopInit && module.API.Equals("whoop_driver_ops")) ||
           module.API.Equals("test_driver") ||
           module.API.Equals("pci_driver") ||
+          module.API.Equals("usb_driver") ||
           module.API.Equals("usb_serial_driver") ||
           module.API.Equals("platform_driver") ||
           module.API.Equals("ps3_system_bus_driver") ||
