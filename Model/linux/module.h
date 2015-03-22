@@ -1,8 +1,14 @@
 #ifndef _LINUX_MODULE_H
 #define _LINUX_MODULE_H
 
+#include <linux/types.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
+#include <linux/platform_device.h>
+#include <linux/pci.h>
+#include <linux/poll.h>
+
+#include <asm/sn/tiocx.h>
 
 #define MODULE_INFO(tag, info) void
 #define MODULE_AUTHOR(_author) void

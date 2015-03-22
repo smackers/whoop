@@ -87,7 +87,7 @@ struct idal_buffer {
 static inline struct idal_buffer *
 idal_buffer_alloc(size_t size, int page_order)
 {
-	struct idal_buffer *ib = (struct idal_buffer *)malloc(sizeof(struct idal_buffer *));
+	struct idal_buffer *ib = (struct idal_buffer *)malloc(sizeof(struct idal_buffer));
 	return ib;
 }
 

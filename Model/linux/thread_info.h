@@ -37,7 +37,7 @@ struct thread_info {
 
 static inline struct thread_info *current_thread_info(void)
 {
-	struct thread_info *ti = (struct thread_info *) malloc(sizeof(struct thread_info *));
+	struct thread_info *ti = (struct thread_info *) malloc(sizeof(struct thread_info));
 	return ti;
 }
 

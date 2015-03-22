@@ -170,7 +170,6 @@ struct x86_platform_ops {
 	void (*apic_post_init)(void);
 };
 
-struct pci_dev;
 struct msi_msg;
 
 struct x86_msi_ops {
