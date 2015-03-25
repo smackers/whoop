@@ -526,6 +526,8 @@ namespace Whoop.Domain.Drivers
 
       if (ep1.API.Equals("release") || ep2.API.Equals("release"))
         return true;
+      if (ep1.API.Equals("revalidate_disk") || ep2.API.Equals("revalidate_disk"))
+        return true;
       if (ep1.API.Equals("open") && ep2.API.Equals("release"))
         return true;
       if (ep1.API.Equals("release") && ep2.API.Equals("open"))

@@ -202,6 +202,7 @@ namespace Whoop.Instrumentation
       }
 
       bool foundRegistrationPoint = false;
+      bool instrumented = false;
       foreach (var block in initImpl.Blocks)
       {
         if (foundRegistrationPoint &&
@@ -226,18 +227,22 @@ namespace Whoop.Instrumentation
           }
         }
 
-        if (foundRegistrationPoint && block.Cmds.Count == index + 1)
+        if (foundRegistrationPoint && !instrumented && block.Cmds.Count == index + 1)
         {
           block.Cmds.Add(checkerCall);
+          instrumented = true;
         }
-        else if (foundRegistrationPoint && !this.EP1.IsInit && !this.EP2.IsInit)
+        else if (foundRegistrationPoint  && !instrumented &&
+          !this.EP1.IsInit && !this.EP2.IsInit)
         {
           block.Cmds.RemoveRange(index + 1, block.Cmds.Count - index - 1);
           block.Cmds.Insert(index + 1, checkerCall);
+          instrumented = true;
         }
-        else if (foundRegistrationPoint)
+        else if (foundRegistrationPoint && !instrumented)
         {
           block.Cmds.Insert(index + 1, checkerCall);
+          instrumented = true;
         }
       }
 
