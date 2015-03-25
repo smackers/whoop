@@ -463,6 +463,8 @@ namespace Whoop.Domain.Drivers
         return true;
       if (ep1.API.Equals("open") || ep2.API.Equals("open"))
         return true;
+      if (ep1.API.Equals("process_read_urb") || ep2.API.Equals("process_read_urb"))
+        return true;
 
       if ((ep1.API.Equals("tiocmget") || ep1.API.Equals("tiocmset") ||
           ep1.API.Equals("tiocmiwait") || ep1.API.Equals("get_icount") ||

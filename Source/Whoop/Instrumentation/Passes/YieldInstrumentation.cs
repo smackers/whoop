@@ -27,14 +27,17 @@ namespace Whoop.Instrumentation
   internal class YieldInstrumentation : IPass
   {
     private AnalysisContext AC;
+    private AnalysisContext RaceCheckedAC;
     private EntryPointPair Pair;
     private ErrorReporter ErrorReporter;
     private ExecutionTimer Timer;
 
-    public YieldInstrumentation(AnalysisContext ac, EntryPointPair pair, ErrorReporter errorReporter)
+    public YieldInstrumentation(AnalysisContext ac, AnalysisContext raceCheckedAc,
+      EntryPointPair pair, ErrorReporter errorReporter)
     {
-      Contract.Requires(ac != null && pair != null && errorReporter != null);
+      Contract.Requires(ac != null && raceCheckedAc != null && pair != null && errorReporter != null);
       this.AC = ac;
+      this.RaceCheckedAC = raceCheckedAc;
       this.Pair = pair;
       this.ErrorReporter = errorReporter;
     }
@@ -46,6 +49,9 @@ namespace Whoop.Instrumentation
         this.Timer = new ExecutionTimer();
         this.Timer.Start();
       }
+
+      var epImpls = this.RaceCheckedAC.GetEntryPoints();
+      var epHelpers = this.RaceCheckedAC.GetEntryPointHelpers();
 
       foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
@@ -60,6 +66,10 @@ namespace Whoop.Instrumentation
             impl.Name.Equals("mutex_unlock") ||
             impl.Name.Equals("spin_lock") || impl.Name.Equals("spin_lock_irqsave") ||
             impl.Name.Equals("spin_unlock") || impl.Name.Equals("spin_unlock_irqrestore"))
+          continue;
+
+        if (!epHelpers.Any(val => val.Name.Split('$')[0].Equals(impl.Name)) &&
+            !epImpls.Any(val => val.Name.Equals(impl.Name)))
           continue;
 
         this.InstrumentImplementation(impl);

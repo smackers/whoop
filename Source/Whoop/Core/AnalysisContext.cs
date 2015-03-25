@@ -122,10 +122,16 @@ namespace Whoop
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "checker"));
     }
 
-    public List<Implementation> GetEntryPointImplementations()
+    public List<Procedure> GetEntryPoints()
     {
-      return this.TopLevelDeclarations.OfType<Implementation>().ToList().
+      return this.TopLevelDeclarations.OfType<Procedure>().ToList().
         FindAll(val => QKeyValue.FindBoolAttribute(val.Attributes, "entrypoint"));
+    }
+
+    public List<Procedure> GetEntryPointHelpers()
+    {
+      return this.TopLevelDeclarations.OfType<Procedure>().ToList().
+        FindAll(val => QKeyValue.FindStringAttribute(val.Attributes, "tag") != null);
     }
 
     public List<Variable> GetLockVariables()

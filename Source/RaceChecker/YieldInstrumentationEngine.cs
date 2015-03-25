@@ -23,6 +23,7 @@ namespace Whoop
   internal sealed class YieldInstrumentationEngine
   {
     private AnalysisContext AC;
+    private AnalysisContext RaceCheckedAC;
     private EntryPointPair Pair;
     private EntryPoint EP1;
     private EntryPoint EP2;
@@ -30,10 +31,12 @@ namespace Whoop
     ErrorReporter ErrorReporter;
     private ExecutionTimer Timer;
 
-    public YieldInstrumentationEngine(AnalysisContext ac, EntryPointPair pair, ErrorReporter errorReporter)
+    public YieldInstrumentationEngine(AnalysisContext ac, EntryPointPair pair, AnalysisContext raceCheckedAc,
+      ErrorReporter errorReporter)
     {
-      Contract.Requires(ac != null && pair != null && errorReporter != null);
+      Contract.Requires(ac != null && pair != null && raceCheckedAc != null && errorReporter != null);
       this.AC = ac;
+      this.RaceCheckedAC = raceCheckedAc;
       this.Pair = pair;
       this.EP1 = pair.EntryPoint1;
       this.EP2 = pair.EntryPoint2;
@@ -51,7 +54,8 @@ namespace Whoop
       }
 
       Instrumentation.Factory.CreateAsyncCheckingInstrumentation(this.AC, this.Pair).Run();
-      Instrumentation.Factory.CreateYieldInstrumentation(this.AC, this.Pair, this.ErrorReporter).Run();
+      Instrumentation.Factory.CreateYieldInstrumentation(this.AC, this.RaceCheckedAC, this.Pair,
+        this.ErrorReporter).Run();
 
       if (WhoopRaceCheckerCommandLineOptions.Get().MeasurePassExecutionTime)
       {

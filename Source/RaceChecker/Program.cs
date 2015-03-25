@@ -17,7 +17,6 @@ using System.Diagnostics.Contracts;
 
 using Microsoft.Boogie;
 using Whoop.Domain.Drivers;
-using System.Net;
 
 namespace Whoop
 {
@@ -85,7 +84,7 @@ namespace Whoop
           timer.Start();
         }
 
-        var pairMap = new Dictionary<EntryPointPair, ErrorReporter>();
+        var pairMap = new Dictionary<EntryPointPair, Tuple<AnalysisContext, ErrorReporter>>();
         foreach (var pair in DeviceDriver.EntryPointPairs)
         {
           AnalysisContext ac = null;
@@ -122,7 +121,7 @@ namespace Whoop
           }
 
           new StaticLocksetAnalyser(ac, pair, errorReporter, stats).Run();
-          pairMap.Add(pair, errorReporter);
+          pairMap.Add(pair, new Tuple<AnalysisContext, ErrorReporter>(ac, errorReporter));
         }
 
         if (WhoopRaceCheckerCommandLineOptions.Get().FindBugs)
@@ -133,7 +132,7 @@ namespace Whoop
             new AnalysisContextParser(fileList[fileList.Count - 1],
               "wbpl").TryParseNew(ref ac);
 
-            new YieldInstrumentationEngine(ac, pair.Key, pair.Value).Run();
+            new YieldInstrumentationEngine(ac, pair.Key, pair.Value.Item1, pair.Value.Item2).Run();
           }
         }
 
