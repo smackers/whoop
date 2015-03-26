@@ -21,28 +21,12 @@ int put_user(int size, void *ptr);
 
 unsigned long copy_to_user(void __user *to, const void *from, unsigned long n)
 {
-  char *tmp = to;
-  while (n) {
-    if ((*tmp = *(const char *)from) != 0)
-      (const char *)from++;
-    tmp++;
-    n--;
-  }
-
-  return (tmp - (const char *)to);
+  return __SMACK_nondet();
 }
 
 unsigned long copy_from_user(void *to, void __user *from, unsigned long n)
 {
-  char *tmp = to;
-  while (n) {
-    if ((*tmp = *(const char *)from) != 0)
-      (const char *)from++;
-    tmp++;
-    n--;
-  }
-
-  return (tmp - (const char *)to);
+  return __SMACK_nondet();
 }
 
 #endif /* __i386_UACCESS_H */

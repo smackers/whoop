@@ -1079,6 +1079,12 @@ struct input_dev {
 	bool devres_managed;
 };
 
+struct input_dev __must_check *input_allocate_device(void)
+{
+	struct input_dev *dev = (struct input_dev *) malloc(sizeof(struct input_dev));
+	return dev;
+}
+
 /**
  * EVIOCGMTSLOTS(len) - get MT slot values
  * @len: size of the data buffer in bytes
