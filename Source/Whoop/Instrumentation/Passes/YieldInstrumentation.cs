@@ -122,8 +122,6 @@ namespace Whoop.Instrumentation
 
     private void InstrumentYieldsInMemoryAccesses(Implementation impl)
     {
-      int rvCounter = 0;
-
       foreach (var block in impl.Blocks)
       {
         for (int idx = 0; idx < block.Cmds.Count; idx++)
@@ -197,30 +195,25 @@ namespace Whoop.Instrumentation
 
           if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound)
           {
-            var localVar = new LocalVariable(Token.NoToken, new TypedIdent(
-              Token.NoToken, "$rv" + rvCounter, this.AC.MemoryModelType));
-            impl.LocVars.Add(localVar);
-            rvCounter++;
-
-            var id = new IdentifierExpr(localVar.tok, localVar);
-            var readAssign = new AssignCmd(Token.NoToken,
-              new List<AssignLhs> { new SimpleAssignLhs(Token.NoToken, id)},
-              assign.Rhss);
+            Expr expr = null;
+            if (rhssMap.Count() == 1)
+              expr = rhssMap.First();
+            else
+              expr = rhss.First();
+            
             var readAssert = new AssertCmd(Token.NoToken, Expr.Eq(
-              assign.Lhss[0].DeepAssignedIdentifier, id));
+              assign.Lhss[0].DeepAssignedIdentifier, expr));
 
             if (idx + 1 == block.Cmds.Count)
             {
-              block.Cmds.Add(readAssign);
               block.Cmds.Add(readAssert);
             }
             else
             {
               block.Cmds.Insert(idx + 1, readAssert);
-              block.Cmds.Insert(idx + 1, readAssign);
             }
 
-            idx += 2;
+            idx++;
           }
           else if (WhoopCommandLineOptions.Get().YieldRaceChecking && writeAccessFound)
           {
