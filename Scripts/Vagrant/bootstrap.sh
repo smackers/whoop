@@ -89,17 +89,14 @@ cd ${BUILD_ROOT}/llvm_and_clang
 git clone https://github.com/llvm-mirror/llvm.git src
 cd ${BUILD_ROOT}/llvm_and_clang/src
 git checkout release_${LLVM_RELEASE}
-# svn co http://llvm.org/svn/llvm-project/llvm/branches/release_${LLVM_RELEASE} src
 cd ${BUILD_ROOT}/llvm_and_clang/src/tools
 git clone https://github.com/llvm-mirror/clang.git clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/tools/clang
 git checkout release_${LLVM_RELEASE}
-# svn co http://llvm.org/svn/llvm-project/cfe/branches/release_${LLVM_RELEASE} clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects
 git clone https://github.com/llvm-mirror/compiler-rt.git compiler-rt
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects/compiler-rt
 git checkout release_${LLVM_RELEASE}
-# svn co http://llvm.org/svn/llvm-project/compiler-rt/branches/release_${LLVM_RELEASE} compiler-rt
 
 echo $'\n================='
 echo $'Building LLVM ...'
@@ -107,7 +104,7 @@ echo $'=================\n'
 
 mkdir -p ${BUILD_ROOT}/llvm_and_clang/build
 cd ${BUILD_ROOT}/llvm_and_clang/build
-cmake -D CMAKE_BUILD_TYPE=Release ../src
+cmake -D CMAKE_BUILD_TYPE=Release -D LLVM_TARGETS_TO_BUILD="X86" ../src
 make -j4
 
 echo $'\n================='
