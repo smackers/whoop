@@ -20,15 +20,18 @@ llvmBinDir = rootDir + "/llvm_and_clang/build/bin"
 llvmLibDir = rootDir + "/llvm_and_clang/build/lib"
 
 # path to the directory containing the chauffeur clang tool
-chauffeurDir = rootDir + "/whoop/FrontEndPlugin/build"
+chauffeurDir = rootDir + "/chauffeur/build"
 
-# path to the SMACK source directory
-smackSrcDir = rootDir + "/smack/src"
+# path to the SMACK libraries
+smackSrcDir = rootDir + "/smack/install/include"
 
 # path to the directory where the SMACK executable can be found
 smackBinDir = rootDir + "/smack/install/bin"
 
-#The path to the directory containing the Whoop binaries
+# path to the directory where the Corral executable can be found
+corralBinDir = rootDir + "/corral/bin/debug"
+
+# path to the directory containing the Whoop binaries
 whoopBinDir = rootDir + "/whoop/Binaries"
 
 # path to the directory containing the z3 executable

@@ -11,14 +11,16 @@ sudo apt-get install -y python-software-properties python
 sudo apt-get install -y automake autoconf
 sudo apt-get install -y libtool libgmp-dev libcln-dev
 sudo apt-get install -y wget git subversion mercurial
-sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev 
+sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev
 
 export PROJECT_ROOT=/vagrant
 export BUILD_ROOT=/home/vagrant/whoop
 export CMAKE_VERSION=2.8.8
-export MONO_VERSION=3.0.7
-# export LLVM_RELEASE=34
-export LLVM_RELEASE=release_34
+export MONO_VERSION=3.12.1
+export LLVM_RELEASE=35
+export SMACK_RELEASE=v.1.5.0
+export BOOGIE_RELEASE=d6a7f2bd79c9
+export CORRAL_RELEASE=3aa62d7425b57295f698c6f47d3ce1910f5f5f8d
 
 mkdir -p ${BUILD_ROOT}
 
@@ -27,17 +29,17 @@ echo $'Getting latest git ...'
 echo $'======================\n'
 
 cd ${BUILD_ROOT}
-git clone https://github.com/git/git.git 
+git clone https://github.com/git/git.git
 
 echo $'\n======================='
 echo $'Building latest git ...'
 echo $'=======================\n'
 
 cd git
-make configure 
+make configure
 ./configure --prefix=/usr
 make all doc
-sudo make install install-doc install-html 
+sudo make install install-doc install-html
 
 echo $'\n================='
 echo $'Getting CMAKE ...'
@@ -86,17 +88,17 @@ mkdir -p ${BUILD_ROOT}/llvm_and_clang
 cd ${BUILD_ROOT}/llvm_and_clang
 git clone https://github.com/llvm-mirror/llvm.git src
 cd ${BUILD_ROOT}/llvm_and_clang/src
-git checkout release_34
+git checkout release_${LLVM_RELEASE}
 # svn co http://llvm.org/svn/llvm-project/llvm/branches/release_${LLVM_RELEASE} src
 cd ${BUILD_ROOT}/llvm_and_clang/src/tools
 git clone https://github.com/llvm-mirror/clang.git clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/tools/clang
-git checkout release_34
+git checkout release_${LLVM_RELEASE}
 # svn co http://llvm.org/svn/llvm-project/cfe/branches/release_${LLVM_RELEASE} clang
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects
 git clone https://github.com/llvm-mirror/compiler-rt.git compiler-rt
 cd ${BUILD_ROOT}/llvm_and_clang/src/projects/compiler-rt
-git checkout release_34
+git checkout release_${LLVM_RELEASE}
 # svn co http://llvm.org/svn/llvm-project/compiler-rt/branches/release_${LLVM_RELEASE} compiler-rt
 
 echo $'\n================='
@@ -114,6 +116,8 @@ echo $'=================\n'
 
 cd ${BUILD_ROOT}
 git clone https://github.com/smackers/smack.git ${BUILD_ROOT}/smack/src
+cd ${BUILD_ROOT}/smack/src
+git checkout tags/${SMACK_RELEASE}
 
 echo $'\n=================='
 echo $'Building SMACK ...'
@@ -145,30 +149,6 @@ make -j4
 make install
 ln -s z3 z3.exe
 
-echo $'\n================'
-echo $'Getting CVC4 ...'
-echo $'================\n'
-
-cd ${BUILD_ROOT}
-git clone https://github.com/CVC4/CVC4.git ${BUILD_ROOT}/CVC4/src
-
-echo $'\n================='
-echo $'Building CVC4 ...'
-echo $'=================\n'
-
-cd ${BUILD_ROOT}/CVC4/src
-MACHINE_TYPE=$1 contrib/get-antlr-3.4
-./autogen.sh
-export ANTLR=${BUILD_ROOT}/CVC4/src/antlr-3.4/bin/antlr3
-./configure --with-antlr-dir=${BUILD_ROOT}/CVC4/src/antlr-3.4 \
-	--prefix=${BUILD_ROOT}/CVC4/install \
-	--best --enable-gpl \
-	--disable-shared --enable-static
-make -j4
-make install
-cd ${BUILD_ROOT}/CVC4/install/bin
-ln -s cvc4 cvc4.exe
-
 echo $'\n================='
 echo $'Getting WHOOP ...'
 echo $'=================\n'
@@ -198,6 +178,56 @@ echo $'Configuring WHOOP ...'
 echo $'=====================\n'
 
 cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
+
+echo $'\n=================='
+echo $'Getting BOOGIE ...'
+echo $'==================\n'
+
+cd ${BUILD_ROOT}
+git clone git@github.com:boogie-org/boogie.git
+cd ${BUILD_ROOT}/boogie
+git checkout ${BOOGIE_RELEASE}
+
+echo $'\n==================='
+echo $'Building BOOGIE ...'
+echo $'===================\n'
+
+xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug boogie.sln
+
+echo $'\n=================='
+echo $'Getting CORRAL ...'
+echo $'==================\n'
+
+cd ${BUILD_ROOT}
+git clone https://git01.codeplex.com/corral
+cd ${BUILD_ROOT}/corral
+git checkout ${CORRAL_RELEASE}
+
+echo $'\n==================='
+echo $'Building CORRAL ...'
+echo $'===================\n'
+
+cd ${BUILD_ROOT}/corral/references
+cp ${BUILD_ROOT}/boogie/Binaries/AbsInt.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Basetypes.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/CodeContractsExtender.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Core.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Concurrency.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/ExecutionEngine.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Graph.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Houdini.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Model.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/ParserHelper.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Provers.SMTLib.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/VCExpr.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/VCGeneration.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Boogie.exe .
+cp ${BUILD_ROOT}/boogie/Binaries/BVD.exe .
+cp ${BUILD_ROOT}/boogie/Binaries/Doomed.dll .
+cp ${BUILD_ROOT}/boogie/Binaries/Predication.dll .
+cd ${BUILD_ROOT}/corral
+xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug cba.sln
+ln -s ${BUILD_ROOT}/z3/install/bin/z3 ${BUILD_ROOT}/corral/bin/Debug/z3.exe
 
 echo $'\n========'
 echo $'Done ...'

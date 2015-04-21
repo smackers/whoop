@@ -5,8 +5,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.box = "hashicorp/precise32"
     config.vm.provision :shell, :path => "Scripts/Vagrant/bootstrap.sh", :args => "x86"
   # else
-    # config.vm.box = "hashicorp/precise64"
-    # config.vm.provision :shell, :path => "Scripts/Vagrant/bootstrap.sh", :args => "x86_64"
+  #   config.vm.box = "hashicorp/precise64"
+  #   config.vm.provision :shell, :path => "Scripts/Vagrant/bootstrap.sh", :args => "x86_64"
   # end
-    
+
 end

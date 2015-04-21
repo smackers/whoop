@@ -31,7 +31,7 @@ smackBinDir = rootDir + "/smack/install/bin"
 # path to the directory where the Corral executable can be found
 corralBinDir = rootDir + "/corral/bin/debug"
 
-#The path to the directory containing the Whoop binaries
+# path to the directory containing the Whoop binaries
 whoopBinDir = rootDir + "/whoop/Binaries"
 
 # path to the directory containing the z3 executable
