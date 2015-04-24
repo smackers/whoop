@@ -20,7 +20,7 @@ export MONO_VERSION=3.12.1
 export LLVM_RELEASE=35
 export SMACK_RELEASE=v.1.5.0
 export Z3_RELEASE=z3-4.1.1
-export BOOGIE_RELEASE=d6a7f2bd79c9
+export BOOGIE_RELEASE=7f7e70772d04b1c574609a5504c9160ca01aca67
 export CORRAL_RELEASE=3aa62d7425b57295f698c6f47d3ce1910f5f5f8d
 
 mkdir -p ${BUILD_ROOT}
@@ -142,40 +142,11 @@ echo $'===============\n'
 
 cd ${BUILD_ROOT}/z3
 python scripts/mk_make.py --prefix=${BUILD_ROOT}/z3/install
-cd build
+cd ${BUILD_ROOT}/z3/build
 make -j4
 make install
+cd ${BUILD_ROOT}/z3/install/bin
 ln -s z3 z3.exe
-
-echo $'\n================='
-echo $'Getting WHOOP ...'
-echo $'=================\n'
-
-cd ${BUILD_ROOT}
-cp -a ${PROJECT_ROOT}/. ${BUILD_ROOT}/whoop/
-
-echo $'\n======================'
-echo $'Building CHAUFFEUR ...'
-echo $'======================\n'
-
-cd ${BUILD_ROOT}/whoop
-mkdir -p ${BUILD_ROOT}/whoop/FrontEndPlugin/build
-cd ${BUILD_ROOT}/whoop/FrontEndPlugin/build
-cmake -D LLVM_CONFIG=${BUILD_ROOT}/llvm_and_clang/build/bin -D CMAKE_BUILD_TYPE=Release ../src
-make -j4
-
-echo $'\n=================='
-echo $'Building WHOOP ...'
-echo $'==================\n'
-
-cd ${BUILD_ROOT}/whoop
-xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug whoop.sln
-
-echo $'\n====================='
-echo $'Configuring WHOOP ...'
-echo $'=====================\n'
-
-cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo $'\n=================='
 echo $'Getting BOOGIE ...'
@@ -226,6 +197,42 @@ cp ${BUILD_ROOT}/boogie/Binaries/Predication.dll .
 cd ${BUILD_ROOT}/corral
 xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug cba.sln
 ln -s ${BUILD_ROOT}/z3/install/bin/z3 ${BUILD_ROOT}/corral/bin/Debug/z3.exe
+
+echo $'\n====================='
+echo $'Getting CHAUFFEUR ...'
+echo $'=====================\n'
+
+cd ${BUILD_ROOT}
+git clone git@github.com:mc-imperial/chauffeur.git ${BUILD_ROOT}/chauffeur/src
+
+echo $'\n======================'
+echo $'Building CHAUFFEUR ...'
+echo $'======================\n'
+
+mkdir -p ${BUILD_ROOT}/chauffeur/build
+cd ${BUILD_ROOT}/chauffeur/build
+cmake -D LLVM_CONFIG=${BUILD_ROOT}/llvm_and_clang/build/bin -D CMAKE_BUILD_TYPE=Release ../src
+make -j4
+
+echo $'\n================='
+echo $'Getting WHOOP ...'
+echo $'=================\n'
+
+cd ${BUILD_ROOT}
+cp -a ${PROJECT_ROOT}/. ${BUILD_ROOT}/whoop/
+
+echo $'\n=================='
+echo $'Building WHOOP ...'
+echo $'==================\n'
+
+cd ${BUILD_ROOT}/whoop
+xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug whoop.sln
+
+echo $'\n====================='
+echo $'Configuring WHOOP ...'
+echo $'=====================\n'
+
+cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo $'\n========'
 echo $'Done ...'
