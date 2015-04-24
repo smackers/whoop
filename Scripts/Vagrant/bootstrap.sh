@@ -19,6 +19,7 @@ export CMAKE_VERSION=2.8.8
 export MONO_VERSION=3.12.1
 export LLVM_RELEASE=35
 export SMACK_RELEASE=v.1.5.0
+export Z3_RELEASE=z3-4.1.1
 export BOOGIE_RELEASE=d6a7f2bd79c9
 export CORRAL_RELEASE=3aa62d7425b57295f698c6f47d3ce1910f5f5f8d
 
@@ -131,16 +132,16 @@ echo $'Getting Z3 ...'
 echo $'==============\n'
 
 cd ${BUILD_ROOT}
-git clone https://git01.codeplex.com/z3
+git clone git@github.com:Z3Prover/z3.git
+cd ${BUILD_ROOT}/z3
+git checkout tags/${Z3_RELEASE}
 
 echo $'\n==============='
 echo $'Building Z3 ...'
 echo $'===============\n'
 
 cd ${BUILD_ROOT}/z3
-autoconf
-./configure
-python scripts/mk_make.py
+python scripts/mk_make.py --prefix=${BUILD_ROOT}/z3/install
 cd build
 make -j4
 make install
