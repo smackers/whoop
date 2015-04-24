@@ -58,7 +58,7 @@ namespace Whoop
       HoudiniOutcome outcome = null;
 
       this.PerformHoudini(ref outcome);
-      this.ApplyInvariants();
+      this.ApplyInvariants(ref outcome);
 
       this.AC.ResetToProgramTopLevelDeclarations();
 
@@ -124,10 +124,10 @@ namespace Whoop
       }
     }
 
-    private void ApplyInvariants()
+    private void ApplyInvariants(ref HoudiniOutcome outcome)
     {
       if (this.Houdini != null) {
-        this.Houdini.ApplyAssignment(this.PostAC.Program);
+        Houdini.ApplyAssignment(this.PostAC.Program, outcome);
         this.Houdini.Close();
         WhoopCruncherCommandLineOptions.Get().TheProverFactory.Close();
       }
