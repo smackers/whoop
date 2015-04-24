@@ -147,8 +147,7 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
-    self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:1" ]
-    # self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:7", "/staticInlining", "/trackAllVars" ]
+    self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:1", "/maxStaticLoopBound:20" ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
