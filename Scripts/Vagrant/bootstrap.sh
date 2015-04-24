@@ -161,7 +161,7 @@ echo $'\n==================='
 echo $'Building BOOGIE ...'
 echo $'===================\n'
 
-xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug boogie.sln
+xbuild /p:TargetFrameworkProfile="" /p:Configuration=Debug Boogie.sln
 
 echo $'\n=================='
 echo $'Getting CORRAL ...'
