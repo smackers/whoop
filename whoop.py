@@ -552,7 +552,10 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
     end = timeit.default_timer()
   except Timeout:
     if CommandLineOptions.time:
-      Timing[ToolName] = timeout
+      if Timing.has_key(ToolName):
+        Timing[ToolName] = Timing[ToolName] + timeout
+      else:
+        Timing[ToolName] = timeout
     raise ReportAndExit(ErrorCodes.TIMEOUT, ToolName + " timed out. " + \
                         "Use --timeout=N with N > " + str(timeout)    + \
                         " to increase timeout, or --timeout=0 to "    + \
