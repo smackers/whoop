@@ -147,7 +147,7 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
-    self.corralOptions = [ "/cooperative", "/k:2", "/recursionBound:1" ]
+    self.corralOptions = [ "/cooperative" ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
@@ -157,6 +157,8 @@ class DefaultCmdLineOptions(object):
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
+    self.k = 2
+    self.recursionBound = 1
     self.staticLoopBound = 0
     self.yieldNoAccess = False
     self.yieldAll = False
@@ -204,10 +206,9 @@ def showHelpAndExit():
     'logic': CommandLineOptions.logic
   }
 
-  print("""OVERVIEW: Whoop - a lockset analysis tool for Linux device drivers
+  print("""OVERVIEW: Whoop - a data race analyser for Linux device drivers
 
-  This is an experimental tool from the Multicore Programming Group
-  at Imperial College London.
+  This is an experimental tool from the Multicore Programming Group at Imperial College London.
 
   USAGE: whoop.py [options] <inputs>
 
@@ -227,6 +228,8 @@ def showHelpAndExit():
     --inline                Inline all device driver non-entry point functions during Clang's AST traversal.
     --inline-bound=X        Inline all device driver non-entry point functions during the Whoop instrumentation,
                             for entry points with less or equal than X nested function calls.
+    --k=X                   Use Corral's /k.
+    --recursion-bound=X     Use Corral's /recursionBound.
     --static-loop-bound=X   Use Corral's /maxStaticLoopBound.
     --inparam-aliasing      Disable assumption that inparams cannot alias.
     --no-existential-opts   Do not perform existential optimisations.
@@ -448,6 +451,20 @@ def processGeneralOptions(opts, args):
           raise ValueError
       except ValueError as e:
           raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "Invalid inlining bound \"" + a + "\"")
+    if o == "--k":
+      try:
+        CommandLineOptions.k = int(a)
+        if CommandLineOptions.k < 0:
+          raise ValueError
+      except ValueError as e:
+          raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "Invalid k \"" + a + "\"")
+    if o == "--recursion-bound":
+      try:
+        CommandLineOptions.recursionBound = int(a)
+        if CommandLineOptions.recursionBound < 0:
+          raise ValueError
+      except ValueError as e:
+          raise ReportAndExit(ErrorCodes.COMMAND_LINE_ERROR, "Invalid recursion bound \"" + a + "\"")
     if o == "--static-loop-bound":
       try:
         CommandLineOptions.staticLoopBound = int(a)
@@ -605,8 +622,8 @@ def startToolChain(argv):
               'keep-temps', 'print-pairs',
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
-              'analyse-only=', 'inline', 'inline-bound=', 'static-loop-bound=', 'no-infer',
-              'no-heavy-async-calls-optimisation',
+              'analyse-only=', 'inline', 'inline-bound=', 'k=', 'recursion-bound=', 'static-loop-bound=',
+              'no-infer', 'no-heavy-async-calls-optimisation',
               'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
@@ -725,6 +742,8 @@ def startToolChain(argv):
   CommandLineOptions.whoopEngineOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
   CommandLineOptions.whoopCruncherOptions += [ "/inlineBound:" + str(CommandLineOptions.inlineBound) ]
 
+  CommandLineOptions.corralOptions += [ "/k:" + str(CommandLineOptions.k) ]
+  CommandLineOptions.corralOptions += [ "/recursionBound:" + str(CommandLineOptions.recursionBound) ]
   if CommandLineOptions.staticLoopBound > 0:
     CommandLineOptions.corralOptions += [ "/maxStaticLoopBound:" + str(CommandLineOptions.staticLoopBound) ]
 
