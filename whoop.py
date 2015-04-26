@@ -549,8 +549,10 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
   try:
     start = timeit.default_timer()
     remainingTime = timeout
-    if Timing.has_key(ToolName):
-      remainingTime = timeout - Timing[ToolName]
+    if timeout > 0 and Timing.has_key(ToolName):
+      remainingTime = timeout - int(Timing[ToolName])
+      if remainingTime < 1:
+        remainingTime = 1
     stdout, returnCode = run(Command, remainingTime)
     end = timeit.default_timer()
   except Timeout:
