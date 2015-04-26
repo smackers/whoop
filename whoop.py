@@ -548,7 +548,10 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
   verbose("Running " + ToolName)
   try:
     start = timeit.default_timer()
-    stdout, returnCode = run(Command, timeout)
+    remainingTime = timeout
+    if Timing.has_key(ToolName):
+      remainingTime = timeout - Timing[ToolName]
+    stdout, returnCode = run(Command, remainingTime)
     end = timeit.default_timer()
   except Timeout:
     if CommandLineOptions.time:
