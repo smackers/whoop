@@ -127,7 +127,8 @@ namespace Whoop
     private void ApplyInvariants(ref HoudiniOutcome outcome)
     {
       if (this.Houdini != null) {
-        Houdini.ApplyAssignment(this.PostAC.Program, outcome);
+//        Houdini.ApplyAssignment(this.PostAC.Program, outcome);
+        this.Houdini.ApplyAssignment(this.PostAC.Program);
         this.Houdini.Close();
         WhoopCruncherCommandLineOptions.Get().TheProverFactory.Close();
       }
