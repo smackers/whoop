@@ -546,9 +546,9 @@ timeout.
 def runTool(ToolName, Command, ErrorCode, timeout=0):
   assert ToolName in Tools
   verbose("Running " + ToolName)
+  remainingTime = timeout
   try:
     start = timeit.default_timer()
-    remainingTime = timeout
     if timeout > 0 and Timing.has_key(ToolName):
       remainingTime = timeout - int(Timing[ToolName])
       if remainingTime < 1:
@@ -558,7 +558,7 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
   except Timeout:
     if CommandLineOptions.time:
       if Timing.has_key(ToolName):
-        Timing[ToolName] = Timing[ToolName] + timeout
+        Timing[ToolName] = Timing[ToolName] + remainingTime
       else:
         Timing[ToolName] = timeout
     raise ReportAndExit(ErrorCodes.TIMEOUT, ToolName + " timed out. " + \
