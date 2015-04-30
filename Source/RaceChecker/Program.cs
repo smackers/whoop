@@ -128,7 +128,8 @@ namespace Whoop
         {
           foreach (var pair in pairMap)
           {
-            if (WhoopRaceCheckerCommandLineOptions.Get().SkipRaceFreePairs &&
+            if (!WhoopRaceCheckerCommandLineOptions.Get().YieldAll &&
+                WhoopRaceCheckerCommandLineOptions.Get().SkipRaceFreePairs &&
                 !pair.Value.Item2.FoundErrors)
               continue;
             
