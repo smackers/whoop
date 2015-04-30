@@ -28,6 +28,8 @@ namespace Whoop.Regions
     #region fields
 
     private AnalysisContext AC;
+    private AnalysisContext AC1;
+    private AnalysisContext AC2;
 
     private string RegionName;
     private Implementation InternalImplementation;
@@ -65,11 +67,11 @@ namespace Whoop.Regions
       this.InParamMapEP1 = new Dictionary<string, IdentifierExpr>();
       this.InParamMapEP2 = new Dictionary<string, IdentifierExpr>();
 
-      var ac1 = AnalysisContext.GetAnalysisContext(ep1);
-      var ac2 = AnalysisContext.GetAnalysisContext(ep2);
+      this.AC1 = AnalysisContext.GetAnalysisContext(ep1);
+      this.AC2 = AnalysisContext.GetAnalysisContext(ep2);
 
-      Implementation impl1 = ac1.GetImplementation(ep1.Name);
-      Implementation impl2 = ac2.GetImplementation(ep2.Name);
+      Implementation impl1 = this.AC1.GetImplementation(ep1.Name);
+      Implementation impl2 = this.AC2.GetImplementation(ep2.Name);
 
       this.CreateInParamMatcher(impl1, impl2);
       this.CreateImplementation(impl1, impl2);
@@ -533,8 +535,12 @@ namespace Whoop.Regions
       }
 
       Expr checkExpr = null;
+      int lockCounter = 0;
       foreach (var l in this.AC.Locks)
       {
+        if (!this.AC1.Locks.Any(v => v.Name.Equals(l.Name)) &&
+            !this.AC2.Locks.Any(v => v.Name.Equals(l.Name)))
+          continue;
         if (l.Name.Equals("lock$tx") && !this.EP1.IsTxLocked && !this.EP2.IsTxLocked)
           continue;
 
@@ -564,9 +570,11 @@ namespace Whoop.Regions
         {
           checkExpr = Expr.Or(checkExpr, lsAndExpr);
         }
+
+        lockCounter++;
       }
 
-      if (this.AC.Locks.Count == 0)
+      if (lockCounter == 0)
       {
         checkExpr = Expr.False;
       }
