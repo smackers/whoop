@@ -128,6 +128,10 @@ namespace Whoop
         {
           foreach (var pair in pairMap)
           {
+            if (WhoopRaceCheckerCommandLineOptions.Get().SkipRaceFreePairs &&
+                !pair.Value.Item2.FoundErrors)
+              continue;
+            
             AnalysisContext ac = null;
             new AnalysisContextParser(fileList[fileList.Count - 1],
               "wbpl").TryParseNew(ref ac);

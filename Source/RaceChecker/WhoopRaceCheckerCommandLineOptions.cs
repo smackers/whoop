@@ -17,13 +17,21 @@ namespace Whoop
 {
   internal class WhoopRaceCheckerCommandLineOptions : WhoopCommandLineOptions
   {
+    public bool SkipRaceFreePairs = false;
+    
     public WhoopRaceCheckerCommandLineOptions() : base("Whoop", "Whoop static lockset analyser")
     {
-
+      
     }
 
     protected override bool ParseOption(string option, CommandLineOptionEngine.CommandLineParseState ps)
     {
+      if (option == "skipRaceFreePairs")
+      {
+        this.SkipRaceFreePairs = true;
+        return true;
+      }
+      
       return base.ParseOption(option, ps);
     }
 

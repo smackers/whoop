@@ -154,6 +154,7 @@ class DefaultCmdLineOptions(object):
     self.onlyRaces = False
     self.onlyDeadlocks = False
     self.findBugs = False
+    self.skipNonRacyPairs = False
     self.noInfer = False
     self.inline = False
     self.inlineBound = 0
@@ -235,6 +236,7 @@ def showHelpAndExit():
     --no-existential-opts   Do not perform existential optimisations.
     --analyse-only=X        Specify entry point to be analysed. All others are skipped.
     --no-infer              Turn off invariant inference.
+    --skip-non-racy-pairs   Skip race free pairs from Corral analysis.
     --yield-all             Instruments yields in all visible operations.
     --yield-coarse          Instruments yields in a coarse granularity manner.
     --yield-no-access       Turn off yield instrumentation in memory accesses.
@@ -338,6 +340,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.onlyDeadlocks = True
     if o == "--find-bugs":
       CommandLineOptions.findBugs = True
+    if o == "--skip-non-racy-pairs":
+      CommandLineOptions.skipNonRacyPairs = True
     if o == "--no-infer":
       CommandLineOptions.noInfer = True
     if o == "--yield-all":
@@ -631,7 +635,7 @@ def startToolChain(argv):
               'clang-opt=', 'smack-opt=',
               'boogie-opt=', 'timeout=', 'boogie-file=',
               'analyse-only=', 'inline', 'inline-bound=', 'k=', 'recursion-bound=', 'static-loop-bound=',
-              'no-infer', 'no-heavy-async-calls-optimisation',
+              'no-infer', 'no-heavy-async-calls-optimisation', 'skip-non-racy-pairs',
               'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
@@ -777,6 +781,8 @@ def startToolChain(argv):
 
   if CommandLineOptions.findBugs:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/findBugs" ]
+  if CommandLineOptions.skipNonRacyPairs:
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/skipRaceFreePairs" ]
   if CommandLineOptions.yieldAll:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
   elif CommandLineOptions.yieldCoarse:
