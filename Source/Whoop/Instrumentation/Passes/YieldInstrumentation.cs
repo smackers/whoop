@@ -44,6 +44,9 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
+      if (WhoopCommandLineOptions.Get().YieldAll)
+        return;
+
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer = new ExecutionTimer();

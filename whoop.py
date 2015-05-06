@@ -147,7 +147,7 @@ class DefaultCmdLineOptions(object):
     self.whoopEngineOptions = [ ]
     self.whoopCruncherOptions = [ ]
     self.whoopRaceCheckerOptions = [ "/nologo", "/typeEncoding:m", "/mv:-", "/doNotUseLabels", "/enhancedErrorMessages:1" ]
-    self.corralOptions = [ "/cooperative" ]
+    self.corralOptions = [ ]
     self.includes = []
     self.defines = clangCoreDefines
     self.analyseOnly = ""
@@ -787,8 +787,11 @@ def startToolChain(argv):
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldAll" ]
   elif CommandLineOptions.yieldCoarse:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldCoarse" ]
+    CommandLineOptions.corralOptions += [ "/cooperative" ]
   elif CommandLineOptions.yieldNoAccess:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
+  else:
+    CommandLineOptions.corralOptions += [ "/cooperative" ]
 
   if CommandLineOptions.yieldRaceChecking:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldRaceChecking" ]
