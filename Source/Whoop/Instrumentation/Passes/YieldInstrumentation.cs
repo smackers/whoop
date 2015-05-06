@@ -44,9 +44,6 @@ namespace Whoop.Instrumentation
 
     public void Run()
     {
-      if (WhoopCommandLineOptions.Get().YieldAll)
-        return;
-
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer = new ExecutionTimer();
@@ -190,11 +187,16 @@ namespace Whoop.Instrumentation
               !this.ErrorReporter.UnprotectedResources.Contains(resource))
             continue;
 
-          if (idx + 1 == block.Cmds.Count)
+          if (idx + 1 == block.Cmds.Count && !WhoopCommandLineOptions.Get().YieldAll)
+          {
             block.Cmds.Add(new YieldCmd(Token.NoToken));
-          else
+            idx++;
+          }
+          else if (!WhoopCommandLineOptions.Get().YieldAll)
+          {
             block.Cmds.Insert(idx + 1, new YieldCmd(Token.NoToken));
-          idx++;
+            idx++;
+          }
 
           if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound)
           {
