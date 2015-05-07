@@ -55,14 +55,23 @@ namespace Whoop.Instrumentation
 
       foreach (var impl in this.AC.TopLevelDeclarations.OfType<Implementation>())
       {
+        bool isOtherFunc = false;
+
         if (impl.Name.Equals(DeviceDriver.InitEntryPoint) &&
             !(this.Pair.EntryPoint1.IsInit || this.Pair.EntryPoint2.IsInit))
           continue;
         if (impl.Equals(this.AC.Checker))
           continue;
+        if (impl.Name.Equals("$static_init") || impl.Name.Equals("__SMACK_nondet"))
+          isOtherFunc = true;
         if ((impl.Name.Equals("$static_init") || impl.Name.Equals("__SMACK_nondet")) &&
             !WhoopCommandLineOptions.Get().YieldAll)
           continue;
+        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
+            impl.Name.Equals("mutex_unlock") ||
+            impl.Name.Equals("spin_lock") || impl.Name.Equals("spin_lock_irqsave") ||
+            impl.Name.Equals("spin_unlock") || impl.Name.Equals("spin_unlock_irqrestore"))
+          isOtherFunc = true;
         if ((impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
             impl.Name.Equals("mutex_unlock") ||
             impl.Name.Equals("spin_lock") || impl.Name.Equals("spin_lock_irqsave") ||
@@ -70,12 +79,15 @@ namespace Whoop.Instrumentation
             !WhoopCommandLineOptions.Get().YieldAll)
           continue;
 
+        if (!epHelpers.Any(val => val.Name.Split('$')[0].Equals(impl.Name)) &&
+            !epImpls.Any(val => val.Name.Equals(impl.Name)))
+          isOtherFunc = true;
         if ((!epHelpers.Any(val => val.Name.Split('$')[0].Equals(impl.Name)) &&
             !epImpls.Any(val => val.Name.Equals(impl.Name))) &&
             !WhoopCommandLineOptions.Get().YieldAll)
           continue;
 
-        this.InstrumentImplementation(impl);
+        this.InstrumentImplementation(impl, isOtherFunc);
       }
 
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
@@ -87,14 +99,14 @@ namespace Whoop.Instrumentation
 
     #region yield instrumentation
 
-    private void InstrumentImplementation(Implementation impl)
+    private void InstrumentImplementation(Implementation impl, bool isOtherFunc)
     {
       this.InstrumentYieldsInLocks(impl);
 
       if (!WhoopCommandLineOptions.Get().YieldNoAccess &&
         (this.ErrorReporter.FoundErrors || WhoopCommandLineOptions.Get().YieldAll))
       {
-        this.InstrumentYieldsInMemoryAccesses(impl);
+        this.InstrumentYieldsInMemoryAccesses(impl, isOtherFunc);
       }
     }
 
@@ -123,7 +135,7 @@ namespace Whoop.Instrumentation
       }
     }
 
-    private void InstrumentYieldsInMemoryAccesses(Implementation impl)
+    private void InstrumentYieldsInMemoryAccesses(Implementation impl, bool isOtherFunc)
     {
       foreach (var block in impl.Blocks)
       {
@@ -204,7 +216,7 @@ namespace Whoop.Instrumentation
             idx++;
           }
 
-          if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound)
+          if (WhoopCommandLineOptions.Get().YieldRaceChecking && readAccessFound && !isOtherFunc)
           {
             Expr expr = null;
             if (rhssMap.Count() == 1)
@@ -226,7 +238,7 @@ namespace Whoop.Instrumentation
 
             idx++;
           }
-          else if (WhoopCommandLineOptions.Get().YieldRaceChecking && writeAccessFound)
+          else if (WhoopCommandLineOptions.Get().YieldRaceChecking && writeAccessFound  && !isOtherFunc)
           {
             Expr expr = null;
             if (lhssMap.Count() == 1)
