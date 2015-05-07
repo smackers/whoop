@@ -32,6 +32,8 @@ namespace Whoop.Instrumentation
     private ErrorReporter ErrorReporter;
     private ExecutionTimer Timer;
 
+    private static int YieldCounter = 0;
+
     public YieldInstrumentation(AnalysisContext ac, AnalysisContext raceCheckedAc,
       EntryPointPair pair, ErrorReporter errorReporter)
     {
@@ -90,6 +92,9 @@ namespace Whoop.Instrumentation
         this.InstrumentImplementation(impl, isOtherFunc);
       }
 
+      if (WhoopCommandLineOptions.Get().CountYields)
+        Console.WriteLine("#y: " + YieldInstrumentation.YieldCounter);
+
       if (WhoopCommandLineOptions.Get().MeasurePassExecutionTime)
       {
         this.Timer.Stop();
@@ -130,6 +135,7 @@ namespace Whoop.Instrumentation
             continue;
 
           block.Cmds.Insert(idx, new YieldCmd(Token.NoToken));
+          YieldInstrumentation.YieldCounter++;
           idx++;
         }
       }
@@ -207,12 +213,14 @@ namespace Whoop.Instrumentation
               WhoopCommandLineOptions.Get().OptimizeCorral))
           {
             block.Cmds.Add(new YieldCmd(Token.NoToken));
+            YieldInstrumentation.YieldCounter++;
             idx++;
           }
           else if (!WhoopCommandLineOptions.Get().YieldAll ||
             WhoopCommandLineOptions.Get().OptimizeCorral)
           {
             block.Cmds.Insert(idx + 1, new YieldCmd(Token.NoToken));
+            YieldInstrumentation.YieldCounter++;
             idx++;
           }
 

@@ -35,6 +35,7 @@ namespace Whoop
     public bool YieldNoAccess = false;
     public bool YieldRaceChecking = false;
     public bool OptimizeCorral = false;
+    public bool CountYields = false;
 
     public bool PrintPairs = false;
     public bool OnlyRaceChecking = false;
@@ -145,6 +146,12 @@ namespace Whoop
       if (option == "optimizeCorral")
       {
         this.OptimizeCorral = true;
+        return true;
+      }
+
+      if (option == "countYields")
+      {
+        this.CountYields = true;
         return true;
       }
 
