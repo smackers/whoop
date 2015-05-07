@@ -165,6 +165,7 @@ class DefaultCmdLineOptions(object):
     self.yieldAll = False
     self.yieldCoarse = False
     self.yieldRaceChecking = False
+    self.optimizeCorral = False
     self.noHeavyAsyncCallsOptimisation = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
@@ -352,6 +353,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.yieldNoAccess = True
     if o == "--yield-race-check":
       CommandLineOptions.yieldRaceChecking = True
+    if o == "--optimize-corral":
+      CommandLineOptions.optimizeCorral = True
     if o == "--no-heavy-async-calls-optimisation":
       CommandLineOptions.noHeavyAsyncCallsOptimisation = True
     if o == "--inparam-aliasing":
@@ -637,6 +640,7 @@ def startToolChain(argv):
               'analyse-only=', 'inline', 'inline-bound=', 'k=', 'recursion-bound=', 'static-loop-bound=',
               'no-infer', 'no-heavy-async-calls-optimisation', 'skip-non-racy-pairs',
               'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
+              'optimize-corral',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
@@ -792,6 +796,10 @@ def startToolChain(argv):
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldNoAccess" ]
   else:
     CommandLineOptions.corralOptions += [ "/cooperative" ]
+
+  if CommandLineOptions.optimizeCorral:
+    CommandLineOptions.corralOptions += [ "/cooperative" ]
+    CommandLineOptions.corralOptions += [ "/optimizeCorral" ]
 
   if CommandLineOptions.yieldRaceChecking:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldRaceChecking" ]

@@ -60,16 +60,19 @@ namespace Whoop.Instrumentation
           continue;
         if (impl.Equals(this.AC.Checker))
           continue;
-        if (impl.Name.Equals("$static_init") || impl.Name.Equals("__SMACK_nondet"))
+        if ((impl.Name.Equals("$static_init") || impl.Name.Equals("__SMACK_nondet")) &&
+            !WhoopCommandLineOptions.Get().YieldAll)
           continue;
-        if (impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
+        if ((impl.Name.Equals("mutex_lock") || impl.Name.Equals("mutex_lock_interruptible") ||
             impl.Name.Equals("mutex_unlock") ||
             impl.Name.Equals("spin_lock") || impl.Name.Equals("spin_lock_irqsave") ||
-            impl.Name.Equals("spin_unlock") || impl.Name.Equals("spin_unlock_irqrestore"))
+            impl.Name.Equals("spin_unlock") || impl.Name.Equals("spin_unlock_irqrestore")) &&
+            !WhoopCommandLineOptions.Get().YieldAll)
           continue;
 
-        if (!epHelpers.Any(val => val.Name.Split('$')[0].Equals(impl.Name)) &&
-            !epImpls.Any(val => val.Name.Equals(impl.Name)))
+        if ((!epHelpers.Any(val => val.Name.Split('$')[0].Equals(impl.Name)) &&
+            !epImpls.Any(val => val.Name.Equals(impl.Name))) &&
+            !WhoopCommandLineOptions.Get().YieldAll)
           continue;
 
         this.InstrumentImplementation(impl);
@@ -187,12 +190,15 @@ namespace Whoop.Instrumentation
               !this.ErrorReporter.UnprotectedResources.Contains(resource))
             continue;
 
-          if (idx + 1 == block.Cmds.Count && !WhoopCommandLineOptions.Get().YieldAll)
+          if (idx + 1 == block.Cmds.Count &&
+            (!WhoopCommandLineOptions.Get().YieldAll ||
+              WhoopCommandLineOptions.Get().OptimizeCorral))
           {
             block.Cmds.Add(new YieldCmd(Token.NoToken));
             idx++;
           }
-          else if (!WhoopCommandLineOptions.Get().YieldAll)
+          else if (!WhoopCommandLineOptions.Get().YieldAll ||
+            WhoopCommandLineOptions.Get().OptimizeCorral)
           {
             block.Cmds.Insert(idx + 1, new YieldCmd(Token.NoToken));
             idx++;
