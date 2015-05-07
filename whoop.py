@@ -799,7 +799,7 @@ def startToolChain(argv):
 
   if CommandLineOptions.optimizeCorral:
     CommandLineOptions.corralOptions += [ "/cooperative" ]
-    CommandLineOptions.corralOptions += [ "/optimizeCorral" ]
+    CommandLineOptions.whoopRaceCheckerOptions += [ "/optimizeCorral" ]
 
   if CommandLineOptions.yieldRaceChecking:
     CommandLineOptions.whoopRaceCheckerOptions += [ "/yieldRaceChecking" ]
