@@ -166,6 +166,7 @@ class DefaultCmdLineOptions(object):
     self.yieldCoarse = False
     self.yieldRaceChecking = False
     self.optimizeCorral = False
+    self.countCorralPairs = False
     self.noHeavyAsyncCallsOptimisation = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
@@ -355,6 +356,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.yieldRaceChecking = True
     if o == "--optimize-corral":
       CommandLineOptions.optimizeCorral = True
+    if o == "--count-corral-pairs":
+      CommandLineOptions.countCorralPairs = True
     if o == "--no-heavy-async-calls-optimisation":
       CommandLineOptions.noHeavyAsyncCallsOptimisation = True
     if o == "--inparam-aliasing":
@@ -589,6 +592,7 @@ def runTool(ToolName, Command, ErrorCode, timeout=0):
 def runCorral(filename):
     directory = os.path.dirname(os.path.realpath(filename))
     inputFile = os.path.splitext(os.path.basename(filename))[0]
+    counter = 0
     for file in os.listdir(directory):
       if fnmatch.fnmatch(file, inputFile + '_check_racy_*.bpl'):
         runTool("corral",
@@ -597,6 +601,9 @@ def runCorral(filename):
                 CommandLineOptions.corralOptions + [ directory + os.sep + file ],
                 ErrorCodes.CORRAL_ERROR,
                 CommandLineOptions.componentTimeout)
+        counter += 1
+        if CommandLineOptions.countCorralPairs:
+          print("Pairs analysed so far: " + str(counter))
 
 def addInline(match, info):
   foundit = False
@@ -640,7 +647,7 @@ def startToolChain(argv):
               'analyse-only=', 'inline', 'inline-bound=', 'k=', 'recursion-bound=', 'static-loop-bound=',
               'no-infer', 'no-heavy-async-calls-optimisation', 'skip-non-racy-pairs',
               'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
-              'optimize-corral',
+              'optimize-corral', 'count-corral-pairs',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
