@@ -166,7 +166,7 @@ class DefaultCmdLineOptions(object):
     self.yieldCoarse = False
     self.yieldRaceChecking = False
     self.optimizeCorral = False
-    self.countCorralPairs = False
+    self.showCorralStats = False
     self.noHeavyAsyncCallsOptimisation = False
     self.checkInParamAliasing = False
     self.noExistentialOpts = False
@@ -356,8 +356,8 @@ def processGeneralOptions(opts, args):
       CommandLineOptions.yieldRaceChecking = True
     if o == "--optimize-corral":
       CommandLineOptions.optimizeCorral = True
-    if o == "--count-corral-pairs":
-      CommandLineOptions.countCorralPairs = True
+    if o == "--show-corral-stats":
+      CommandLineOptions.showCorralStats = True
     if o == "--no-heavy-async-calls-optimisation":
       CommandLineOptions.noHeavyAsyncCallsOptimisation = True
     if o == "--inparam-aliasing":
@@ -602,8 +602,9 @@ def runCorral(filename):
                 ErrorCodes.CORRAL_ERROR,
                 CommandLineOptions.componentTimeout)
         counter += 1
-        if CommandLineOptions.countCorralPairs:
+        if CommandLineOptions.showCorralStats:
           print("Pairs analysed so far: " + str(counter))
+          print("Time elapsed so far: " + str(Timing["corral"]))
 
 def addInline(match, info):
   foundit = False
@@ -647,7 +648,7 @@ def startToolChain(argv):
               'analyse-only=', 'inline', 'inline-bound=', 'k=', 'recursion-bound=', 'static-loop-bound=',
               'no-infer', 'no-heavy-async-calls-optimisation', 'skip-non-racy-pairs',
               'yield-all', 'yield-coarse', 'yield-no-access', 'yield-race-check',
-              'optimize-corral', 'count-corral-pairs',
+              'optimize-corral', 'show-corral-stats',
               'inparam-aliasing', 'no-existential-opts',
               'gen-smt2', 'solver=', 'logic=', 'other-model',
               'stop-at-re', 'stop-at-bc', 'stop-at-bpl', 'stop-at-engine',
