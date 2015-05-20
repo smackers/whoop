@@ -12,6 +12,7 @@ sudo apt-get install -y automake autoconf
 sudo apt-get install -y libtool libgmp-dev libcln-dev
 sudo apt-get install -y wget git subversion mercurial
 sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev
+sudo apt-get install -y git
 
 export PROJECT_ROOT=/vagrant
 export BUILD_ROOT=/home/vagrant/whoop
