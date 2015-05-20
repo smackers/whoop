@@ -13,6 +13,12 @@ Whoop is a symbolic data race analyzer for Linux device drivers.
 1. Clone this project.
 2. Compile using Visual Studio or Mono.
 
+We also have vagrant support for building a virtual machine with the toolchain installed. To do this use the following after ```cd``` in the root directory:
+
+```
+vagrant up
+```
+
 ## How to use
 
 The input to Whoop is a Linux driver. To use Whoop do the following:
