@@ -14,6 +14,10 @@ sudo apt-get install -y wget git subversion mercurial
 sudo apt-get install -y gettext zlib1g-dev asciidoc libcurl4-openssl-dev
 sudo apt-get install -y git
 
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo apt-get -y update
+sudo apt-get install -y g++-4.9
+
 export PROJECT_ROOT=/vagrant
 export BUILD_ROOT=/home/vagrant/whoop
 export CMAKE_VERSION=2.8.8
@@ -133,7 +137,7 @@ echo $'Getting Z3 ...'
 echo $'==============\n'
 
 cd ${BUILD_ROOT}
-git clone git@github.com:Z3Prover/z3.git
+git clone https://github.com/Z3Prover/z3.git
 cd ${BUILD_ROOT}/z3
 git checkout tags/${Z3_RELEASE}
 
@@ -154,7 +158,7 @@ echo $'Getting BOOGIE ...'
 echo $'==================\n'
 
 cd ${BUILD_ROOT}
-git clone git@github.com:boogie-org/boogie.git
+git clone https://github.com/boogie-org/boogie.git
 cd ${BUILD_ROOT}/boogie
 git checkout ${BOOGIE_RELEASE}
 
@@ -169,7 +173,7 @@ echo $'Getting CORRAL ...'
 echo $'==================\n'
 
 cd ${BUILD_ROOT}
-git clone https://git01.codeplex.com/corral
+git clone https://github.com/pdeligia/corral.git
 cd ${BUILD_ROOT}/corral
 git checkout ${CORRAL_RELEASE}
 
@@ -204,7 +208,7 @@ echo $'Getting CHAUFFEUR ...'
 echo $'=====================\n'
 
 cd ${BUILD_ROOT}
-git clone git@github.com:mc-imperial/chauffeur.git ${BUILD_ROOT}/chauffeur/src
+git clone https://github.com/mc-imperial/chauffeur.git ${BUILD_ROOT}/chauffeur/src
 
 echo $'\n======================'
 echo $'Building CHAUFFEUR ...'
@@ -233,7 +237,7 @@ echo $'\n====================='
 echo $'Configuring WHOOP ...'
 echo $'=====================\n'
 
-cp /Scripts/Vagrant/findtools.vagrant.py findtools.py
+cp /home/vagrant/whoop/whoop/Scripts/Vagrant/findtools.vagrant.py findtools.py
 
 echo $'\n========'
 echo $'Done ...'
