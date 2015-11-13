@@ -27,7 +27,7 @@ The input to Whoop is a Linux driver. To use Whoop do the following:
 .\whoop.py ${DRIVER}.c
 ```
 
-The use Corral for finding precise bugs do the following:
+To use Corral for finding precise bugs do the following:
 
 ```
 .\whoop.py ${DRIVER}.c --find-bugs --yield-race-check
