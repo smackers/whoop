@@ -27,7 +27,7 @@ The input to Whoop is a Linux driver. To use Whoop do the following:
 .\whoop.py ${DRIVER}.c
 ```
 
-The use Corral for finding precise bugs do the following:
+To use Corral for precise bug-finding do the following:
 
 ```
 .\whoop.py ${DRIVER}.c --find-bugs --yield-race-check
@@ -36,3 +36,6 @@ The use Corral for finding precise bugs do the following:
 ## Tool options
 
 Use --verbose for verbose mode. Use --time for timing information.
+
+## Publications
+- **[Fast and Precise Symbolic Analysis of Concurrency Bugs in Device Drivers](http://multicore.doc.ic.ac.uk/publications/ase-15.html)**. Pantazis Deligiannis, Alastair F. Donaldson, Zvonimir Rakamarić. In the *30th IEEE/ACM International Conference on Automated Software Engineering* (ASE), 2015.
