@@ -78,7 +78,7 @@ namespace Whoop
 
         if (WhoopEngineCommandLineOptions.Get().PrintPairs)
         {
-          DeviceDriver.PrintEntryPointPairs();
+          DeviceDriver.EmitEntryPointPairs(Program.FileList);
         }
 
         Program.RunParsingEngine();

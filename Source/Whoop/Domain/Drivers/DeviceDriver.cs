@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.IO;
+using System.Xml.Linq;
 
 using Microsoft.Boogie;
 using Microsoft.Basetypes;
@@ -46,15 +47,6 @@ namespace Whoop.Domain.Drivers
     #endregion
 
     #region public API
-
-    public static void PrintEntryPointPairs()
-    {
-      foreach (var ep in DeviceDriver.EntryPointPairs)
-      {
-        Console.WriteLine("Entry Point: " + ep.EntryPoint1.Name
-          + " :: " + ep.EntryPoint2.Name);
-      }
-    }
 
     /// <summary>
     /// Parses and initializes device driver specific information.
@@ -195,6 +187,28 @@ namespace Whoop.Domain.Drivers
       }
 
       return pairs;
+    }
+
+    /// <summary>
+    /// Emits the entry point pairs in an XML file.
+    /// </summary>
+    /// <param name="files">List of file names</param>
+    public static void EmitEntryPointPairs(List<string> files)
+    {
+      XDocument epXmlDoc = new XDocument();
+      XElement root = new XElement("driver", new XAttribute("name", WhoopCommandLineOptions.Get().OriginalFile));
+
+      foreach (var ep in DeviceDriver.EntryPointPairs)
+      {
+        root.Add(new XElement("pair", new XAttribute("ep1", ep.EntryPoint1.Name),
+          new XAttribute("ep2", ep.EntryPoint2.Name), new XAttribute("bug", false)));
+      }
+
+      epXmlDoc.Add(root);
+
+      string pairXmlFile = files[files.Count - 1].Substring(0,
+        files[files.Count - 1].IndexOf(".")) + ".pairs.xml";
+      epXmlDoc.Save(pairXmlFile);
     }
 
     #endregion
