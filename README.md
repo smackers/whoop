@@ -1,6 +1,6 @@
 Whoop
 ====================
-Whoop is a symbolic data race analyzer for Linux device drivers.
+Whoop is a SMACK-based symbolic data race analyzer for Linux device drivers.
 
 ## Prerequisites
 1. [LLVM](http://llvm.org) 3.5
