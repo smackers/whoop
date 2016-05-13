@@ -55,7 +55,7 @@ namespace Whoop.Domain.Drivers
     public static void ParseAndInitialize(List<string> files)
     {
       string driverInfoFile = files[files.Count - 1].Substring(0,
-        files[files.Count - 1].IndexOf(".")) + ".info";
+        files[files.Count - 1].LastIndexOf(".")) + ".info";
 
       DeviceDriver.EntryPoints = new List<EntryPoint>();
       DeviceDriver.Modules = new List<Module>();
@@ -207,7 +207,7 @@ namespace Whoop.Domain.Drivers
       epXmlDoc.Add(root);
 
       string pairXmlFile = files[files.Count - 1].Substring(0,
-        files[files.Count - 1].IndexOf(".")) + ".pairs.xml";
+        files[files.Count - 1].LastIndexOf(".")) + ".pairs.xml";
       epXmlDoc.Save(pairXmlFile);
     }
 

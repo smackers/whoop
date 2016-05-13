@@ -46,7 +46,7 @@ namespace Whoop.Summarisation
     public static void ToFile(List<string> files)
     {
       string summaryInfoFile = files[files.Count - 1].Substring(0,
-        files[files.Count - 1].IndexOf(".")) + ".summaries.info";
+        files[files.Count - 1].LastIndexOf(".")) + ".summaries.info";
 
       if (SummaryInformationParser.AvailableSummaries == null)
         SummaryInformationParser.AvailableSummaries = new List<string>();
@@ -71,7 +71,7 @@ namespace Whoop.Summarisation
     public static void FromFile(List<string> files)
     {
       string summaryInfoFile = files[files.Count - 1].Substring(0,
-        files[files.Count - 1].IndexOf(".")) + ".summaries.info";
+        files[files.Count - 1].LastIndexOf(".")) + ".summaries.info";
 
       if (SummaryInformationParser.AvailableSummaries == null)
         SummaryInformationParser.AvailableSummaries = new List<string>();
