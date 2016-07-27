@@ -43,14 +43,17 @@ void mutex_lock(struct mutex *lock)
 
 bool mutex_lock_interruptible(struct mutex *lock)
 {
-	int tid = __SMACK_nondet();
-	__SMACK_code("call @ := corral_getThreadID();", tid);
-	//__SMACK_code("assert @ != @;", tid, lock->locked);
-	__SMACK_code("call corral_atomic_begin();");
-	__SMACK_code("assume @ == @;", lock->locked, MUTEX_UNLOCKED);
-	lock->locked = tid;
-	__SMACK_code("call corral_atomic_end();");
-	return __SMACK_nondet();
+	bool ret = (bool)__SMACK_nondet();
+	if(!ret) {
+		int tid = __SMACK_nondet();
+		__SMACK_code("call @ := corral_getThreadID();", tid);
+		//__SMACK_code("assert @ != @;", tid, lock->locked);
+		__SMACK_code("call corral_atomic_begin();");
+		__SMACK_code("assume @ == @;", lock->locked, MUTEX_UNLOCKED);
+		lock->locked = tid;
+		__SMACK_code("call corral_atomic_end();");
+	}
+	return ret;
 }
 
 void mutex_unlock(struct mutex *lock)
